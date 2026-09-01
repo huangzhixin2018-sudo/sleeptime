@@ -688,25 +688,30 @@ struct SleepTrendView: View {
                 let stepWidth = (geo.size.width - itemWidth) / CGFloat(totalIntervals)
                 
                 ZStack(alignment: .topLeading) {
+                    // 绘制底部的横向基准线 (可选：如果要连成一条线，可以在这里加一个贯穿的 Rectangle)
+                    
                     // 绘制底部的刻度线和时间
                     HStack(alignment: .top, spacing: 0) {
                         ForEach(0..<tickCount, id: \.self) { i in
                             // 现在是每两个格一个主刻度
                             let isMajor = (i % 2 == 0)
+                            let hour = (21 + i / 2) % 24
+                            
+                            // 核心逻辑：根据时间点决定刻度的颜色，区分睡眠风险区间
+                            let zoneColor = getZoneColor(for: hour)
                             
                             VStack(spacing: 8) {
                                 // 刻度线
                                 Rectangle()
-                                    .fill(isMajor ? Color(UIColor.secondaryLabel) : Color(UIColor.tertiaryLabel).opacity(0.6))
+                                    .fill(isMajor ? zoneColor : zoneColor.opacity(0.4))
                                     .frame(width: isMajor ? 2 : 1.5,
                                            height: isMajor ? 12 : 6)
                                 
                                 // 时间文字
                                 if isMajor {
-                                    let hour = (21 + i / 2) % 24 // i/2 算出小时
                                     Text(String(format: "%02d", hour))
                                         .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(Color(UIColor.secondaryLabel))
+                                        .foregroundColor(zoneColor) // 文字也带上区间颜色
                                 } else {
                                     // 用透明文字占位，保证所有 VStack 高度结构一致
                                     Text("00").font(.system(size: 12)).hidden()
@@ -726,7 +731,7 @@ struct SleepTrendView: View {
                     let dotSize: CGFloat = 14
                     
                     Circle()
-                        .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 使用高对比的粉色点
+                        .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 保持原点为高亮的粉红色（或根据实际落点变色）
                         .frame(width: dotSize, height: dotSize)
                         .overlay(
                             // 增加一圈与背景色相同的粗描边，制造出“镂空悬浮”的质感
@@ -748,6 +753,24 @@ struct SleepTrendView: View {
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 24)
+    }
+    
+    // 区间颜色映射逻辑
+    private func getZoneColor(for hour: Int) -> Color {
+        switch hour {
+        case 21, 22:
+            // 11点前：健康睡眠区间 (薄荷绿/青色)
+            return Color(red: 0.2, green: 0.8, blue: 0.6)
+        case 23:
+            // 11点-12点：临界警告区间 (亮橙色/黄色)
+            return Color.orange
+        case 0:
+            // 12点-1点：严重熬夜区间 (粉红色)
+            return Color(red: 0.98, green: 0.45, blue: 0.52)
+        default:
+            // 1点以后：修仙危险区间 (深紫色/黑色)
+            return Color.purple
+        }
     }
 }
 
