@@ -195,36 +195,10 @@ struct SleepProgressView: View {
                 
                 // 入睡分布卡片 (图表样式)
                 SleepDistributionCardView()
-                    .padding(.top, 16)
                 
                 // 承诺追踪卡片 (说到做到 vs 破戒)
                 HabitStreakView()
-                    .padding(.top, 16)
                 
-                // 7天早睡计划卡片
-                WeeklyPlanCardView()
-                    .padding(.top, 16)
-
-                HStack(spacing: 16) {
-                    TargetCardView(
-                        title: "最晚入睡时间",
-                        value: "2:00",
-                        unit: "",
-                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
-                        rotationAngle: -2
-                    )
-
-                    TargetCardView(
-                        title: "最长连续熬夜",
-                        value: "5",
-                        unit: "天",
-                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
-                        rotationAngle: 2
-                    )
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-
                 VStack(spacing: 12) {
                     EarlySleepDayGridView()
                         .padding(.horizontal, 16)
@@ -232,6 +206,26 @@ struct SleepProgressView: View {
 
                 DayTimelineCardView()
                     .padding(.horizontal, 16)
+
+                HStack(spacing: 16) {
+                    TargetCardView(
+                        title: "超时熬夜时长",
+                        value: "2",
+                        unit: "小时",
+                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
+                        rotationAngle: -2
+                    )
+
+                    TargetCardView(
+                        title: "早睡天数",
+                        value: "6",
+                        unit: "天",
+                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
+                        rotationAngle: 2
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
                 
                 Spacer()
@@ -253,7 +247,7 @@ struct EarlySleepSummaryCardView: View {
                 )
 
                 Rectangle()
-                    .fill(Color(UIColor.separator).opacity(0.5))
+                    .fill(Color(UIColor.separator).opacity(0.4))
                     .frame(width: 1, height: 60)
 
                 EarlySleepMetricView(
@@ -262,27 +256,26 @@ struct EarlySleepSummaryCardView: View {
                     suffix: "天"
                 )
             }
-            .padding(.vertical, 16)
+            .padding(.vertical, 20)
 
-            HStack(spacing: 8) {
-                Text("规则：")
+            // 规则区域
+            HStack(spacing: 12) {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(Color(UIColor.tertiaryLabel))
                 Text("最晚 02:00 入睡")
                 Text("·")
                 Text("连续熬夜 ≤ 5天")
                 Spacer(minLength: 0)
             }
-            .font(.system(size: 14, weight: .bold))
-            .foregroundColor(Color(red: 0.28, green: 0.55, blue: 0.38))
-            .padding(.horizontal, 18)
-            .frame(height: 52)
-            .background(Color(red: 0.92, green: 0.97, blue: 0.94))
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(Color(UIColor.secondaryLabel))
+            .padding(.horizontal, 20)
+            .frame(height: 48)
+            .background(Color(white: 0.96)) // 干净的高级灰底色
         }
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(red: 0.28, green: 0.55, blue: 0.38).opacity(0.12), lineWidth: 1)
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -292,16 +285,16 @@ struct EarlySleepMetricView: View {
     let suffix: String
 
     var body: some View {
-        VStack(alignment: .center, spacing: 8) {
+        VStack(alignment: .center, spacing: 6) {
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Color(red: 0.36, green: 0.43, blue: 0.38))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(Color(UIColor.secondaryLabel))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
 
-            HStack(alignment: .lastTextBaseline, spacing: 4) {
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 32, weight: .medium, design: .rounded))
+                    .font(.system(size: 34, weight: .black, design: .rounded))
                     .foregroundColor(.primary)
                 if !suffix.isEmpty {
                     Text(suffix)
@@ -691,77 +684,13 @@ struct DashedLine: Shape {
 
 // MARK: - 连续规律记录组件 (横向滚动卡片)
 
-// MARK: - 7天早睡计划卡片 (打卡视图)
-struct WeeklyPlanCardView: View {
-    // 模拟数据: 1代表达标(绿), 2代表拖延(黄), 0代表未发生(虚线)
-    let history = [1, 1, 2, 1, 2, 1, 0] // 截图中有两个黄色块，最后一块未打卡
-    
-    // 提取颜色为常量，深度还原截图
-    let successColor = Color(red: 0.49, green: 0.69, blue: 0.55) // 鼠尾草绿
-    let warningColor = Color(red: 0.82, green: 0.65, blue: 0.42) // 驼色/土黄色
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("7天早睡计划")
-                        .font(.system(size: 24, weight: .heavy))
-                        .foregroundColor(.primary)
-
-                }
-            }
-
-            
-            // 7 Blocks
-            HStack(spacing: 8) {
-                ForEach(0..<7, id: \.self) { index in
-                    if index < history.count && history[index] != 0 {
-                        let status = history[index]
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(status == 1 ? successColor : warningColor)
-                            .frame(height: 44)
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        // Empty
-                        if index == 6 {
-                            // 最后一个带有奖励图标
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(UIColor.tertiaryLabel).opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                Image(systemName: "gift.fill") // 礼物图标
-                                    .foregroundColor(Color(red: 0.85, green: 0.35, blue: 0.35)) // 红色
-                                    .font(.system(size: 20))
-                            }
-                            .frame(height: 44)
-                            .frame(maxWidth: .infinity)
-                        } else {
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(UIColor.tertiaryLabel).opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                .frame(height: 44)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                }
-            }
-            .padding(.top, 8)
-        }
-        .padding(20)
-        .background(Color.white) // 纯白卡片底色
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
-        .padding(.horizontal, 16)
-    }
-}
 // MARK: - 连续规律记录组件 (横向滚动卡片)
 struct HabitStreakView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // 标题区
-            VStack(alignment: .leading, spacing: 6) {
-                Text("规律记录")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
+            Text("规律记录")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
             .padding(.horizontal, 16)
             
             // 横向滑动的卡片列表
@@ -995,7 +924,11 @@ struct EarlySleepDayGridView: View {
     private let completedColor = Color(red: 0.48, green: 0.68, blue: 0.54)
 
     var body: some View {
-        VStack {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("21天早睡计划")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
+
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(1...totalDays, id: \.self) { day in
                     Group {
@@ -1226,12 +1159,9 @@ struct SleepDistributionCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // 标题区 (在卡片外部)
-            VStack(alignment: .leading, spacing: 6) {
-                Text("入睡分布")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
+            Text("入睡分布")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
             .padding(.horizontal, 16)
             
             // 连续进度条图表区 (包裹在白色卡片内部)
@@ -1287,6 +1217,5 @@ struct SleepDistributionCardView: View {
             .cornerRadius(16)
             .padding(.horizontal, 16)
         }
-        .padding(.vertical, 8)
     }
 }
