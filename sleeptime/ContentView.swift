@@ -624,29 +624,21 @@ struct WeeklyPlanCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Header
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .bottom, spacing: 8) {
-                        Text("二月")
-                            .font(.system(size: 24, weight: .heavy))
-                            .foregroundColor(.primary)
-                        Text("2026年")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(UIColor.tertiaryLabel))
-                    }
-                    Text("行动是看得见的形状，坚持是时间的无声。")
-                        .font(.system(size: 14))
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("7天早睡计划")
+                        .font(.system(size: 20, weight: .heavy))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Text("9月1日-15日")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(UIColor.secondaryLabel))
                 }
-                
-                Spacer()
-                
-                Button(action: {}) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                }
+                Text("行动是看得见的形状，坚持是时间的无声。")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(UIColor.secondaryLabel))
             }
 
             
@@ -690,102 +682,37 @@ struct WeeklyPlanCardView: View {
         .padding(.horizontal, 16)
     }
 }
-// MARK: - 目标与限制数据卡片 (高级感重构版)
+// MARK: - 夜猫守护者卡片 (图文结合版)
 struct PlanGoalCardView: View {
     var body: some View {
-        VStack(spacing: 0) {
-            // Row 1: Target Sleep Time
-            GoalRowView(
-                icon: "moon.zzz.fill",
-                iconColor: Color(red: 0.35, green: 0.45, blue: 0.9), // 宁静蓝
-                title: "保持入睡时间",
-                value: "23:30",
-                valueSuffix: " 前",
-                statusText: "边界守护中",
-                statusColor: Color(red: 0.85, green: 0.5, blue: 0.2), // 橙色
-                statusBgColor: Color(red: 0.85, green: 0.5, blue: 0.2).opacity(0.12)
-            )
+        ZStack(alignment: .bottomTrailing) {
+            // 背景卡片
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(red: 0.98, green: 0.94, blue: 0.86)) // 燕麦暖米色
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
             
-            Divider()
-                .padding(.leading, 56) // 苹果式内缩分割线，避开图标区域
-                .background(Color.black.opacity(0.03))
-            
-            // Row 2: Max Stay Up Limit
-            GoalRowView(
-                icon: "flame.fill",
-                iconColor: Color(red: 0.9, green: 0.35, blue: 0.35), // 警示红
-                title: "最长连续熬夜",
-                value: "6",
-                valueSuffix: " 天上限",
-                statusText: "突破边界",
-                statusColor: Color(red: 0.9, green: 0.2, blue: 0.2), // 深红
-                statusBgColor: Color(red: 0.9, green: 0.2, blue: 0.2).opacity(0.12)
-            )
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.04), radius: 15, x: 0, y: 8)
-        )
-        .padding(.horizontal, 16)
-    }
-}
-
-// 高级数据行组件
-struct GoalRowView: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let value: String
-    let valueSuffix: String
-    let statusText: String
-    let statusColor: Color
-    let statusBgColor: Color
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            // 左侧：轻拟物/磨砂质感圆形图标底座
-            ZStack {
-                Circle()
-                    .fill(iconColor.opacity(0.12))
-                    .frame(width: 40, height: 40)
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(iconColor)
-            }
-            
-            // 中间：高对比度排版数据
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(Color(UIColor.secondaryLabel))
+            // 左侧文案
+            VStack(alignment: .leading, spacing: 14) {
+                Text("目标最晚入睡时间 23:00")
+                    .font(.system(size: 17, weight: .black))
+                    .foregroundColor(Color(white: 0.15))
                 
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text(value)
-                        .font(.system(size: 22, weight: .heavy))
-                        .foregroundColor(.primary)
-                    Text(valueSuffix)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.primary)
-                }
+                Text("限制最长连续熬夜 5天")
+                    .font(.system(size: 17, weight: .black))
+                    .foregroundColor(Color(white: 0.15))
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 32)
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Spacer()
-            
-            // 右侧：精美胶囊状态标签
-            Text(statusText)
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundColor(statusColor)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(statusBgColor)
-                )
+            // 右下角黑猫 (利用超大号 Emoji 模拟图像)
+            Text("🐈‍⬛")
+                .font(.system(size: 85))
+                // 让猫咪微微溢出卡片边缘，产生破局感
+                .offset(x: 10, y: 12) 
         }
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 }
 
