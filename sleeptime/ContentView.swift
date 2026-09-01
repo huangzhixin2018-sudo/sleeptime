@@ -185,14 +185,6 @@ struct SleepProgressView: View {
                 // 作息漂移刻度尺
                 SleepTrendView()
                     .padding(.top, 24)
-                
-                Divider()
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 8)
-                    
-                // 入睡轨迹分布
-                SleepDistributionView()
-                    .padding(.top, 24)
 
                 // 承诺追踪卡片 (说到做到 vs 破戒)
                 HabitStreakView()
@@ -311,7 +303,12 @@ struct ProfileView: View {
                                 ProfileRowView(icon: "gearshape", title: "年度目标", showDivider: false)
                             }
                             .buttonStyle(.plain)
-                            ProfileRowView(icon: "calendar", title: "日期设置", showDivider: false)
+                            
+                            NavigationLink(destination: SleepDistributionView()) {
+                                ProfileRowView(icon: "chart.bar.fill", title: "入睡分布", showDivider: false)
+                            }
+                            .buttonStyle(.plain)
+                            
                             ProfileRowView(icon: "tag", title: "标签管理", showDivider: false)
                             ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
                         }
@@ -892,76 +889,82 @@ struct PromiseTrackingView: View {
     }
 }
 
-// MARK: - 睡眠分布轨迹组件 (积木图)
+// MARK: - 睡眠分布统计页面 (横向条形图)
 struct SleepDistributionView: View {
     // 模拟数据：分别对应 提前, 守信, 拖延, 熬夜, 通宵 的天数
-    let distribution = [1, 4, 3, 2, 0]
-    let maxBlocks = 6
+    let distribution = [8, 3, 5, 2, 0]
+    let maxCount = 8
     
-    // 配置：标签, 时间段, 积木颜色
+    // 配置：标签, 颜色
     let categories = [
-        ("提前", "22-23", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
-        ("守信", "23-00", Color.primary), // 达成目标的黑色实心
-        ("拖延", "00-01", Color.orange), // 警告橙
-        ("熬夜", "01-02", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
-        ("通宵", "02后", Color.purple) // 危险紫
+        ("提前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
+        ("守信", Color.primary), // 达成目标的黑色实心
+        ("拖延", Color.orange), // 警告橙
+        ("熬夜", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
+        ("通宵", Color.purple) // 危险紫
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) { // 调整整体纵向间距以匹配其他卡片
-            // 标题区
-            VStack(alignment: .leading, spacing: 6) {
-                Text("入睡轨迹") // 恢复统一命名
-                    .font(.system(size: 18, weight: .bold)) // 与规律记录完全一致
-                    .foregroundColor(.primary)
-                
-                Text("习惯是一块块拼出来的。今晚的积木，你想落在哪个区？")
-                    .font(.system(size: 14)) // 字号微调，避免抢戏
-                    .foregroundColor(Color(UIColor.secondaryLabel))
-                    .lineSpacing(4)
-            }
-            .padding(.horizontal, 16) // 与规律记录的标题左边距一致
-            
-            // 柱状图区
-            HStack(alignment: .bottom, spacing: 0) {
-                ForEach(0..<categories.count, id: \.self) { index in
-                    let category = categories[index]
-                    let count = distribution[index]
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                // 标题区
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("你的入睡分布")
+                        .font(.system(size: 26, weight: .black))
+                        .foregroundColor(.primary)
                     
-                    VStack(spacing: 20) {
-                        // 积木块
-                        VStack(spacing: 8) {
-                            ForEach((0..<maxBlocks).reversed(), id: \.self) { blockIndex in
-                                if blockIndex < count {
-                                    // 实体块
+                    Text("最近 21 天的数据统计。好的坏的，都在这里。")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                        .lineSpacing(6)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                
+                // 横向条形图区
+                VStack(spacing: 24) {
+                    ForEach(0..<categories.count, id: \.self) { index in
+                        let category = categories[index]
+                        let count = distribution[index]
+                        let widthPercent = maxCount > 0 ? CGFloat(count) / CGFloat(maxCount) : 0
+                        
+                        HStack(spacing: 16) {
+                            Text(category.0)
+                                .font(.system(size: 18, weight: .heavy))
+                                .foregroundColor(.primary)
+                                .frame(width: 44, alignment: .leading)
+                            
+                            // 进度条
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    // 背景槽 (极简风，浅灰色)
                                     Capsule()
-                                        .fill(category.2)
-                                        .frame(width: 44, height: 22)
-                                } else {
-                                    // 虚线空心块
-                                    Capsule()
-                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                        .frame(width: 44, height: 22)
+                                        .fill(Color(UIColor.tertiaryLabel).opacity(0.15))
+                                    
+                                    // 实际数据条
+                                    if count > 0 {
+                                        Capsule()
+                                            .fill(category.1)
+                                            // 最小宽度限制，确保数值极小时也能显示一个圆角点
+                                            .frame(width: max(geo.size.width * widthPercent, 16))
+                                    }
                                 }
                             }
-                        }
-                        
-                        // 底部标签
-                        VStack(spacing: 6) {
-                            Text(category.0)
-                                .font(.system(size: 16, weight: .heavy))
-                                .foregroundColor(.primary)
-                            Text(category.1)
-                                .font(.custom("AvenirNext-DemiBold", size: 12))
-                                .foregroundColor(Color(UIColor.tertiaryLabel))
+                            .frame(height: 24)
+                            
+                            Text("\(count)天")
+                                .font(.custom("AvenirNext-Bold", size: 18))
+                                .foregroundColor(count > 0 ? .primary : Color(UIColor.tertiaryLabel))
+                                .frame(width: 40, alignment: .trailing)
                         }
                     }
-                    .frame(maxWidth: .infinity)
                 }
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 16) // 与规律记录卡片的左边距一致
+            .padding(.bottom, 40)
         }
-        .padding(.vertical, 24)
-        // 移除了这里的外层 .padding(.horizontal, 24)，改为内部独立控制 16
+        .background(Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea())
+        .navigationTitle("入睡分布")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
