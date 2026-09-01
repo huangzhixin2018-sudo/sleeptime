@@ -726,37 +726,31 @@ struct SleepTrendView: View {
                             }
                         }
                         
-                        // 3. 航班偏航轨迹 (抛物线虚线)
-                        // 目标时间 23:30 (第5个小格)，实际时间 00:20 (第6.66个小格)
-                        let targetPosition: CGFloat = 5.0 
-                        let actualPosition: CGFloat = 6.66 
+                        // 3. 悬浮指示点与垂直对齐线
+                        let actualPosition: CGFloat = 6.66 // 实际时间 (例如 00:20)
                         
-                        let targetX = (itemWidth / 2) + (stepWidth * targetPosition)
                         let actualX = (itemWidth / 2) + (stepWidth * actualPosition)
-                        let centerY: CGFloat = 10.5 // ZStack总高12，横轴高3沉底(y:9~12)，中心是10.5
+                        let axisY: CGFloat = 10.5 // 底轴中心 (ZStack高度12，底轴高度3)
+                        let suspendedY: CGFloat = axisY - 36 // 悬浮在轴线上方 36 个 point
                         
-                        // 绘制向上的抛物线轨迹
+                        // 垂直向下对应的虚线
                         Path { path in
-                            path.move(to: CGPoint(x: targetX, y: centerY))
-                            let controlY = centerY - 50 // 让抛物线飞得更高
-                            path.addQuadCurve(
-                                to: CGPoint(x: actualX, y: centerY),
-                                control: CGPoint(x: (targetX + actualX) / 2, y: controlY)
-                            )
+                            path.move(to: CGPoint(x: actualX, y: suspendedY + 7)) // 从圆点底部开始
+                            path.addLine(to: CGPoint(x: actualX, y: axisY)) // 连到底轴
                         }
-                        .stroke(Color(UIColor.tertiaryLabel), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
+                        .stroke(Color(UIColor.tertiaryLabel), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
                         
-                        // 4. 实际着陆点 (恢复极简原点)
+                        // 悬浮在空中的指示圆点
                         Circle()
-                            .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
+                            .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 标志性高亮粉色
                             .frame(width: 14, height: 14)
                             .overlay(
                                 Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
                             )
-                            .position(x: actualX, y: centerY)
+                            .position(x: actualX, y: suspendedY)
                     }
-                    // 为了不让高抛物线被切掉或者挤压，强制在上半部分 ZStack 增加一点顶部内边距
-                    .padding(.top, 30)
+                    // 为了不让悬浮点被切掉，给 ZStack 增加顶部内边距
+                    .padding(.top, 40)
                     
                     // 下半部：时间文字
                     HStack(spacing: 0) {
