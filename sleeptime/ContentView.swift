@@ -191,6 +191,10 @@ struct SleepProgressView: View {
                 HabitStreakView()
                     .padding(.top, 16)
                 
+                // 目标与限制数据卡片
+                PlanGoalCardView()
+                    .padding(.top, 16)
+                
                 // 7天早睡计划卡片
                 WeeklyPlanCardView()
                     .padding(.top, 16)
@@ -615,10 +619,7 @@ struct WeeklyPlanCardView: View {
                         .foregroundColor(Color(UIColor.secondaryLabel))
                 }
             }
-            
-            // 目标与限制数据卡片
-            PlanGoalCardView()
-                .padding(.vertical, 4)
+
             
             // 7 Blocks
             HStack(spacing: 8) {
@@ -720,6 +721,7 @@ struct PlanGoalCardView: View {
         }
         .background(Color(red: 0.96, green: 0.98, blue: 0.98)) // 淡青蓝底色
         .cornerRadius(24)
+        .padding(.horizontal, 16)
     }
 }
 
