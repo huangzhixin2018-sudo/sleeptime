@@ -178,10 +178,7 @@ struct SleepProgressView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 16) // 距离上方卡片的间距
                 
-                // 单日记录卡片
-                DayRecordCardView()
-                    .padding(.top, 16)
-                
+
                 // 作息漂移刻度尺
                 SleepTrendView()
                     .padding(.top, 24)
@@ -997,7 +994,7 @@ struct SleepTrajectoryView: View {
                     .foregroundColor(.primary)
                 
                 Text("习惯是一块块拼出来的。今晚你想落在哪一格？")
-                    .font(.system(size: 14))
+                    .font(.system(size: 18, weight: .bold)) // 修改为与标题一样大
                     .foregroundColor(Color(UIColor.secondaryLabel))
                     .lineSpacing(4)
             }
