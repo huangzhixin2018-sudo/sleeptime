@@ -186,6 +186,14 @@ struct SleepProgressView: View {
                 SleepTrendView()
                     .padding(.top, 24)
                 
+                Divider()
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
+                    
+                // 入睡轨迹分布
+                SleepDistributionView()
+                    .padding(.top, 24)
+
                 // 承诺追踪卡片 (说到做到 vs 破戒)
                 HabitStreakView()
                     .padding(.top, 16)
@@ -881,5 +889,79 @@ struct PromiseTrackingView: View {
         .padding(.vertical, 16)
         .padding(.horizontal, 24)
         // 完全去除白底、圆角和阴影，让它直接浮在燕麦色主背景上
+    }
+}
+
+// MARK: - 睡眠分布轨迹组件 (积木图)
+struct SleepDistributionView: View {
+    // 模拟数据：分别对应 提前, 守信, 拖延, 熬夜, 通宵 的天数
+    let distribution = [1, 4, 3, 2, 0]
+    let maxBlocks = 6
+    
+    // 配置：标签, 时间段, 积木颜色
+    let categories = [
+        ("提前", "22-23", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
+        ("守信", "23-00", Color.primary), // 达成目标的黑色实心
+        ("拖延", "00-01", Color.orange), // 警告橙
+        ("熬夜", "01-02", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
+        ("通宵", "02后", Color.purple) // 危险紫
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            // 标题区
+            VStack(alignment: .leading, spacing: 8) {
+                Text("入睡轨迹")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Text("每一次的行动，都是一点点积累。下一次落在哪里，仍由你决定。")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(UIColor.secondaryLabel))
+                    .lineSpacing(4)
+            }
+            
+            // 柱状图区
+            HStack(alignment: .bottom, spacing: 0) {
+                ForEach(0..<categories.count, id: \.self) { index in
+                    let category = categories[index]
+                    let count = distribution[index]
+                    
+                    VStack(spacing: 12) {
+                        // 积木块
+                        VStack(spacing: 6) {
+                            ForEach((0..<maxBlocks).reversed(), id: \.self) { blockIndex in
+                                if blockIndex < count {
+                                    // 实体块
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(category.2)
+                                        .frame(width: 32, height: 16)
+                                } else {
+                                    // 虚线空心块
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                                        .frame(width: 32, height: 16)
+                                }
+                            }
+                        }
+                        
+                        // 底部标签
+                        VStack(spacing: 4) {
+                            Text(category.0)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text(category.1)
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(UIColor.tertiaryLabel))
+                        }
+                        .padding(.top, 8)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, 8)
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
     }
 }
