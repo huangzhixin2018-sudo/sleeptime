@@ -666,12 +666,12 @@ struct PlanGoalCardView: View {
     var body: some View {
         HStack(spacing: 0) {
             // 左侧数据区
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
                 // Item 1
                 VStack(alignment: .leading, spacing: 4) {
                     Text("23:30")
-                        .font(.custom("AvenirNext-Heavy", size: 36))
-                        .foregroundColor(Color(red: 0.3, green: 0.2, blue: 0.15)) // 深棕色
+                        .font(.system(size: 32, weight: .heavy))
+                        .foregroundColor(.primary)
                     Text("目标最晚入睡")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(Color(UIColor.secondaryLabel))
@@ -681,18 +681,18 @@ struct PlanGoalCardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .lastTextBaseline, spacing: 2) {
                         Text("6")
-                            .font(.custom("AvenirNext-Heavy", size: 36))
-                            .foregroundColor(Color(red: 0.3, green: 0.2, blue: 0.15))
+                            .font(.system(size: 32, weight: .heavy))
+                            .foregroundColor(.primary)
                         Text("天")
                             .font(.system(size: 16, weight: .heavy))
-                            .foregroundColor(Color(red: 0.3, green: 0.2, blue: 0.15))
+                            .foregroundColor(.primary)
                     }
                     Text("限制最长连续熬夜")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(Color(UIColor.secondaryLabel))
                 }
             }
-            .padding(24)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             
             // 右侧图形区
@@ -707,20 +707,20 @@ struct PlanGoalCardView: View {
                 Image(systemName: "shield.fill")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 76, height: 76)
+                    .frame(width: 60, height: 60)
                     .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.15))
                     .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 6)
                     .overlay(
                         Text("1")
-                            .font(.custom("AvenirNext-Heavy", size: 40))
+                            .font(.system(size: 30, weight: .black))
                             .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.4))
                             .offset(y: -4)
                     )
             }
             .frame(width: 150)
         }
-        .background(Color(red: 0.96, green: 0.98, blue: 0.98)) // 淡青蓝底色
-        .cornerRadius(24)
+        .background(Color.white) // 统一采用干净的纯白底色
+        .cornerRadius(20)
         .padding(.horizontal, 16)
     }
 }
