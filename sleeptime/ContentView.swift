@@ -975,9 +975,9 @@ struct SleepDistributionView: View {
 
 // MARK: - 入睡轨迹组件 (横向积木图)
 struct SleepTrajectoryView: View {
-    // 模拟数据：最近 5 天的轨迹 (如需更多天数，UI已支持自动折叠为多排)
+    // 模拟数据：最近 6 天的轨迹 (如需更多天数，UI已支持自动折叠为多排)
     let distribution = [2, 3, 1, 1, 0]
-    let maxBlocks = 5
+    let maxBlocks = 6
     
     // 配置：标签, 积木颜色
     let categories = [
@@ -1012,15 +1012,8 @@ struct SleepTrajectoryView: View {
                     // 如果天数为 0，则直接隐藏整行
                     if count > 0 {
                         HStack(spacing: 12) {
-                            // 标题加上天数，例如 "提前 2天"
-                            Text("\(category.0) \(count)天")
-                                .font(.system(size: 16, weight: .heavy))
-                                .foregroundColor(.primary)
-                                .frame(width: 76, alignment: .leading)
-                            
-                            // 积木模块
-                            // 使用 LazyVGrid 支持自动换行（超过5个自动折叠到下一排）
-                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 8), count: 5), alignment: .leading, spacing: 8) {
+                            // 积木模块在左，保证第一列积木和标题完美左对齐
+                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 8), count: 6), alignment: .leading, spacing: 8) {
                                 ForEach(0..<maxBlocks, id: \.self) { blockIndex in
                                     if blockIndex < count {
                                         // 实体块
@@ -1035,6 +1028,13 @@ struct SleepTrajectoryView: View {
                                     }
                                 }
                             }
+                            
+                            Spacer(minLength: 0)
+                            
+                            // 标题加上天数，例如 "提前 2天"，放在右侧
+                            Text("\(category.0) \(count)天")
+                                .font(.system(size: 16, weight: .heavy))
+                                .foregroundColor(.primary)
                         }
                     }
                 }
