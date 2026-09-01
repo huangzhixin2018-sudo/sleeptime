@@ -701,36 +701,63 @@ struct SleepTrendView: View {
                 let itemWidth: CGFloat = 20 // 加宽一点
                 let stepWidth = (geo.size.width - itemWidth) / CGFloat(totalIntervals)
                 
-                ZStack(alignment: .topLeading) {
-                    // 1. 绘制一条贯穿前后的彩色横轴
-                    HStack(spacing: 0) {
-                        // 共 5 个小时区间 (21-22, 22-23, 23-00, 00-01, 01-02)
-                        ForEach(0..<5, id: \.self) { i in
-                            let hour = (21 + i) % 24
-                            Rectangle()
-                                .fill(getZoneColor(for: hour))
-                                .frame(height: 3) // 横轴粗细
+                VStack(spacing: 8) {
+                    // 上半部：刻度线和彩色横轴 (底部对齐)
+                    ZStack(alignment: .bottomLeading) {
+                        // 1. 绘制一条贯穿的彩色横轴
+                        HStack(spacing: 0) {
+                            // 共 5 个小时区间 (21-22, 22-23, 23-00, 00-01, 01-02)
+                            ForEach(0..<5, id: \.self) { i in
+                                let hour = (21 + i) % 24
+                                Rectangle()
+                                    .fill(getZoneColor(for: hour))
+                                    .frame(height: 3) // 横轴粗细
+                            }
                         }
+                        .clipShape(Capsule()) // 两端圆角
+                        .padding(.horizontal, itemWidth / 2) // 横轴从第一个刻度中心连到最后一个刻度中心
+                        
+                        // 2. 竖向刻度线 (长在横轴上方)
+                        HStack(alignment: .bottom, spacing: 0) {
+                            ForEach(0..<tickCount, id: \.self) { i in
+                                let isMajor = (i % 2 == 0)
+                                
+                                Rectangle()
+                                    .fill(isMajor ? Color(UIColor.secondaryLabel) : Color(UIColor.tertiaryLabel))
+                                    .frame(width: isMajor ? 2 : 1.5,
+                                           height: isMajor ? 12 : 6)
+                                    .frame(width: itemWidth, alignment: .bottom) // 占位保证间距
+                                
+                                if i < tickCount - 1 {
+                                    Spacer(minLength: 0)
+                                }
+                            }
+                        }
+                        
+                        // 3. 原点指示器 (嵌在横轴上)
+                        let position: CGFloat = 5.0 
+                        let dotSize: CGFloat = 14
+                        
+                        Circle()
+                            .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
+                            .frame(width: dotSize, height: dotSize)
+                            .overlay(
+                                Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
+                            )
+                            .offset(
+                                x: (itemWidth / 2) + (stepWidth * position) - (dotSize / 2),
+                                y: 5.5 // 向下偏移，使圆心正好对准高度为3的横轴中心
+                            )
                     }
-                    .clipShape(Capsule()) // 两端圆角
-                    .padding(.horizontal, itemWidth / 2) // 让横轴刚好从第一个刻度中心连到最后一个刻度中心
-                    .offset(y: 4.5) // 大刻度高12，中心点是6；横轴高3，6-1.5=4.5
                     
-                    // 2. 绘制竖向刻度线和时间文字
-                    HStack(alignment: .top, spacing: 0) {
+                    // 下半部：时间文字
+                    HStack(spacing: 0) {
                         ForEach(0..<tickCount, id: \.self) { i in
                             let isMajor = (i % 2 == 0)
                             let hour = (21 + i / 2) % 24
                             let zoneColor = getZoneColor(for: hour)
                             
-                            VStack(spacing: 8) {
-                                // 竖向刻度线
-                                Rectangle()
-                                    .fill(isMajor ? Color(UIColor.secondaryLabel) : Color(UIColor.tertiaryLabel))
-                                    .frame(width: isMajor ? 2 : 1.5,
-                                           height: isMajor ? 12 : 6)
-                                
-                                // 时间文字
+                            Group {
                                 if isMajor {
                                     Text(String(format: "%02d", hour))
                                         .font(.system(size: 12, weight: .bold))
@@ -746,23 +773,6 @@ struct SleepTrendView: View {
                             }
                         }
                     }
-                    
-                    // 原点指示器
-                    // 例如数据在 23:30 (从21:00起走过2.5小时，即 5 个小格)
-                    let position: CGFloat = 5.0 
-                    let dotSize: CGFloat = 14
-                    
-                    Circle()
-                        .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 保持原点为高亮的粉红色（或根据实际落点变色）
-                        .frame(width: dotSize, height: dotSize)
-                        .overlay(
-                            // 增加一圈与背景色相同的粗描边，制造出“镂空悬浮”的质感
-                            Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
-                        )
-                        .offset(
-                            x: (itemWidth / 2) + (stepWidth * position) - (dotSize / 2),
-                            y: 6 - (dotSize / 2) // 大刻度高度12，中心在6。减去半径实现垂直居中对齐刻度
-                        )
                 }
             }
             .frame(height: 44) // 为刻度和文字预留足够高度
