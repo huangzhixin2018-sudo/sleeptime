@@ -1012,7 +1012,13 @@ struct SleepTrajectoryView: View {
                     // 如果天数为 0，则直接隐藏整行
                     if count > 0 {
                         HStack(spacing: 12) {
-                            // 积木模块在左，保证第一列积木和标题完美左对齐
+                            // 标题加上天数放在左侧，与最上方的标题文本对齐
+                            Text("\(category.0) \(count)天")
+                                .font(.system(size: 16, weight: .heavy))
+                                .foregroundColor(.primary)
+                                .frame(width: 76, alignment: .leading)
+                            
+                            // 积木模块在右侧
                             LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 8), count: 6), alignment: .leading, spacing: 8) {
                                 ForEach(0..<maxBlocks, id: \.self) { blockIndex in
                                     if blockIndex < count {
@@ -1028,13 +1034,6 @@ struct SleepTrajectoryView: View {
                                     }
                                 }
                             }
-                            
-                            Spacer(minLength: 0)
-                            
-                            // 标题加上天数，例如 "提前 2天"，放在右侧
-                            Text("\(category.0) \(count)天")
-                                .font(.system(size: 16, weight: .heavy))
-                                .foregroundColor(.primary)
                         }
                     }
                 }
