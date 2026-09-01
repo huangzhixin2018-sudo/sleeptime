@@ -975,9 +975,9 @@ struct SleepDistributionView: View {
 
 // MARK: - 入睡轨迹组件 (横向积木图)
 struct SleepTrajectoryView: View {
-    // 模拟数据：最近 7 天的轨迹
+    // 模拟数据：最近 5 天的轨迹 (如需更多天数，UI已支持自动折叠为多排)
     let distribution = [2, 3, 1, 1, 0]
-    let maxBlocks = 7
+    let maxBlocks = 5
     
     // 配置：标签, 积木颜色
     let categories = [
@@ -1016,21 +1016,22 @@ struct SleepTrajectoryView: View {
                             Text("\(category.0) \(count)天")
                                 .font(.system(size: 16, weight: .heavy))
                                 .foregroundColor(.primary)
-                                .frame(width: 76, alignment: .leading) // 稍微缩小占位，依然保证左对齐
+                                .frame(width: 76, alignment: .leading)
                             
                             // 积木模块
-                            HStack(spacing: 6) { // 减小积木间距
+                            // 使用 LazyVGrid 支持自动换行（超过5个自动折叠到下一排）
+                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 8), count: 5), alignment: .leading, spacing: 8) {
                                 ForEach(0..<maxBlocks, id: \.self) { blockIndex in
                                     if blockIndex < count {
                                         // 实体块
-                                        Capsule()
+                                        RoundedRectangle(cornerRadius: 6)
                                             .fill(category.1)
-                                            .frame(width: 28, height: 16) // 缩小胶囊尺寸，防止屏幕溢出
+                                            .frame(height: 20)
                                     } else {
                                         // 虚线空心块
-                                        Capsule()
-                                            .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                                            .frame(width: 28, height: 16)
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                            .frame(height: 20)
                                     }
                                 }
                             }
