@@ -749,7 +749,7 @@ struct HabitStreakView: View {
                         count: "2天",
                         dateRange: "8.25 - 8.26",
                         isActive: false,
-                        themeColor: Color(red: 0.48, green: 0.68, blue: 0.54)
+                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84)
                     )
                     
                     HabitCard(
@@ -884,7 +884,7 @@ struct DayTimelineCardView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 28) {
             VStack(alignment: .leading, spacing: 18) {
                 Text("Day \(selectedDay)")
                     .font(.system(size: 24, weight: .bold))
@@ -911,20 +911,7 @@ struct DayTimelineCardView: View {
                     }
                 }
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color(red: 0.48, green: 0.68, blue: 0.54).opacity(0.30), lineWidth: 1)
-            )
-
-            DayPlanConnectorBridgeShape()
-                .fill(Color(.systemBackground))
-                .frame(width: 60, height: 18)
-                .padding(.vertical, -1)
-                .zIndex(1)
 
             VStack(alignment: .leading, spacing: 20) {
                 Text("时间规划")
@@ -982,41 +969,11 @@ struct DayTimelineCardView: View {
                     }
                 }
             }
-            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color(red: 0.48, green: 0.68, blue: 0.54).opacity(0.30), lineWidth: 1)
-            )
         }
-    }
-}
-
-struct DayPlanConnectorBridgeShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let radius = rect.height / 2
-
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addArc(
-            center: CGPoint(x: rect.minX, y: rect.midY),
-            radius: radius,
-            startAngle: .degrees(-90),
-            endAngle: .degrees(90),
-            clockwise: false
-        )
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addArc(
-            center: CGPoint(x: rect.maxX, y: rect.midY),
-            radius: radius,
-            startAngle: .degrees(90),
-            endAngle: .degrees(270),
-            clockwise: false
-        )
-        path.closeSubpath()
-        return path
+        .padding(20)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
