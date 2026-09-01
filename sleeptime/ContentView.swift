@@ -1016,18 +1016,18 @@ struct SleepTrajectoryView: View {
                             .frame(width: 44, alignment: .leading)
                         
                         // 积木模块
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             ForEach(0..<maxBlocks, id: \.self) { blockIndex in
                                 if blockIndex < count {
                                     // 实体块
-                                    RoundedRectangle(cornerRadius: 4)
+                                    Capsule() // 改回胶囊形状，视觉更圆润
                                         .fill(category.1)
-                                        .frame(height: 22)
+                                        .frame(width: 36, height: 20) // 固定宽度，不要被拉伸
                                 } else {
                                     // 虚线空心块
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                        .frame(height: 22)
+                                    Capsule()
+                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                                        .frame(width: 36, height: 20)
                                 }
                             }
                         }
