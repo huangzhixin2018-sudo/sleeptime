@@ -680,38 +680,65 @@ struct SleepTrendView: View {
                     .foregroundColor(.primary)
             }
             
-            // 刻度尺区域
+            // 刻度尺区域 (带时间的高级刻度)
             GeometryReader { geo in
-                let width = geo.size.width
-                let tickCount = 11 // 11根刻度线
+                let tickCount = 11 // 缩减为 11 根线：每小时只分两格（整点和半点），避免太密
+                let totalIntervals = tickCount - 1
+                let itemWidth: CGFloat = 20 // 加宽一点
+                let stepWidth = (geo.size.width - itemWidth) / CGFloat(totalIntervals)
                 
-                ZStack {
-                    // 绘制底部的刻度线
-                    HStack(spacing: 0) {
+                ZStack(alignment: .topLeading) {
+                    // 绘制底部的刻度线和时间
+                    HStack(alignment: .top, spacing: 0) {
                         ForEach(0..<tickCount, id: \.self) { i in
-                            Rectangle()
-                                .fill(Color(UIColor.tertiaryLabel).opacity(0.5))
-                                .frame(width: 2, height: 12)
+                            // 现在是每两个格一个主刻度
+                            let isMajor = (i % 2 == 0)
+                            
+                            VStack(spacing: 8) {
+                                // 刻度线
+                                Rectangle()
+                                    .fill(isMajor ? Color(UIColor.secondaryLabel) : Color(UIColor.tertiaryLabel).opacity(0.6))
+                                    .frame(width: isMajor ? 2 : 1.5,
+                                           height: isMajor ? 12 : 6)
+                                
+                                // 时间文字
+                                if isMajor {
+                                    let hour = (21 + i / 2) % 24 // i/2 算出小时
+                                    Text(String(format: "%02d", hour))
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(Color(UIColor.secondaryLabel))
+                                } else {
+                                    // 用透明文字占位，保证所有 VStack 高度结构一致
+                                    Text("00").font(.system(size: 12)).hidden()
+                                }
+                            }
+                            .frame(width: itemWidth)
+                            
                             if i < tickCount - 1 {
-                                Spacer()
+                                Spacer(minLength: 0)
                             }
                         }
                     }
                     
-                    // 中心的虚线指示圈
+                    // 原点指示器
+                    // 例如数据在 23:30 (从21:00起走过2.5小时，即 5 个小格)
+                    let position: CGFloat = 5.0 
+                    let dotSize: CGFloat = 14
+                    
                     Circle()
-                        .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                        .frame(width: 36, height: 36)
-                        .background(
-                            Circle()
-                                .fill(Color(red: 0.98, green: 0.97, blue: 0.95)) // 燕麦色主背景色，用来遮盖下方的刻度线
+                        .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 使用高对比的粉色点
+                        .frame(width: dotSize, height: dotSize)
+                        .overlay(
+                            // 增加一圈与背景色相同的粗描边，制造出“镂空悬浮”的质感
+                            Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
                         )
-                        // 如果有偏移数据，可以在这里加 .offset(x: ...)
+                        .offset(
+                            x: (itemWidth / 2) + (stepWidth * position) - (dotSize / 2),
+                            y: 6 - (dotSize / 2) // 大刻度高度12，中心在6。减去半径实现垂直居中对齐刻度
+                        )
                 }
             }
-            .frame(height: 36)
-            .padding(.horizontal, 16) // 尺子两端往里收一点
+            .frame(height: 44) // 为刻度和文字预留足够高度
             
             // 底部说明文案
             Text("最近两周的有效睡眠记录都不足 4 晚。记录满 4 晚后，会告诉你作息在往哪个方向走。")
@@ -721,7 +748,6 @@ struct SleepTrendView: View {
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 24)
-        // 保持和上方“承诺卡片”一样，直接悬浮在背景上
     }
 }
 
