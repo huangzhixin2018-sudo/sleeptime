@@ -748,9 +748,9 @@ struct SleepTrendView: View {
                         
                         // 4. 计划着陆点 (空心锚点)
                         ZStack {
-                            Circle().fill(Color.white).frame(width: 12, height: 12)
-                            Circle().stroke(Color(UIColor.tertiaryLabel), lineWidth: 3)
-                            Circle().fill(Color(UIColor.tertiaryLabel)).frame(width: 4, height: 4)
+                            Circle().fill(Color.white).frame(width: 10, height: 10)
+                            Circle().stroke(Color(UIColor.tertiaryLabel), lineWidth: 2)
+                            Circle().fill(Color(UIColor.tertiaryLabel)).frame(width: 3, height: 3)
                         }
                         .position(x: targetX, y: centerY)
                         
@@ -758,19 +758,19 @@ struct SleepTrendView: View {
                         ZStack {
                             Circle()
                                 .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
-                                .frame(width: 18, height: 18) // 稍微放大一点飞机点，显得更立体
+                                .frame(width: 12, height: 12) // 缩小为精致的点
                                 .overlay(
-                                    Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
+                                    Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 2)
                                 )
                             
-                            // 箭头图标，指示偏航方向 (迟睡向右，早睡向左)
+                            // 箭头图标，指示偏航方向
                             Image(systemName: "location.north.fill")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 8, height: 8)
+                                .frame(width: 6, height: 6)
                                 .foregroundColor(.white)
                                 .rotationEffect(.degrees(actualX > targetX ? 90 : -90))
-                                .offset(x: actualX > targetX ? 1 : -1) // 微调图标让视觉更居中
+                                .offset(x: actualX > targetX ? 0.5 : -0.5) // 微调
                         }
                         .position(x: actualX, y: centerY)
                     }
