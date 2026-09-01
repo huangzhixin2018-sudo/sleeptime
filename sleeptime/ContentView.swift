@@ -704,18 +704,24 @@ struct PlanGoalCardView: View {
                         endPoint: .bottomTrailing
                     ))
                 
-                Image(systemName: "shield.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
-                    .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.15))
-                    .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 6)
-                    .overlay(
-                        Text("1")
-                            .font(.system(size: 30, weight: .black))
-                            .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.4))
-                            .offset(y: -4)
-                    )
+                VStack(spacing: 4) {
+                    Image(systemName: "shield.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 56, height: 56)
+                        .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.15))
+                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 6)
+                        .overlay(
+                            Text("1")
+                                .font(.system(size: 28, weight: .black))
+                                .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.4))
+                                .offset(y: -4)
+                        )
+                    
+                    Text("达成天数")
+                        .font(.system(size: 12, weight: .heavy))
+                        .foregroundColor(Color(red: 0.65, green: 0.3, blue: 0.1))
+                }
             }
             .frame(width: 150)
         }
