@@ -1016,21 +1016,21 @@ struct SleepTrajectoryView: View {
                             Text("\(category.0) \(count)天")
                                 .font(.system(size: 16, weight: .heavy))
                                 .foregroundColor(.primary)
-                                .frame(width: 80, alignment: .leading) // 加宽以容纳更长的文字，保证积木依然左对齐
+                                .frame(width: 76, alignment: .leading) // 稍微缩小占位，依然保证左对齐
                             
                             // 积木模块
-                            HStack(spacing: 8) {
+                            HStack(spacing: 6) { // 减小积木间距
                                 ForEach(0..<maxBlocks, id: \.self) { blockIndex in
                                     if blockIndex < count {
                                         // 实体块
-                                        Capsule() // 改回胶囊形状，视觉更圆润
+                                        Capsule()
                                             .fill(category.1)
-                                            .frame(width: 36, height: 20) // 固定宽度，不要被拉伸
+                                            .frame(width: 28, height: 16) // 缩小胶囊尺寸，防止屏幕溢出
                                     } else {
                                         // 虚线空心块
                                         Capsule()
                                             .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                                            .frame(width: 36, height: 20)
+                                            .frame(width: 28, height: 16)
                                     }
                                 }
                             }
