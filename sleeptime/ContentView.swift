@@ -258,10 +258,8 @@ struct EarlySleepSummaryCardView: View {
             }
             .padding(.vertical, 20)
 
-            // 规则区域
-            HStack(spacing: 12) {
-                Image(systemName: "info.circle.fill")
-                    .foregroundColor(Color(UIColor.tertiaryLabel))
+            HStack(spacing: 8) {
+                Text("规则：")
                 Text("最晚 02:00 入睡")
                 Text("·")
                 Text("连续熬夜 ≤ 5天")
