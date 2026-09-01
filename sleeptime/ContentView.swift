@@ -185,28 +185,9 @@ struct SleepProgressView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 24)
                     .padding(.bottom, 16)
-                
-                // 计划目标卡片
-                HStack(spacing: 16) {
-                    TargetCardView(
-                        title: "最晚入睡时间",
-                        value: "2:00",
-                        unit: "",
-                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96), // 极低饱和度的婴儿蓝
-                        rotationAngle: -2
-                    )
-                    
-                    TargetCardView(
-                        title: "最长连续熬夜",
-                        value: "5",
-                        unit: "天",
-                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84), // 极低饱和度的薄荷绿
-                        rotationAngle: 2
-                    )
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 16) // 距离上方卡片的间距
-                
+
+                EarlySleepSummaryCardView()
+                    .padding(.horizontal, 16)
 
                 // 作息漂移刻度尺
                 SleepTrendView()
@@ -220,19 +201,116 @@ struct SleepProgressView: View {
                 HabitStreakView()
                     .padding(.top, 16)
                 
-                // 目标与限制数据卡片
-                PlanGoalCardView()
-                    .padding(.top, 16)
-                
                 // 7天早睡计划卡片
                 WeeklyPlanCardView()
                     .padding(.top, 16)
+
+                HStack(spacing: 16) {
+                    TargetCardView(
+                        title: "最晚入睡时间",
+                        value: "2:00",
+                        unit: "",
+                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
+                        rotationAngle: -2
+                    )
+
+                    TargetCardView(
+                        title: "最长连续熬夜",
+                        value: "5",
+                        unit: "天",
+                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
+                        rotationAngle: 2
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+
+                VStack(spacing: 12) {
+                    EarlySleepDayGridView()
+                        .padding(.horizontal, 16)
+                }
+
+                DayTimelineCardView()
+                    .padding(.horizontal, 16)
+
                 
                 Spacer()
             }
             .padding(.bottom, 40) // 底部留白，防止滚动到底部时贴边
             }
         }
+    }
+}
+
+struct EarlySleepSummaryCardView: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                EarlySleepMetricView(
+                    title: "最晚入睡时间",
+                    value: "23:45",
+                    suffix: ""
+                )
+
+                Rectangle()
+                    .fill(Color(UIColor.separator).opacity(0.5))
+                    .frame(width: 1, height: 60)
+
+                EarlySleepMetricView(
+                    title: "累计连续早睡",
+                    value: "1",
+                    suffix: "天"
+                )
+            }
+            .padding(.vertical, 16)
+
+            HStack(spacing: 8) {
+                Text("规则：")
+                Text("最晚 02:00 入睡")
+                Text("·")
+                Text("连续熬夜 ≤ 5天")
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(Color(red: 0.28, green: 0.55, blue: 0.38))
+            .padding(.horizontal, 18)
+            .frame(height: 52)
+            .background(Color(red: 0.92, green: 0.97, blue: 0.94))
+        }
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color(red: 0.28, green: 0.55, blue: 0.38).opacity(0.12), lineWidth: 1)
+        )
+    }
+}
+
+struct EarlySleepMetricView: View {
+    let title: String
+    let value: String
+    let suffix: String
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 8) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color(red: 0.36, green: 0.43, blue: 0.38))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 32, weight: .medium, design: .rounded))
+                    .foregroundColor(.primary)
+                if !suffix.isEmpty {
+                    Text(suffix)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -627,18 +705,10 @@ struct WeeklyPlanCardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("7天早睡计划")
-                        .font(.system(size: 20, weight: .heavy))
+                        .font(.system(size: 24, weight: .heavy))
                         .foregroundColor(.primary)
 
-                    Spacer()
-
-                    Text("9月1日-15日")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
                 }
-                Text("行动是看得见的形状，坚持是时间的无声。")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(UIColor.secondaryLabel))
             }
 
             
@@ -682,40 +752,6 @@ struct WeeklyPlanCardView: View {
         .padding(.horizontal, 16)
     }
 }
-// MARK: - 夜猫守护者卡片 (图文结合版)
-struct PlanGoalCardView: View {
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            // 背景卡片
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(red: 0.98, green: 0.94, blue: 0.86)) // 燕麦暖米色
-                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
-            
-            // 左侧文案
-            VStack(alignment: .leading, spacing: 14) {
-                Text("目标最晚入睡时间 23:00")
-                    .font(.system(size: 17, weight: .black))
-                    .foregroundColor(Color(white: 0.15))
-                
-                Text("限制最长连续熬夜 5天")
-                    .font(.system(size: 17, weight: .black))
-                    .foregroundColor(Color(white: 0.15))
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 32)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // 右下角黑猫 (利用超大号 Emoji 模拟图像)
-            Text("🐈‍⬛")
-                .font(.system(size: 85))
-                // 让猫咪微微溢出卡片边缘，产生破局感
-                .offset(x: 10, y: 12) 
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-}
-
 // MARK: - 连续规律记录组件 (横向滚动卡片)
 struct HabitStreakView: View {
     var body: some View {
@@ -926,11 +962,6 @@ struct SleepTrendView: View {
             }
             .frame(height: 70) // 增加整体高度，给超高的抛物线留足天空
             
-            // 底部说明文案
-            Text("最近两周的有效睡眠记录都不足 4 晚。记录满 4 晚后，会告诉你作息在往哪个方向走。")
-                .font(.system(size: 14))
-                .foregroundColor(Color(UIColor.secondaryLabel))
-                .lineSpacing(6)
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 24)
@@ -955,79 +986,146 @@ struct SleepTrendView: View {
     }
 }
 
-// MARK: - 承诺追踪组件 (说到做到 vs 破戒)
 
-struct PromiseTrackingView: View {
-    let promise: String
-    let successRate: Double // 0.0 to 1.0
-    
+
+struct EarlySleepDayGridView: View {
+    private let completedDays = 6
+    private let totalDays = 21
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
+    private let completedColor = Color(red: 0.48, green: 0.68, blue: 0.54)
+
     var body: some View {
-        VStack(spacing: 12) {
-            // 顶部聊天气泡
-            HStack {
-                Spacer()
-                
-                Text(promise)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.black)
-                    .cornerRadius(20)
-                    .overlay(
-                        // 气泡右下角的小尾巴
-                        Image(systemName: "arrowtriangle.down.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.black)
-                            // 稍微调整一下尾巴的位置，让它看起来更自然地连接
-                            .offset(x: -24, y: 10)
-                        , alignment: .bottomTrailing
-                    )
-            }
-            .padding(.bottom, 12) // 气泡和下方内容的间距
-            
-            // 进度条文字标签
-            HStack {
-                Text("说到做到")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.primary)
-                Spacer()
-                Text("又破戒了")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            
-            // 拼接进度条
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(width: geo.size.width * successRate)
-                    
-                    Rectangle()
-                        .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 截图中的浅粉红色
-                        .frame(width: geo.size.width * (1.0 - successRate))
+        VStack {
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(1...totalDays, id: \.self) { day in
+                    Group {
+                        if day <= completedDays {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 15, weight: .black))
+                        } else {
+                            Text("\(day)")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                        }
+                    }
+                        .foregroundColor(foregroundColor(for: day))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(background(for: day))
+                        .overlay {
+                            if day == completedDays + 1 {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(completedColor, lineWidth: 1.5)
+                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-                .clipShape(Capsule()) // 整体裁切成胶囊体
-            }
-            .frame(height: 12)
-            
-            // 底部百分比大字
-            HStack {
-                Text("\(Int(successRate * 100))%")
-                    .font(.custom("AvenirNext-CondensedBold", size: 28))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text("\(Int((1.0 - successRate) * 100))%")
-                    .font(.custom("AvenirNext-CondensedBold", size: 28))
-                    .foregroundColor(Color(red: 0.98, green: 0.45, blue: 0.52))
             }
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 24)
-        // 完全去除白底、圆角和阴影，让它直接浮在燕麦色主背景上
+    }
+
+    private func background(for day: Int) -> Color {
+        if day <= completedDays {
+            return completedColor
+        }
+        if day == completedDays + 1 {
+            return Color(.systemBackground)
+        }
+        return Color(.secondarySystemBackground)
+    }
+
+    private func foregroundColor(for day: Int) -> Color {
+        day <= completedDays ? .white : .primary
+    }
+}
+
+struct DayTimelineCardView: View {
+    @State private var isExpanded = true
+    @State private var completedItems: Set<Int> = []
+
+    private let schedule = [
+        ("11:00", "刷牙"),
+        ("11:15", "放下手机"),
+        ("11:30", "上床准备入睡")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Text("第1天")
+                        .font(.system(size: 19, weight: .black))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(schedule.enumerated()), id: \.offset) { index, item in
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(spacing: 0) {
+                                Button {
+                                    if completedItems.contains(index) {
+                                        completedItems.remove(index)
+                                    } else {
+                                        completedItems.insert(index)
+                                    }
+                                } label: {
+                                    ZStack {
+                                        Circle()
+                                            .fill(completedItems.contains(index) ? Color(red: 0.48, green: 0.68, blue: 0.54) : Color.clear)
+                                        Circle()
+                                            .stroke(Color(red: 0.48, green: 0.68, blue: 0.54), lineWidth: 1.5)
+                                        if completedItems.contains(index) {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 10, weight: .black))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
+                                    .frame(width: 20, height: 20)
+                                }
+                                .buttonStyle(.plain)
+
+                                if index < schedule.count - 1 {
+                                    Rectangle()
+                                        .fill(Color(red: 0.48, green: 0.68, blue: 0.54).opacity(0.28))
+                                        .frame(width: 1, height: 30)
+                                }
+                            }
+
+                            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                                Text(item.0)
+                                    .font(.system(size: 17, weight: .black, design: .rounded))
+                                    .foregroundColor(.primary)
+                                    .frame(width: 48, alignment: .leading)
+                                Text(item.1)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color(UIColor.secondaryLabel))
+                            }
+
+                            Spacer(minLength: 0)
+                        }
+                        .frame(height: index < schedule.count - 1 ? 50 : 20, alignment: .top)
+                    }
+                }
+                .padding(.top, 20)
+            }
+        }
+        .padding(20)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
