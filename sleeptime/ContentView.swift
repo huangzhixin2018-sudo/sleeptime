@@ -138,24 +138,53 @@ struct SleepProgressView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     // 标题区 (去掉返回箭头)
-                    VStack(alignment: .leading, spacing: 8) {
-                    Text("夜猫子改造营")
-                        .font(.system(size: 28, weight: .black))
-                        .tracking(-0.5) // 字距微调，更紧凑
-                        .foregroundColor(.primary)
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("夜猫子改造营")
+                                .font(.system(size: 28, weight: .black))
+                                .tracking(-0.5) // 字距微调，更紧凑
+                                .foregroundColor(.primary)
+                                .overlay(
+                                    WavyLine()
+                                        .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                                        .frame(height: 7)
+                                        .padding(.leading, 2)
+                                        .padding(.trailing, 32) // 右侧留出大约一个字的宽度，避开“营”字
+                                        .offset(y: 16)
+                                    , alignment: .bottom
+                                )
+                        }
+                        
+                        Spacer()
+                        
+                        // 全局进度徽章 (方案B)
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(red: 0.95, green: 0.5, blue: 0.2)) // 活力橙
+                            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                Text("6")
+                                    .font(.system(size: 18, weight: .black))
+                                    .foregroundColor(.primary)
+                                Text("/ 14")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(Color(UIColor.tertiaryLabel))
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white)
+                        .cornerRadius(20)
                         .overlay(
-                            WavyLine()
-                                .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                                .frame(height: 7)
-                                .padding(.leading, 2)
-                                .padding(.trailing, 32) // 右侧留出大约一个字的宽度，避开“营”字
-                                .offset(y: 16)
-                            , alignment: .bottom
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.black.opacity(0.04), lineWidth: 1)
                         )
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 16)
+                        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+                        .padding(.bottom, 2) // 微调垂直对齐
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 16)
                 
                 // 计划目标卡片
                 HStack(spacing: 16) {
