@@ -746,33 +746,14 @@ struct SleepTrendView: View {
                         }
                         .stroke(Color(UIColor.tertiaryLabel), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
                         
-                        // 4. 计划着陆点 (空心锚点)
-                        ZStack {
-                            Circle().fill(Color.white).frame(width: 10, height: 10)
-                            Circle().stroke(Color(UIColor.tertiaryLabel), lineWidth: 2)
-                            Circle().fill(Color(UIColor.tertiaryLabel)).frame(width: 3, height: 3)
-                        }
-                        .position(x: targetX, y: centerY)
-                        
-                        // 5. 实际着陆点 (带箭头的指示器)
-                        ZStack {
-                            Circle()
-                                .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
-                                .frame(width: 12, height: 12) // 缩小为精致的点
-                                .overlay(
-                                    Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 2)
-                                )
-                            
-                            // 箭头图标，指示偏航方向
-                            Image(systemName: "location.north.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 6, height: 6)
-                                .foregroundColor(.white)
-                                .rotationEffect(.degrees(actualX > targetX ? 90 : -90))
-                                .offset(x: actualX > targetX ? 0.5 : -0.5) // 微调
-                        }
-                        .position(x: actualX, y: centerY)
+                        // 4. 实际着陆点 (恢复极简原点)
+                        Circle()
+                            .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
+                            .frame(width: 14, height: 14)
+                            .overlay(
+                                Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
+                            )
+                            .position(x: actualX, y: centerY)
                     }
                     // 为了不让高抛物线被切掉或者挤压，强制在上半部分 ZStack 增加一点顶部内边距
                     .padding(.top, 30)
