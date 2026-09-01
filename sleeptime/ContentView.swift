@@ -910,13 +910,13 @@ struct SleepDistributionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 36) { // 增加整体纵向间距
             // 标题区
-            VStack(alignment: .leading, spacing: 10) {
-                Text("入睡轨迹")
-                    .font(.system(size: 24, weight: .heavy)) // 更大的标题，更有张力
+            VStack(alignment: .leading, spacing: 8) {
+                Text("你的入睡轨迹")
+                    .font(.system(size: 26, weight: .black)) // 极具视觉冲击力的极限字重
                     .foregroundColor(.primary)
                 
-                Text("每一次行动都是积累，下一次落点仍由你决定。")
-                    .font(.system(size: 15, weight: .medium)) // 字号稍微加大，增加分量感
+                Text("习惯是一块块拼出来的。今晚的积木，你想落在哪个区？")
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundColor(Color(UIColor.secondaryLabel))
                     .lineSpacing(6)
             }
