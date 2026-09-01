@@ -661,93 +661,42 @@ struct WeeklyPlanCardView: View {
         .padding(.horizontal, 16)
     }
 }
-// MARK: - 目标与限制数据卡片 (黄色波浪盾牌)
+// MARK: - 目标与限制数据卡片 (极简双排胶囊)
 struct PlanGoalCardView: View {
     var body: some View {
-        HStack(spacing: 0) {
-            // 左侧数据区
-            VStack(alignment: .leading, spacing: 12) {
-                // Item 1
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("23:30")
-                        .font(.system(size: 32, weight: .heavy))
-                        .foregroundColor(.primary)
-                    Text("目标最晚入睡")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                }
-                
-                // Item 2
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                        Text("6")
-                            .font(.system(size: 32, weight: .heavy))
-                            .foregroundColor(.primary)
-                        Text("天")
-                            .font(.system(size: 16, weight: .heavy))
-                            .foregroundColor(.primary)
-                    }
-                    Text("限制最长连续熬夜")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                }
+        VStack(spacing: 0) {
+            // Row 1
+            HStack {
+                Text("保持 23:30 前入睡")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                Spacer()
+                Text("边界守护中")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundColor(Color(red: 0.85, green: 0.5, blue: 0.2)) // 橙色警告
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 16)
             
-            // 右侧图形区
-            ZStack {
-                WaveShape()
-                    .fill(LinearGradient(
-                        gradient: Gradient(colors: [Color(red: 1.0, green: 0.88, blue: 0.4), Color(red: 0.98, green: 0.78, blue: 0.2)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                
-                VStack(spacing: 4) {
-                    Image(systemName: "shield.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 56, height: 56)
-                        .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.15))
-                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 6)
-                        .overlay(
-                            Text("1")
-                                .font(.system(size: 28, weight: .black))
-                                .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.4))
-                                .offset(y: -4)
-                        )
-                    
-                    Text("达成天数")
-                        .font(.system(size: 12, weight: .heavy))
-                        .foregroundColor(Color(red: 0.65, green: 0.3, blue: 0.1))
-                }
+            Divider()
+                .background(Color.black.opacity(0.05))
+            
+            // Row 2
+            HStack {
+                Text("最长连续熬夜上限 6天")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                Spacer()
+                Text("突破边界")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundColor(Color(red: 0.85, green: 0.2, blue: 0.2)) // 红色危险
             }
-            .frame(width: 150)
+            .padding(.vertical, 16)
         }
-        .background(Color.white) // 统一采用干净的纯白底色
-        .cornerRadius(20)
+        .padding(.horizontal, 20)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         .padding(.horizontal, 16)
-    }
-}
-
-// 波浪形状遮罩
-struct WaveShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.width, y: 0))
-        path.addLine(to: CGPoint(x: 0, y: 0))
-        
-        // 使用贝塞尔曲线画出波浪形边缘
-        path.addCurve(
-            to: CGPoint(x: 0, y: rect.height),
-            control1: CGPoint(x: -rect.width * 0.3, y: rect.height * 0.3),
-            control2: CGPoint(x: rect.width * 0.2, y: rect.height * 0.7)
-        )
-        
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
-        path.closeSubpath()
-        return path
     }
 }
 
