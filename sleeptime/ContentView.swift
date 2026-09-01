@@ -183,8 +183,8 @@ struct SleepProgressView: View {
                 SleepTrendView()
                     .padding(.top, 24)
                 
-                // 入睡轨迹 (横向积木图)
-                SleepTrajectoryView()
+                // 入睡分布卡片 (图表样式)
+                SleepDistributionCardView()
                     .padding(.top, 16)
                 
                 // 承诺追踪卡片 (说到做到 vs 破戒)
@@ -970,13 +970,13 @@ struct SleepDistributionView: View {
     }
 }
 
-// MARK: - 入睡轨迹组件 (横向积木图)
-struct SleepTrajectoryView: View {
-    // 模拟数据：最近 7 天的轨迹 (如需更多天数，UI已支持自动折叠为多排)
-    let distribution = [2, 3, 1, 1, 0]
-    let maxBlocks = 7
+// MARK: - 入睡分布卡片 (图表样式)
+struct SleepDistributionCardView: View {
+    // 模拟数据：最近 21 天的数据统计
+    let distribution = [8, 3, 5, 2, 0]
+    let maxCount = 8 // 用于计算进度条比例
     
-    // 配置：标签, 积木颜色
+    // 配置：标签, 颜色
     let categories = [
         ("提前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
         ("守信", Color.primary), // 达成目标的黑色实心
@@ -986,52 +986,55 @@ struct SleepTrajectoryView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 20) {
             // 标题区
-            VStack(alignment: .leading, spacing: 6) {
-                Text("入睡轨迹")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 16)
+            Text("入睡分布")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.primary)
             
-            // 横向积木排列区
+            // 连续进度条图表区
             VStack(spacing: 16) {
                 ForEach(0..<categories.count, id: \.self) { index in
                     let category = categories[index]
                     let count = distribution[index]
+                    let widthPercent = maxCount > 0 ? CGFloat(count) / CGFloat(maxCount) : 0
                     
-                    // 如果天数为 0，则直接隐藏整行
                     if count > 0 {
                         HStack(spacing: 12) {
-                            // 标题加上天数放在左侧，与最上方的标题文本对齐
-                            Text("\(category.0) \(count)天")
-                                .font(.system(size: 16, weight: .heavy))
-                                .foregroundColor(.primary)
-                                .frame(width: 76, alignment: .leading)
+                            Text(category.0)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(Color(UIColor.secondaryLabel))
+                                .frame(width: 36, alignment: .leading)
                             
-                            // 积木模块在右侧，使用正方形积木
-                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(24), spacing: 6), count: 7), alignment: .leading, spacing: 6) {
-                                ForEach(0..<maxBlocks, id: \.self) { blockIndex in
-                                    if blockIndex < count {
-                                        // 实体块
-                                        RoundedRectangle(cornerRadius: 4)
+                            // 进度条
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    // 背景槽 (浅灰色)
+                                    Capsule()
+                                        .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                                    
+                                    // 实际数据条
+                                    if count > 0 {
+                                        Capsule()
                                             .fill(category.1)
-                                            .frame(height: 24)
-                                    } else {
-                                        // 虚线空心块
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                            .frame(height: 24)
+                                            .frame(width: max(geo.size.width * widthPercent, 12))
                                     }
                                 }
                             }
+                            .frame(height: 12) // 图表更加精致纤细
+                            
+                            Text("\(count)天")
+                                .font(.custom("AvenirNext-DemiBold", size: 15))
+                                .foregroundColor(.primary)
+                                .frame(width: 40, alignment: .trailing)
                         }
                     }
                 }
             }
-            .padding(.horizontal, 16)
         }
-        .padding(.vertical, 8)
+        .padding(20)
+        .background(Color(UIColor.secondarySystemGroupedBackground)) // 白色卡片
+        .cornerRadius(16)
+        .padding(.horizontal, 16)
     }
 }
