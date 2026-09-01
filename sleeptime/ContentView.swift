@@ -684,15 +684,7 @@ struct HabitCard: View {
 
 struct SleepTrendView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 32) {
-            // 标题区
-            HStack(spacing: 8) {
-                Image(systemName: "moon.stars.fill")
-                    .foregroundColor(Color(red: 0.3, green: 0.5, blue: 0.9)) // 静谧蓝
-                Text("最近两周数据不足")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
+        VStack(alignment: .leading, spacing: 24) {
             
             // 刻度尺区域 (带时间的高级刻度)
             GeometryReader { geo in
@@ -746,7 +738,7 @@ struct SleepTrendView: View {
                         // 绘制向上的抛物线轨迹
                         Path { path in
                             path.move(to: CGPoint(x: targetX, y: centerY))
-                            let controlY = centerY - 24 // 向上突起的控制点
+                            let controlY = centerY - 50 // 让抛物线飞得更高
                             path.addQuadCurve(
                                 to: CGPoint(x: actualX, y: centerY),
                                 control: CGPoint(x: (targetX + actualX) / 2, y: controlY)
@@ -766,7 +758,7 @@ struct SleepTrendView: View {
                         ZStack {
                             Circle()
                                 .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
-                                .frame(width: 16, height: 16)
+                                .frame(width: 18, height: 18) // 稍微放大一点飞机点，显得更立体
                                 .overlay(
                                     Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
                                 )
@@ -782,6 +774,8 @@ struct SleepTrendView: View {
                         }
                         .position(x: actualX, y: centerY)
                     }
+                    // 为了不让高抛物线被切掉或者挤压，强制在上半部分 ZStack 增加一点顶部内边距
+                    .padding(.top, 30)
                     
                     // 下半部：时间文字
                     HStack(spacing: 0) {
@@ -808,7 +802,7 @@ struct SleepTrendView: View {
                     }
                 }
             }
-            .frame(height: 44) // 为刻度和文字预留足够高度
+            .frame(height: 70) // 增加整体高度，给超高的抛物线留足天空
             
             // 底部说明文案
             Text("最近两周的有效睡眠记录都不足 4 晚。记录满 4 晚后，会告诉你作息在往哪个方向走。")
