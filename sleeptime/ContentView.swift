@@ -661,42 +661,102 @@ struct WeeklyPlanCardView: View {
         .padding(.horizontal, 16)
     }
 }
-// MARK: - 目标与限制数据卡片 (极简双排胶囊)
+// MARK: - 目标与限制数据卡片 (高级感重构版)
 struct PlanGoalCardView: View {
     var body: some View {
         VStack(spacing: 0) {
-            // Row 1
-            HStack {
-                Text("保持 23:30 前入睡")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.primary)
-                Spacer()
-                Text("边界守护中")
-                    .font(.system(size: 14, weight: .heavy))
-                    .foregroundColor(Color(red: 0.85, green: 0.5, blue: 0.2)) // 橙色警告
-            }
-            .padding(.vertical, 16)
+            // Row 1: Target Sleep Time
+            GoalRowView(
+                icon: "moon.zzz.fill",
+                iconColor: Color(red: 0.35, green: 0.45, blue: 0.9), // 宁静蓝
+                title: "保持入睡时间",
+                value: "23:30",
+                valueSuffix: " 前",
+                statusText: "边界守护中",
+                statusColor: Color(red: 0.85, green: 0.5, blue: 0.2), // 橙色
+                statusBgColor: Color(red: 0.85, green: 0.5, blue: 0.2).opacity(0.12)
+            )
             
             Divider()
-                .background(Color.black.opacity(0.05))
+                .padding(.leading, 56) // 苹果式内缩分割线，避开图标区域
+                .background(Color.black.opacity(0.03))
             
-            // Row 2
-            HStack {
-                Text("最长连续熬夜上限 6天")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.primary)
-                Spacer()
-                Text("突破边界")
-                    .font(.system(size: 14, weight: .heavy))
-                    .foregroundColor(Color(red: 0.85, green: 0.2, blue: 0.2)) // 红色危险
-            }
-            .padding(.vertical, 16)
+            // Row 2: Max Stay Up Limit
+            GoalRowView(
+                icon: "flame.fill",
+                iconColor: Color(red: 0.9, green: 0.35, blue: 0.35), // 警示红
+                title: "最长连续熬夜",
+                value: "6",
+                valueSuffix: " 天上限",
+                statusText: "突破边界",
+                statusColor: Color(red: 0.9, green: 0.2, blue: 0.2), // 深红
+                statusBgColor: Color(red: 0.9, green: 0.2, blue: 0.2).opacity(0.12)
+            )
         }
-        .padding(.horizontal, 20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+        .padding(.vertical, 8)
         .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.04), radius: 15, x: 0, y: 8)
+        )
+        .padding(.horizontal, 16)
+    }
+}
+
+// 高级数据行组件
+struct GoalRowView: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let value: String
+    let valueSuffix: String
+    let statusText: String
+    let statusColor: Color
+    let statusBgColor: Color
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // 左侧：轻拟物/磨砂质感圆形图标底座
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.12))
+                    .frame(width: 40, height: 40)
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(iconColor)
+            }
+            
+            // 中间：高对比度排版数据
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color(UIColor.secondaryLabel))
+                
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(value)
+                        .font(.system(size: 22, weight: .heavy))
+                        .foregroundColor(.primary)
+                    Text(valueSuffix)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            Spacer()
+            
+            // 右侧：精美胶囊状态标签
+            Text(statusText)
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundColor(statusColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(statusBgColor)
+                )
+        }
+        .padding(.vertical, 12)
     }
 }
 
