@@ -908,17 +908,17 @@ struct SleepDistributionView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 32) {
+        VStack(alignment: .leading, spacing: 36) { // 增加整体纵向间距
             // 标题区
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("入睡轨迹")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 24, weight: .heavy)) // 更大的标题，更有张力
                     .foregroundColor(.primary)
                 
-                Text("每一次的行动，都是一点点积累。下一次落在哪里，仍由你决定。")
-                    .font(.system(size: 14))
+                Text("每一次行动都是积累，下一次落点仍由你决定。")
+                    .font(.system(size: 15, weight: .medium)) // 字号稍微加大，增加分量感
                     .foregroundColor(Color(UIColor.secondaryLabel))
-                    .lineSpacing(4)
+                    .lineSpacing(6)
             }
             
             // 柱状图区
@@ -927,41 +927,40 @@ struct SleepDistributionView: View {
                     let category = categories[index]
                     let count = distribution[index]
                     
-                    VStack(spacing: 12) {
+                    VStack(spacing: 20) { // 加大积木和文字的距离
                         // 积木块
-                        VStack(spacing: 6) {
+                        VStack(spacing: 8) { // 积木间距加大
                             ForEach((0..<maxBlocks).reversed(), id: \.self) { blockIndex in
                                 if blockIndex < count {
                                     // 实体块
-                                    RoundedRectangle(cornerRadius: 6)
+                                    Capsule() // 使用完全圆角，更显大气
                                         .fill(category.2)
-                                        .frame(width: 32, height: 16)
+                                        .frame(width: 44, height: 22) // 积木尺寸大幅加大
                                 } else {
                                     // 虚线空心块
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                                        .frame(width: 32, height: 16)
+                                    Capsule()
+                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                        .frame(width: 44, height: 22)
                                 }
                             }
                         }
                         
                         // 底部标签
-                        VStack(spacing: 4) {
+                        VStack(spacing: 6) {
                             Text(category.0)
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 16, weight: .heavy)) // 文字加粗加大
                                 .foregroundColor(.primary)
                             Text(category.1)
-                                .font(.system(size: 11))
+                                .font(.custom("AvenirNext-DemiBold", size: 12)) // 使用英文字体提升质感
                                 .foregroundColor(Color(UIColor.tertiaryLabel))
                         }
-                        .padding(.top, 8)
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
             .padding(.top, 8)
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, 24)
         .padding(.horizontal, 24)
     }
 }
