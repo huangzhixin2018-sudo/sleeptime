@@ -253,7 +253,11 @@ struct SleepProgressView: View {
                 DayRecordCardView()
                     .padding(.top, 16)
                 
-                // 连续规律记录 (横向滚动)
+                // 作息漂移刻度尺
+                SleepTrendView()
+                    .padding(.top, 24)
+                
+                // 承诺追踪卡片 (说到做到 vs 破戒)
                 HabitStreakView()
                     .padding(.top, 16)
                 
@@ -284,7 +288,7 @@ struct ProfileView: View {
                         
                         // 分组卡片：设置组
                         VStack(spacing: 0) {
-                            ProfileRowView(icon: "gearshape", title: "高级设置", showDivider: false)
+                            ProfileRowView(icon: "gearshape", title: "年度目标", showDivider: false)
                             ProfileRowView(icon: "calendar", title: "日期设置", showDivider: false)
                             ProfileRowView(icon: "tag", title: "标签管理", showDivider: false)
                             ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
@@ -659,5 +663,140 @@ struct HabitCard: View {
         .cornerRadius(24)
         // 统一加上淡淡的阴影，从燕麦色背景中浮现出来
         .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
+    }
+}
+
+// MARK: - 作息漂移趋势 (刻度尺)
+
+struct SleepTrendView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            // 标题区
+            HStack(spacing: 8) {
+                Image(systemName: "moon.stars.fill")
+                    .foregroundColor(Color(red: 0.3, green: 0.5, blue: 0.9)) // 静谧蓝
+                Text("最近两周数据不足")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.primary)
+            }
+            
+            // 刻度尺区域
+            GeometryReader { geo in
+                let width = geo.size.width
+                let tickCount = 11 // 11根刻度线
+                
+                ZStack {
+                    // 绘制底部的刻度线
+                    HStack(spacing: 0) {
+                        ForEach(0..<tickCount, id: \.self) { i in
+                            Rectangle()
+                                .fill(Color(UIColor.tertiaryLabel).opacity(0.5))
+                                .frame(width: 2, height: 12)
+                            if i < tickCount - 1 {
+                                Spacer()
+                            }
+                        }
+                    }
+                    
+                    // 中心的虚线指示圈
+                    Circle()
+                        .stroke(style: StrokeStyle(lineWidth: 2, dash: [4]))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                        .frame(width: 36, height: 36)
+                        .background(
+                            Circle()
+                                .fill(Color(red: 0.98, green: 0.97, blue: 0.95)) // 燕麦色主背景色，用来遮盖下方的刻度线
+                        )
+                        // 如果有偏移数据，可以在这里加 .offset(x: ...)
+                }
+            }
+            .frame(height: 36)
+            .padding(.horizontal, 16) // 尺子两端往里收一点
+            
+            // 底部说明文案
+            Text("最近两周的有效睡眠记录都不足 4 晚。记录满 4 晚后，会告诉你作息在往哪个方向走。")
+                .font(.system(size: 14))
+                .foregroundColor(Color(UIColor.secondaryLabel))
+                .lineSpacing(6)
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
+        // 保持和上方“承诺卡片”一样，直接悬浮在背景上
+    }
+}
+
+// MARK: - 承诺追踪组件 (说到做到 vs 破戒)
+
+struct PromiseTrackingView: View {
+    let promise: String
+    let successRate: Double // 0.0 to 1.0
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // 顶部聊天气泡
+            HStack {
+                Spacer()
+                
+                Text(promise)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.black)
+                    .cornerRadius(20)
+                    .overlay(
+                        // 气泡右下角的小尾巴
+                        Image(systemName: "arrowtriangle.down.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.black)
+                            // 稍微调整一下尾巴的位置，让它看起来更自然地连接
+                            .offset(x: -24, y: 10)
+                        , alignment: .bottomTrailing
+                    )
+            }
+            .padding(.bottom, 12) // 气泡和下方内容的间距
+            
+            // 进度条文字标签
+            HStack {
+                Text("说到做到")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                Spacer()
+                Text("又破戒了")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+            }
+            
+            // 拼接进度条
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.black)
+                        .frame(width: geo.size.width * successRate)
+                    
+                    Rectangle()
+                        .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 截图中的浅粉红色
+                        .frame(width: geo.size.width * (1.0 - successRate))
+                }
+                .clipShape(Capsule()) // 整体裁切成胶囊体
+            }
+            .frame(height: 12)
+            
+            // 底部百分比大字
+            HStack {
+                Text("\(Int(successRate * 100))%")
+                    .font(.custom("AvenirNext-CondensedBold", size: 28))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Text("\(Int((1.0 - successRate) * 100))%")
+                    .font(.custom("AvenirNext-CondensedBold", size: 28))
+                    .foregroundColor(Color(red: 0.98, green: 0.45, blue: 0.52))
+            }
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
+        // 完全去除白底、圆角和阴影，让它直接浮在燕麦色主背景上
     }
 }
