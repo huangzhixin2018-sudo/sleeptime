@@ -616,6 +616,10 @@ struct WeeklyPlanCardView: View {
                 }
             }
             
+            // 目标与限制数据卡片
+            PlanGoalCardView()
+                .padding(.vertical, 4)
+            
             // 7 Blocks
             HStack(spacing: 8) {
                 ForEach(0..<7, id: \.self) { index in
@@ -654,6 +658,88 @@ struct WeeklyPlanCardView: View {
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
         .padding(.horizontal, 16)
+    }
+}
+// MARK: - 目标与限制数据卡片 (黄色波浪盾牌)
+struct PlanGoalCardView: View {
+    var body: some View {
+        HStack(spacing: 0) {
+            // 左侧数据区
+            VStack(alignment: .leading, spacing: 20) {
+                // Item 1
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("23:30")
+                        .font(.custom("AvenirNext-Heavy", size: 36))
+                        .foregroundColor(Color(red: 0.3, green: 0.2, blue: 0.15)) // 深棕色
+                    Text("目标最晚入睡")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                }
+                
+                // Item 2
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .lastTextBaseline, spacing: 2) {
+                        Text("6")
+                            .font(.custom("AvenirNext-Heavy", size: 36))
+                            .foregroundColor(Color(red: 0.3, green: 0.2, blue: 0.15))
+                        Text("天")
+                            .font(.system(size: 16, weight: .heavy))
+                            .foregroundColor(Color(red: 0.3, green: 0.2, blue: 0.15))
+                    }
+                    Text("限制最长连续熬夜")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // 右侧图形区
+            ZStack {
+                WaveShape()
+                    .fill(LinearGradient(
+                        gradient: Gradient(colors: [Color(red: 1.0, green: 0.88, blue: 0.4), Color(red: 0.98, green: 0.78, blue: 0.2)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                
+                Image(systemName: "shield.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 76, height: 76)
+                    .foregroundColor(Color(red: 0.75, green: 0.35, blue: 0.15))
+                    .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 6)
+                    .overlay(
+                        Text("1")
+                            .font(.custom("AvenirNext-Heavy", size: 40))
+                            .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.4))
+                            .offset(y: -4)
+                    )
+            }
+            .frame(width: 150)
+        }
+        .background(Color(red: 0.96, green: 0.98, blue: 0.98)) // 淡青蓝底色
+        .cornerRadius(24)
+    }
+}
+
+// 波浪形状遮罩
+struct WaveShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.width, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: 0))
+        
+        // 使用贝塞尔曲线画出波浪形边缘
+        path.addCurve(
+            to: CGPoint(x: 0, y: rect.height),
+            control1: CGPoint(x: -rect.width * 0.3, y: rect.height * 0.3),
+            control2: CGPoint(x: rect.width * 0.2, y: rect.height * 0.7)
+        )
+        
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.closeSubpath()
+        return path
     }
 }
 
