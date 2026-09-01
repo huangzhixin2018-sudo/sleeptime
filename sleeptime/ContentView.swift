@@ -164,11 +164,11 @@ struct SleepProgressView: View {
                                 .foregroundColor(Color(red: 0.95, green: 0.5, blue: 0.2)) // 活力橙
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
                                 Text("6")
-                                    .font(.system(size: 18, weight: .black))
+                                    .font(.system(size: 15, weight: .bold))
                                     .foregroundColor(.primary)
                                 Text("/ 14")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(Color(UIColor.tertiaryLabel))
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(Color(UIColor.secondaryLabel))
                             }
                         }
                         .padding(.horizontal, 12)
