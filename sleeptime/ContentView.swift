@@ -187,8 +187,8 @@ struct SleepProgressView: View {
                 SleepDistributionCardView()
                     .padding(.top, 16)
                 
-                // 承诺追踪卡片 (说到做到 vs 破戒)
-                HabitStreakView()
+                // 7天早睡计划卡片
+                WeeklyPlanCardView()
                     .padding(.top, 16)
                 
                 Spacer()
@@ -576,113 +576,80 @@ struct DashedLine: Shape {
 
 // MARK: - 连续规律记录组件 (横向滚动卡片)
 
-struct HabitStreakView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // 标题区
-            VStack(alignment: .leading, spacing: 6) {
-                Text("规律记录")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 16)
-            
-            // 横向滑动的卡片列表
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    // 高亮激活的卡片 (对应截图左侧白色卡片)
-                    HabitCard(
-                        title: "早睡",
-                        icon: "moon.stars.fill",
-                        count: "3天",
-                        dateRange: "8.29 - 8.31",
-                        isActive: true,
-                        themeColor: Color(red: 0.95, green: 0.77, blue: 0.2) // 明黄色
-                    )
-                    
-                    // 黑色未激活卡片 (对应截图右侧黑色卡片)
-                    HabitCard(
-                        title: "熬夜",
-                        icon: "flame.fill",
-                        count: "2天",
-                        dateRange: "8.25 - 8.26",
-                        isActive: false,
-                        themeColor: Color(red: 0.95, green: 0.4, blue: 0.2) // 橘红色
-                    )
-                    
-                    HabitCard(
-                        title: "起床",
-                        icon: "alarm.fill",
-                        count: "2天",
-                        dateRange: "8.22 - 8.23",
-                        isActive: false,
-                        themeColor: Color(red: 0.2, green: 0.8, blue: 0.5) // 翠绿色
-                    )
-                    
-                    HabitCard(
-                        title: "午休",
-                        icon: "zzz",
-                        count: "1天",
-                        dateRange: "8.21",
-                        isActive: false,
-                        themeColor: Color(red: 0.3, green: 0.6, blue: 0.9) // 亮蓝色
-                    )
-                }
-                .padding(.horizontal, 16)
-                // 左右边缘留白
-            }
-        }
-    }
-}
-
-struct HabitCard: View {
-    let title: String
-    let icon: String
-    let count: String
-    let dateRange: String
-    let isActive: Bool
-    let themeColor: Color
+// MARK: - 7天早睡计划卡片 (打卡视图)
+struct WeeklyPlanCardView: View {
+    // 模拟数据: 1代表达标(绿), 2代表拖延(黄), 0代表未发生(虚线)
+    let history = [1, 1, 2, 1, 2, 1, 0] // 截图中有两个黄色块，最后一块未打卡
+    
+    // 提取颜色为常量，深度还原截图
+    let successColor = Color(red: 0.49, green: 0.69, blue: 0.55) // 鼠尾草绿
+    let warningColor = Color(red: 0.82, green: 0.65, blue: 0.42) // 驼色/土黄色
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // 左上角徽章 (全员继承第一张卡片的黑色粗边框+主题色底)
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .black))
-                Text(title)
-                    .font(.system(size: 15, weight: .heavy))
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .bottom, spacing: 8) {
+                        Text("二月")
+                            .font(.system(size: 24, weight: .heavy))
+                            .foregroundColor(.primary)
+                        Text("2026年")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(Color(UIColor.tertiaryLabel))
+                    }
+                    Text("行动是看得见的形状，坚持是时间的无声。")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                }
+                
+                Spacer()
+                
+                Button(action: {}) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(Color(UIColor.secondaryLabel))
+                }
             }
-            .foregroundColor(.black)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(themeColor)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.black, lineWidth: 3)
-            )
             
-            Spacer()
-            
-            // 中间大字：天数
-            Text(count)
-                .font(.system(size: 26, weight: .heavy))
-                .foregroundColor(.primary)
-                .padding(.bottom, 2)
-            
-            // 底部小字：日期段
-            Text(dateRange)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(Color(UIColor.secondaryLabel))
+            // 7 Blocks
+            HStack(spacing: 8) {
+                ForEach(0..<7, id: \.self) { index in
+                    if index < history.count && history[index] != 0 {
+                        let status = history[index]
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(status == 1 ? successColor : warningColor)
+                            .frame(height: 44)
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        // Empty
+                        if index == 6 {
+                            // 最后一个带有奖励图标
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(UIColor.tertiaryLabel).opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                Image(systemName: "gift.fill") // 礼物图标
+                                    .foregroundColor(Color(red: 0.85, green: 0.35, blue: 0.35)) // 红色
+                                    .font(.system(size: 20))
+                            }
+                            .frame(height: 44)
+                            .frame(maxWidth: .infinity)
+                        } else {
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(UIColor.tertiaryLabel).opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                .frame(height: 44)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 8)
         }
-        .padding(16)
-        .frame(width: 140, height: 150, alignment: .topLeading)
-        .background(Color.white) // 统一采用干净的纯白底色
-        .cornerRadius(24)
-        // 统一加上淡淡的阴影，从燕麦色背景中浮现出来
-        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
+        .padding(20)
+        .background(Color.white) // 纯白卡片底色
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
+        .padding(.horizontal, 16)
     }
 }
 
