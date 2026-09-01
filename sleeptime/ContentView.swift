@@ -908,18 +908,19 @@ struct SleepDistributionView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 36) { // 增加整体纵向间距
+        VStack(alignment: .leading, spacing: 24) { // 调整整体纵向间距以匹配其他卡片
             // 标题区
-            VStack(alignment: .leading, spacing: 8) {
-                Text("你的入睡轨迹")
-                    .font(.system(size: 26, weight: .black)) // 极具视觉冲击力的极限字重
+            VStack(alignment: .leading, spacing: 6) {
+                Text("入睡轨迹") // 恢复统一命名
+                    .font(.system(size: 18, weight: .bold)) // 与规律记录完全一致
                     .foregroundColor(.primary)
                 
                 Text("习惯是一块块拼出来的。今晚的积木，你想落在哪个区？")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 14)) // 字号微调，避免抢戏
                     .foregroundColor(Color(UIColor.secondaryLabel))
-                    .lineSpacing(6)
+                    .lineSpacing(4)
             }
+            .padding(.horizontal, 16) // 与规律记录的标题左边距一致
             
             // 柱状图区
             HStack(alignment: .bottom, spacing: 0) {
@@ -927,15 +928,15 @@ struct SleepDistributionView: View {
                     let category = categories[index]
                     let count = distribution[index]
                     
-                    VStack(spacing: 20) { // 加大积木和文字的距离
+                    VStack(spacing: 20) {
                         // 积木块
-                        VStack(spacing: 8) { // 积木间距加大
+                        VStack(spacing: 8) {
                             ForEach((0..<maxBlocks).reversed(), id: \.self) { blockIndex in
                                 if blockIndex < count {
                                     // 实体块
-                                    Capsule() // 使用完全圆角，更显大气
+                                    Capsule()
                                         .fill(category.2)
-                                        .frame(width: 44, height: 22) // 积木尺寸大幅加大
+                                        .frame(width: 44, height: 22)
                                 } else {
                                     // 虚线空心块
                                     Capsule()
@@ -948,19 +949,19 @@ struct SleepDistributionView: View {
                         // 底部标签
                         VStack(spacing: 6) {
                             Text(category.0)
-                                .font(.system(size: 16, weight: .heavy)) // 文字加粗加大
+                                .font(.system(size: 16, weight: .heavy))
                                 .foregroundColor(.primary)
                             Text(category.1)
-                                .font(.custom("AvenirNext-DemiBold", size: 12)) // 使用英文字体提升质感
+                                .font(.custom("AvenirNext-DemiBold", size: 12))
                                 .foregroundColor(Color(UIColor.tertiaryLabel))
                         }
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.top, 8)
+            .padding(.horizontal, 16) // 与规律记录卡片的左边距一致
         }
         .padding(.vertical, 24)
-        .padding(.horizontal, 24)
+        // 移除了这里的外层 .padding(.horizontal, 24)，改为内部独立控制 16
     }
 }
