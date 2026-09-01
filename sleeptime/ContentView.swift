@@ -157,77 +157,6 @@ struct SleepProgressView: View {
                 .padding(.top, 24)
                 .padding(.bottom, 16)
                 
-                // 核心进度卡片
-                VStack(spacing: 0) {
-                    // 头部文字 (1:1 像素级复刻截图)
-                    HStack(alignment: .lastTextBaseline) {
-                        Text("勋章进度")
-                            .font(.system(size: 17, weight: .heavy))
-                            .foregroundColor(.primary)
-                        
-                        Spacer()
-                        
-                        HStack(alignment: .lastTextBaseline, spacing: 2) {
-                            Text("29")
-                                .font(.system(size: 28, weight: .heavy))
-                                .foregroundColor(.primary)
-                            Text("/30")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Color(UIColor.tertiaryLabel))
-                        }
-                    }
-                    .padding(.bottom, 12) // 头部与进度条间距收紧
-                    
-                    // 自定义分段进度条
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            // 进度条底色
-                            Capsule()
-                                .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                                .frame(height: 12) // 恢复原来的粗度
-                            
-                            // 进度条激活色 (原生态绿色)
-                            Capsule()
-                                .fill(Color(red: 0.2, green: 0.75, blue: 0.4))
-                                .frame(width: geometry.size.width * (29.0 / 30.0), height: 12) // 恢复原来的粗度
-                            
-                            // 当前终点：绿边大空心圆
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 20, height: 20) // 恢复大号圆环
-                                Circle()
-                                    .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), lineWidth: 4)
-                                    .frame(width: 20, height: 20)
-                            }
-                            .position(x: geometry.size.width, y: 7.5) // 恢复微下调的位置
-                        }
-                    }
-                    .frame(height: 24)
-                    
-                    // 底部刻度
-                    GeometryReader { geometry in
-                        let stepWidth = geometry.size.width / 5
-                        ZStack {
-                            Text("0").position(x: 0, y: 7)
-                            Text("6").position(x: stepWidth * 1, y: 7)
-                            Text("12").position(x: stepWidth * 2, y: 7)
-                            Text("18").position(x: stepWidth * 3, y: 7)
-                            Text("24").position(x: stepWidth * 4, y: 7)
-                            Text("30").position(x: stepWidth * 5, y: 7)
-                        }
-                        .font(.custom("AvenirNext-Medium", size: 12)) // 刻度数字缩小到辅助级别
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                    }
-                    .frame(height: 14)
-                    .padding(.top, 4) // 与进度条紧密贴合
-                }
-                .padding(.vertical, 16) // 上下内边距极限压缩
-                .padding(.horizontal, 16) // 左右内边距压缩
-                .background(Color(.systemBackground))
-                .cornerRadius(16) // 圆角稍微缩小，匹配更扁的卡片
-                .padding(.horizontal, 16)
-                
                 // 计划目标卡片
                 HStack(spacing: 16) {
                     TargetCardView(
@@ -269,6 +198,88 @@ struct SleepProgressView: View {
     }
 }
 
+struct AnnualGoalView: View {
+    var body: some View {
+        ZStack {
+            Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                BadgeProgressCard()
+                    .padding(16)
+            }
+        }
+        .navigationTitle("年度目标")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct BadgeProgressCard: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .lastTextBaseline) {
+                Text("勋章进度")
+                    .font(.system(size: 17, weight: .heavy))
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                HStack(alignment: .lastTextBaseline, spacing: 2) {
+                    Text("29")
+                        .font(.system(size: 28, weight: .heavy))
+                        .foregroundColor(.primary)
+                    Text("/30")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(UIColor.tertiaryLabel))
+                }
+            }
+            .padding(.bottom, 12)
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                        .frame(height: 12)
+
+                    Capsule()
+                        .fill(Color(red: 0.2, green: 0.75, blue: 0.4))
+                        .frame(width: geometry.size.width * (29.0 / 30.0), height: 12)
+
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 20, height: 20)
+                        Circle()
+                            .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), lineWidth: 4)
+                            .frame(width: 20, height: 20)
+                    }
+                    .position(x: geometry.size.width, y: 7.5)
+                }
+            }
+            .frame(height: 24)
+
+            GeometryReader { geometry in
+                let stepWidth = geometry.size.width / 5
+                ZStack {
+                    Text("0").position(x: 0, y: 7)
+                    Text("6").position(x: stepWidth, y: 7)
+                    Text("12").position(x: stepWidth * 2, y: 7)
+                    Text("18").position(x: stepWidth * 3, y: 7)
+                    Text("24").position(x: stepWidth * 4, y: 7)
+                    Text("30").position(x: stepWidth * 5, y: 7)
+                }
+                .font(.custom("AvenirNext-Medium", size: 12))
+                .foregroundColor(Color(UIColor.secondaryLabel))
+            }
+            .frame(height: 14)
+            .padding(.top, 4)
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+    }
+}
+
 struct ProfileView: View {
     var body: some View {
         NavigationStack {
@@ -288,7 +299,10 @@ struct ProfileView: View {
                         
                         // 分组卡片：设置组
                         VStack(spacing: 0) {
-                            ProfileRowView(icon: "gearshape", title: "年度目标", showDivider: false)
+                            NavigationLink(destination: AnnualGoalView()) {
+                                ProfileRowView(icon: "gearshape", title: "年度目标", showDivider: false)
+                            }
+                            .buttonStyle(.plain)
                             ProfileRowView(icon: "calendar", title: "日期设置", showDivider: false)
                             ProfileRowView(icon: "tag", title: "标签管理", showDivider: false)
                             ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
@@ -688,22 +702,31 @@ struct SleepTrendView: View {
                 let stepWidth = (geo.size.width - itemWidth) / CGFloat(totalIntervals)
                 
                 ZStack(alignment: .topLeading) {
-                    // 绘制底部的横向基准线 (可选：如果要连成一条线，可以在这里加一个贯穿的 Rectangle)
+                    // 1. 绘制一条贯穿前后的彩色横轴
+                    HStack(spacing: 0) {
+                        // 共 5 个小时区间 (21-22, 22-23, 23-00, 00-01, 01-02)
+                        ForEach(0..<5, id: \.self) { i in
+                            let hour = (21 + i) % 24
+                            Rectangle()
+                                .fill(getZoneColor(for: hour))
+                                .frame(height: 3) // 横轴粗细
+                        }
+                    }
+                    .clipShape(Capsule()) // 两端圆角
+                    .padding(.horizontal, itemWidth / 2) // 让横轴刚好从第一个刻度中心连到最后一个刻度中心
+                    .offset(y: 4.5) // 大刻度高12，中心点是6；横轴高3，6-1.5=4.5
                     
-                    // 绘制底部的刻度线和时间
+                    // 2. 绘制竖向刻度线和时间文字
                     HStack(alignment: .top, spacing: 0) {
                         ForEach(0..<tickCount, id: \.self) { i in
-                            // 现在是每两个格一个主刻度
                             let isMajor = (i % 2 == 0)
                             let hour = (21 + i / 2) % 24
-                            
-                            // 核心逻辑：根据时间点决定刻度的颜色，区分睡眠风险区间
                             let zoneColor = getZoneColor(for: hour)
                             
                             VStack(spacing: 8) {
-                                // 刻度线
+                                // 竖向刻度线
                                 Rectangle()
-                                    .fill(isMajor ? zoneColor : zoneColor.opacity(0.4))
+                                    .fill(isMajor ? Color(UIColor.secondaryLabel) : Color(UIColor.tertiaryLabel))
                                     .frame(width: isMajor ? 2 : 1.5,
                                            height: isMajor ? 12 : 6)
                                 
@@ -711,9 +734,8 @@ struct SleepTrendView: View {
                                 if isMajor {
                                     Text(String(format: "%02d", hour))
                                         .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(zoneColor) // 文字也带上区间颜色
+                                        .foregroundColor(zoneColor)
                                 } else {
-                                    // 用透明文字占位，保证所有 VStack 高度结构一致
                                     Text("00").font(.system(size: 12)).hidden()
                                 }
                             }
