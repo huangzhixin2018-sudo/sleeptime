@@ -986,13 +986,16 @@ struct SleepDistributionCardView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // 标题区
-            Text("入睡分布")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.primary)
+        VStack(alignment: .leading, spacing: 16) {
+            // 标题区 (在卡片外部)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("入睡分布")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.primary)
+            }
+            .padding(.horizontal, 16)
             
-            // 连续进度条图表区
+            // 连续进度条图表区 (包裹在白色卡片内部)
             VStack(spacing: 16) {
                 ForEach(0..<categories.count, id: \.self) { index in
                     let category = categories[index]
@@ -1040,10 +1043,11 @@ struct SleepDistributionCardView: View {
                     }
                 }
             }
+            .padding(20)
+            .background(Color(UIColor.secondarySystemGroupedBackground)) // 白色卡片
+            .cornerRadius(16)
+            .padding(.horizontal, 16)
         }
-        .padding(20)
-        .background(Color(UIColor.secondarySystemGroupedBackground)) // 白色卡片
-        .cornerRadius(16)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 }
