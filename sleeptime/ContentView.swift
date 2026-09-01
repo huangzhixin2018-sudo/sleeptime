@@ -976,13 +976,13 @@ struct SleepDistributionCardView: View {
     let distribution = [8, 3, 5, 2, 0]
     let maxCount = 8 // 用于计算进度条比例
     
-    // 配置：标签, 颜色
+    // 配置：标签, 时间区间, 颜色
     let categories = [
-        ("提前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
-        ("守信", Color.primary), // 达成目标的黑色实心
-        ("拖延", Color.orange), // 警告橙
-        ("熬夜", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
-        ("通宵", Color.purple) // 危险紫
+        ("提前", "23:00 前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
+        ("守信", "23:00-00:00", Color.primary), // 达成目标的黑色实心
+        ("拖延", "00:00-01:00", Color.orange), // 警告橙
+        ("熬夜", "01:00-02:00", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
+        ("通宵", "02:00 后", Color.purple) // 危险紫
     ]
     
     var body: some View {
@@ -1000,13 +1000,27 @@ struct SleepDistributionCardView: View {
                     let widthPercent = maxCount > 0 ? CGFloat(count) / CGFloat(maxCount) : 0
                     
                     if count > 0 {
-                        HStack(spacing: 12) {
-                            Text(category.0)
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Color(UIColor.secondaryLabel))
-                                .frame(width: 36, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 8) {
+                            // 文本行：左侧是 "标签 · 时间"，右侧是 "天数"
+                            HStack(alignment: .bottom) {
+                                HStack(spacing: 6) {
+                                    Text(category.0)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundColor(.primary)
+                                    
+                                    Text(category.1)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(Color(UIColor.tertiaryLabel))
+                                }
+                                
+                                Spacer()
+                                
+                                Text("\(count)天")
+                                    .font(.custom("AvenirNext-DemiBold", size: 15))
+                                    .foregroundColor(.primary)
+                            }
                             
-                            // 进度条
+                            // 进度条行
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     // 背景槽 (浅灰色)
@@ -1016,17 +1030,12 @@ struct SleepDistributionCardView: View {
                                     // 实际数据条
                                     if count > 0 {
                                         Capsule()
-                                            .fill(category.1)
-                                            .frame(width: max(geo.size.width * widthPercent, 12))
+                                            .fill(category.2)
+                                            .frame(width: max(geo.size.width * widthPercent, 8))
                                     }
                                 }
                             }
-                            .frame(height: 12) // 图表更加精致纤细
-                            
-                            Text("\(count)天")
-                                .font(.custom("AvenirNext-DemiBold", size: 15))
-                                .foregroundColor(.primary)
-                                .frame(width: 40, alignment: .trailing)
+                            .frame(height: 8) // 图表更加纤细精致
                         }
                     }
                 }
