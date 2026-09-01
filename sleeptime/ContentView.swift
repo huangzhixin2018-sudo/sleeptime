@@ -972,9 +972,9 @@ struct SleepDistributionView: View {
 
 // MARK: - 入睡轨迹组件 (横向积木图)
 struct SleepTrajectoryView: View {
-    // 模拟数据：最近 6 天的轨迹 (如需更多天数，UI已支持自动折叠为多排)
+    // 模拟数据：最近 7 天的轨迹 (如需更多天数，UI已支持自动折叠为多排)
     let distribution = [2, 3, 1, 1, 0]
-    let maxBlocks = 6
+    let maxBlocks = 7
     
     // 配置：标签, 积木颜色
     let categories = [
@@ -992,11 +992,6 @@ struct SleepTrajectoryView: View {
                 Text("入睡轨迹")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.primary)
-                
-                Text("习惯是一块块拼出来的。今晚你想落在哪一格？")
-                    .font(.system(size: 18, weight: .bold)) // 修改为与标题一样大
-                    .foregroundColor(Color(UIColor.secondaryLabel))
-                    .lineSpacing(4)
             }
             .padding(.horizontal, 16)
             
@@ -1015,19 +1010,19 @@ struct SleepTrajectoryView: View {
                                 .foregroundColor(.primary)
                                 .frame(width: 76, alignment: .leading)
                             
-                            // 积木模块在右侧
-                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 8), count: 6), alignment: .leading, spacing: 8) {
+                            // 积木模块在右侧，使用正方形积木
+                            LazyVGrid(columns: Array(repeating: GridItem(.fixed(24), spacing: 6), count: 7), alignment: .leading, spacing: 6) {
                                 ForEach(0..<maxBlocks, id: \.self) { blockIndex in
                                     if blockIndex < count {
                                         // 实体块
-                                        RoundedRectangle(cornerRadius: 6)
+                                        RoundedRectangle(cornerRadius: 4)
                                             .fill(category.1)
-                                            .frame(height: 20)
+                                            .frame(height: 24)
                                     } else {
                                         // 虚线空心块
-                                        RoundedRectangle(cornerRadius: 6)
+                                        RoundedRectangle(cornerRadius: 4)
                                             .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                            .frame(height: 20)
+                                            .frame(height: 24)
                                     }
                                 }
                             }
