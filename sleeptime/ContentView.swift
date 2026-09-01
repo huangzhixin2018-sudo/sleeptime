@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     var body: some View {
@@ -80,7 +81,7 @@ struct SleepTrackingCardView: View {
                 Text(title)
                     .font(.system(size: 19, weight: .bold)) // 标题加粗，压住阵脚
                     .foregroundColor(.primary)
-                
+
                 Spacer()
                 
                 // 顶部右侧留白，让标题更加独立
@@ -131,6 +132,8 @@ struct ContentView_Previews: PreviewProvider {
 }
 
 struct SleepProgressView: View {
+    @State private var exportedPlan: ExportedPlanImage?
+
     var body: some View {
         ZStack {
             Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea()
@@ -138,74 +141,27 @@ struct SleepProgressView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     // 标题区 (去掉返回箭头)
-                    HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("夜猫子改造营")
                                 .font(.system(size: 28, weight: .black))
                                 .tracking(-0.5) // 字距微调，更紧凑
                                 .foregroundColor(.primary)
-                                .overlay(
-                                    WavyLine()
-                                        .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                                        .frame(height: 7)
-                                        .padding(.leading, 2)
-                                        .padding(.trailing, 32) // 右侧留出大约一个字的宽度，避开“营”字
-                                        .offset(y: 16)
-                                    , alignment: .bottom
-                                )
+
+                            WavyLine()
+                                .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                                .frame(width: 120, height: 7)
+                                .padding(.leading, 2)
                         }
-                        
-                        Spacer()
-                        
-                        // 全局进度徽章 (方案B)
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color(red: 0.95, green: 0.5, blue: 0.2)) // 活力橙
-                            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                Text("6")
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(.primary)
-                                Text("/ 14")
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(Color(UIColor.secondaryLabel))
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white)
-                        .cornerRadius(20)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                        )
-                        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
-                        .padding(.bottom, 2) // 微调垂直对齐
+
+                        Text("最晚 02:00 入睡 · 连续熬夜不超过 5 天")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.88)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 24)
-                    .padding(.bottom, 16)
-
-                EarlySleepSummaryCardView()
-                    .padding(.horizontal, 16)
-
-                // 作息漂移刻度尺
-                SleepTrendView()
-                    .padding(.top, 24)
-                
-                // 入睡分布卡片 (图表样式)
-                SleepDistributionCardView()
-                
-                // 承诺追踪卡片 (说到做到 vs 破戒)
-                HabitStreakView()
-                
-                VStack(spacing: 12) {
-                    EarlySleepDayGridView()
-                        .padding(.horizontal, 16)
-                }
-
-                DayTimelineCardView()
-                    .padding(.horizontal, 16)
 
                 HStack(spacing: 16) {
                     TargetCardView(
@@ -213,7 +169,7 @@ struct SleepProgressView: View {
                         value: "2",
                         unit: "小时",
                         themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
-                        rotationAngle: -2
+                        rotationAngle: -1.4
                     )
 
                     TargetCardView(
@@ -221,88 +177,174 @@ struct SleepProgressView: View {
                         value: "6",
                         unit: "天",
                         themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
-                        rotationAngle: 2
+                        rotationAngle: 1.6
                     )
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
 
-                
+                HStack(spacing: 16) {
+                    TargetCardView(
+                        title: "实际最晚入睡",
+                        value: "23:45",
+                        unit: "",
+                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
+                        rotationAngle: 1.1
+                    )
+
+                    TargetCardView(
+                        title: "最长连续熬夜",
+                        value: "5",
+                        unit: "天",
+                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
+                        rotationAngle: -1.8
+                    )
+                }
+                .padding(.horizontal, 16)
+
+                DayTimelineCardView()
+                    .padding(.horizontal, 16)
+
+                // 入睡分布卡片 (图表样式)
+                SleepDistributionCardView()
+
+                // 承诺追踪卡片 (说到做到 vs 破戒)
+                HabitStreakView()
+
+                VStack(spacing: 12) {
+                    EarlySleepDayGridView()
+                        .padding(.horizontal, 16)
+                }
+
+                Button {
+                    exportPlanImage()
+                } label: {
+                    Label("分享计划", systemImage: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color(UIColor.separator).opacity(0.7), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+
                 Spacer()
             }
             .padding(.bottom, 40) // 底部留白，防止滚动到底部时贴边
             }
         }
-    }
-}
-
-struct EarlySleepSummaryCardView: View {
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                EarlySleepMetricView(
-                    title: "最晚入睡时间",
-                    value: "23:45",
-                    suffix: ""
-                )
-
-                Rectangle()
-                    .fill(Color(UIColor.separator).opacity(0.4))
-                    .frame(width: 1, height: 60)
-
-                EarlySleepMetricView(
-                    title: "累计连续早睡",
-                    value: "1",
-                    suffix: "天"
-                )
-            }
-            .padding(.vertical, 20)
-
-            HStack(spacing: 8) {
-                Text("规则：")
-                Text("最晚 02:00 入睡")
-                Text("·")
-                Text("连续熬夜 ≤ 5天")
-                Spacer(minLength: 0)
-            }
-            .font(.system(size: 13, weight: .bold))
-            .foregroundColor(Color(UIColor.secondaryLabel))
-            .padding(.horizontal, 20)
-            .frame(height: 48)
-            .background(Color(white: 0.96)) // 干净的高级灰底色
+        .sheet(item: $exportedPlan) { plan in
+            ActivityShareSheet(items: [plan.image])
         }
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+    }
+
+    @MainActor
+    private func exportPlanImage() {
+        let renderer = ImageRenderer(
+            content: PlanShareImageView()
+                .frame(width: 390)
+        )
+        renderer.scale = 3
+
+        if let image = renderer.uiImage {
+            exportedPlan = ExportedPlanImage(image: image)
+        }
     }
 }
 
-struct EarlySleepMetricView: View {
-    let title: String
-    let value: String
-    let suffix: String
+struct ExportedPlanImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
 
+struct PlanShareImageView: View {
     var body: some View {
-        VStack(alignment: .center, spacing: 6) {
-            Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(Color(UIColor.secondaryLabel))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+        ZStack {
+            Color(red: 0.98, green: 0.97, blue: 0.95)
 
-            HStack(alignment: .lastTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 34, weight: .black, design: .rounded))
-                    .foregroundColor(.primary)
-                if !suffix.isEmpty {
-                    Text(suffix)
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("夜猫子改造营")
+                            .font(.system(size: 28, weight: .black))
+                            .foregroundColor(.primary)
+
+                        WavyLine()
+                            .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                            .frame(width: 120, height: 7)
+                            .padding(.leading, 2)
+                    }
+
+                    Text("最晚 02:00 入睡 · 连续熬夜不超过 5 天")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
                 }
+                .padding(.horizontal, 24)
+
+                HStack(spacing: 16) {
+                    TargetCardView(
+                        title: "超时熬夜时长",
+                        value: "2",
+                        unit: "小时",
+                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
+                        rotationAngle: -1.4
+                    )
+
+                    TargetCardView(
+                        title: "早睡天数",
+                        value: "6",
+                        unit: "天",
+                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
+                        rotationAngle: 1.6
+                    )
+                }
+                .padding(.horizontal, 16)
+
+                HStack(spacing: 16) {
+                    TargetCardView(
+                        title: "实际最晚入睡",
+                        value: "23:45",
+                        unit: "",
+                        themeColor: Color(red: 0.82, green: 0.89, blue: 0.96),
+                        rotationAngle: 1.1
+                    )
+
+                    TargetCardView(
+                        title: "最长连续熬夜",
+                        value: "5",
+                        unit: "天",
+                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
+                        rotationAngle: -1.8
+                    )
+                }
+                .padding(.horizontal, 16)
+
+                DayTimelineCardView()
+                    .padding(.horizontal, 16)
+
+                SleepDistributionCardView()
+
+                HabitStreakView()
+
+                EarlySleepDayGridView()
+                    .padding(.horizontal, 16)
             }
+            .padding(.vertical, 24)
         }
-        .frame(maxWidth: .infinity)
     }
+}
+
+struct ActivityShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 struct AnnualGoalView: View {
@@ -528,12 +570,13 @@ struct TargetCardView: View {
     let unit: String
     let themeColor: Color
     let rotationAngle: Double
+    let titleFontSize: CGFloat = 16
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.secondary)
+                .font(.system(size: titleFontSize, weight: .bold))
+                .foregroundColor(.primary)
             
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(value)
@@ -558,10 +601,7 @@ struct TargetCardView: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(themeColor, lineWidth: 3)
         )
-        // 保留微微的倾斜，打破死板
         .rotationEffect(.degrees(rotationAngle))
-        // 稍微加一点阴影增加层次感
-        .shadow(color: Color.black.opacity(0.02), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -686,7 +726,7 @@ struct DashedLine: Shape {
 struct HabitStreakView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("规律记录")
+            Text("连续趋势")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
             .padding(.horizontal, 16)
@@ -696,8 +736,7 @@ struct HabitStreakView: View {
                 HStack(spacing: 12) {
                     // 高亮激活的卡片
                     HabitCard(
-                        title: "早睡",
-                        icon: "moon.stars.fill",
+                        title: "连续早睡",
                         count: "3天",
                         dateRange: "8.29 - 8.31",
                         isActive: true,
@@ -706,17 +745,15 @@ struct HabitStreakView: View {
                     
                     // 黑色未激活卡片
                     HabitCard(
-                        title: "熬夜",
-                        icon: "flame.fill",
+                        title: "连续熬夜",
                         count: "2天",
                         dateRange: "8.25 - 8.26",
                         isActive: false,
-                        themeColor: Color(red: 0.95, green: 0.4, blue: 0.2) // 橘红色
+                        themeColor: Color(red: 0.48, green: 0.68, blue: 0.54)
                     )
                     
                     HabitCard(
-                        title: "起床",
-                        icon: "alarm.fill",
+                        title: "连续早睡",
                         count: "2天",
                         dateRange: "8.22 - 8.23",
                         isActive: false,
@@ -725,7 +762,6 @@ struct HabitStreakView: View {
                     
                     HabitCard(
                         title: "午休",
-                        icon: "zzz",
                         count: "1天",
                         dateRange: "8.21",
                         isActive: false,
@@ -741,7 +777,6 @@ struct HabitStreakView: View {
 
 struct HabitCard: View {
     let title: String
-    let icon: String
     let count: String
     let dateRange: String
     let isActive: Bool
@@ -750,12 +785,8 @@ struct HabitCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 左上角徽章 (全员继承第一张卡片的黑色粗边框+主题色底)
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .black))
-                Text(title)
-                    .font(.system(size: 15, weight: .heavy))
-            }
+            Text(title)
+                .font(.system(size: 15, weight: .heavy))
             .foregroundColor(.black)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -785,135 +816,8 @@ struct HabitCard: View {
         .frame(width: 140, height: 150, alignment: .topLeading)
         .background(Color.white) // 统一采用干净的纯白底色
         .cornerRadius(24)
-        // 统一加上淡淡的阴影，从燕麦色背景中浮现出来
-        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
     }
 }
-
-// MARK: - 作息漂移趋势 (刻度尺)
-
-struct SleepTrendView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            
-            // 刻度尺区域 (带时间的高级刻度)
-            GeometryReader { geo in
-                let tickCount = 11 // 缩减为 11 根线：每小时只分两格（整点和半点），避免太密
-                let totalIntervals = tickCount - 1
-                let itemWidth: CGFloat = 20 // 加宽一点
-                let stepWidth = (geo.size.width - itemWidth) / CGFloat(totalIntervals)
-                
-                VStack(spacing: 8) {
-                    // 上半部：刻度线和彩色横轴 (底部对齐)
-                    ZStack(alignment: .bottomLeading) {
-                        // 1. 绘制一条贯穿的彩色横轴
-                        HStack(spacing: 0) {
-                            // 共 5 个小时区间 (21-22, 22-23, 23-00, 00-01, 01-02)
-                            ForEach(0..<5, id: \.self) { i in
-                                let hour = (21 + i) % 24
-                                Rectangle()
-                                    .fill(getZoneColor(for: hour))
-                                    .frame(height: 3) // 横轴粗细
-                            }
-                        }
-                        .clipShape(Capsule()) // 两端圆角
-                        .padding(.horizontal, itemWidth / 2) // 横轴从第一个刻度中心连到最后一个刻度中心
-                        
-                        // 2. 竖向刻度线 (长在横轴上方)
-                        HStack(alignment: .bottom, spacing: 0) {
-                            ForEach(0..<tickCount, id: \.self) { i in
-                                let isMajor = (i % 2 == 0)
-                                
-                                Rectangle()
-                                    .fill(isMajor ? Color(UIColor.secondaryLabel) : Color(UIColor.tertiaryLabel))
-                                    .frame(width: isMajor ? 2 : 1.5,
-                                           height: isMajor ? 12 : 6)
-                                    .frame(width: itemWidth, alignment: .bottom) // 占位保证间距
-                                
-                                if i < tickCount - 1 {
-                                    Spacer(minLength: 0)
-                                }
-                            }
-                        }
-                        
-                        // 3. 悬浮指示点与垂直对齐线
-                        let actualPosition: CGFloat = 6.66 // 实际时间 (例如 00:20)
-                        
-                        let actualX = (itemWidth / 2) + (stepWidth * actualPosition)
-                        let axisY: CGFloat = 10.5 // 底轴中心 (ZStack高度12，底轴高度3)
-                        let suspendedY: CGFloat = axisY - 36 // 悬浮在轴线上方 36 个 point
-                        
-                        // 垂直向下对应的虚线
-                        Path { path in
-                            path.move(to: CGPoint(x: actualX, y: suspendedY + 7)) // 从圆点底部开始
-                            path.addLine(to: CGPoint(x: actualX, y: axisY)) // 连到底轴
-                        }
-                        .stroke(Color(UIColor.tertiaryLabel), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                        
-                        // 悬浮在空中的指示圆点
-                        Circle()
-                            .fill(Color(red: 0.98, green: 0.45, blue: 0.52)) // 标志性高亮粉色
-                            .frame(width: 14, height: 14)
-                            .overlay(
-                                Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
-                            )
-                            .position(x: actualX, y: suspendedY)
-                    }
-                    // 为了不让悬浮点被切掉，给 ZStack 增加顶部内边距
-                    .padding(.top, 40)
-                    
-                    // 下半部：时间文字
-                    HStack(spacing: 0) {
-                        ForEach(0..<tickCount, id: \.self) { i in
-                            let isMajor = (i % 2 == 0)
-                            let hour = (21 + i / 2) % 24
-                            let zoneColor = getZoneColor(for: hour)
-                            
-                            Group {
-                                if isMajor {
-                                    Text(String(format: "%02d", hour))
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(zoneColor)
-                                } else {
-                                    Text("00").font(.system(size: 12)).hidden()
-                                }
-                            }
-                            .frame(width: itemWidth)
-                            
-                            if i < tickCount - 1 {
-                                Spacer(minLength: 0)
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(height: 70) // 增加整体高度，给超高的抛物线留足天空
-            
-        }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 24)
-    }
-    
-    // 区间颜色映射逻辑
-    private func getZoneColor(for hour: Int) -> Color {
-        switch hour {
-        case 21, 22:
-            // 11点前：健康睡眠区间 (薄荷绿/青色)
-            return Color(red: 0.2, green: 0.8, blue: 0.6)
-        case 23:
-            // 11点-12点：临界警告区间 (亮橙色/黄色)
-            return Color.orange
-        case 0:
-            // 12点-1点：严重熬夜区间 (粉红色)
-            return Color(red: 0.98, green: 0.45, blue: 0.52)
-        default:
-            // 1点以后：修仙危险区间 (深紫色/黑色)
-            return Color.purple
-        }
-    }
-}
-
-
 
 struct EarlySleepDayGridView: View {
     private let completedDays = 6
@@ -970,7 +874,7 @@ struct EarlySleepDayGridView: View {
 }
 
 struct DayTimelineCardView: View {
-    @State private var isExpanded = true
+    @State private var selectedDay = 1
     @State private var completedItems: Set<Int> = []
 
     private let schedule = [
@@ -980,29 +884,53 @@ struct DayTimelineCardView: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                HStack {
-                    Text("第1天")
-                        .font(.system(size: 19, weight: .black))
-                        .foregroundColor(.primary)
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Day \(selectedDay)")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.primary)
 
-                    Spacer()
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                HStack(spacing: 8) {
+                    ForEach(1...7, id: \.self) { day in
+                        Button {
+                            selectedDay = day
+                        } label: {
+                            Text("\(day)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(day == selectedDay ? .white : .primary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                                .background(
+                                    day == selectedDay
+                                        ? Color(red: 0.48, green: 0.68, blue: 0.54)
+                                        : Color(UIColor.secondarySystemBackground)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color(red: 0.48, green: 0.68, blue: 0.54).opacity(0.30), lineWidth: 1)
+            )
 
-            if isExpanded {
+            DayPlanConnectorBridgeShape()
+                .fill(Color(.systemBackground))
+                .frame(width: 60, height: 18)
+                .padding(.vertical, -1)
+                .zIndex(1)
+
+            VStack(alignment: .leading, spacing: 20) {
+                Text("时间规划")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(schedule.enumerated()), id: \.offset) { index, item in
                         HStack(alignment: .top, spacing: 12) {
@@ -1025,51 +953,83 @@ struct DayTimelineCardView: View {
                                                 .foregroundColor(.white)
                                         }
                                     }
-                                    .frame(width: 20, height: 20)
+                                    .frame(width: 22, height: 22)
                                 }
                                 .buttonStyle(.plain)
 
                                 if index < schedule.count - 1 {
                                     Rectangle()
                                         .fill(Color(red: 0.48, green: 0.68, blue: 0.54).opacity(0.28))
-                                        .frame(width: 1, height: 30)
+                                        .frame(width: 1, height: 32)
                                 }
                             }
 
                             HStack(alignment: .firstTextBaseline, spacing: 14) {
                                 Text(item.0)
-                                    .font(.system(size: 17, weight: .black, design: .rounded))
+                                    .font(.system(size: 17, weight: .semibold, design: .default))
+                                    .monospacedDigit()
                                     .foregroundColor(.primary)
-                                    .frame(width: 48, alignment: .leading)
+                                    .lineLimit(1)
+                                    .frame(width: 56, alignment: .leading)
                                 Text(item.1)
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color(UIColor.secondaryLabel))
+                                    .foregroundColor(.primary)
                             }
 
                             Spacer(minLength: 0)
                         }
-                        .frame(height: index < schedule.count - 1 ? 50 : 20, alignment: .top)
+                        .frame(height: index < schedule.count - 1 ? 54 : 22, alignment: .top)
                     }
                 }
-                .padding(.top, 20)
             }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color(red: 0.48, green: 0.68, blue: 0.54).opacity(0.30), lineWidth: 1)
+            )
         }
-        .padding(20)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+struct DayPlanConnectorBridgeShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let radius = rect.height / 2
+
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addArc(
+            center: CGPoint(x: rect.minX, y: rect.midY),
+            radius: radius,
+            startAngle: .degrees(-90),
+            endAngle: .degrees(90),
+            clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addArc(
+            center: CGPoint(x: rect.maxX, y: rect.midY),
+            radius: radius,
+            startAngle: .degrees(90),
+            endAngle: .degrees(270),
+            clockwise: false
+        )
+        path.closeSubpath()
+        return path
     }
 }
 
 // MARK: - 睡眠分布统计页面 (横向条形图)
 struct SleepDistributionView: View {
-    // 模拟数据：分别对应 提前, 守信, 拖延, 熬夜, 通宵 的天数
+    // 模拟数据：分别对应 提前, 早睡, 拖延, 熬夜, 通宵 的天数
     let distribution = [8, 3, 5, 2, 0]
     let maxCount = 8
     
     // 配置：标签, 颜色
     let categories = [
         ("提前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
-        ("守信", Color.primary), // 达成目标的黑色实心
+        ("早睡", Color.primary), // 达成目标的黑色实心
         ("拖延", Color.orange), // 警告橙
         ("熬夜", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
         ("通宵", Color.purple) // 危险紫
@@ -1149,7 +1109,7 @@ struct SleepDistributionCardView: View {
     // 配置：标签, 时间区间, 颜色
     let categories = [
         ("提前", "23:00 前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
-        ("守信", "23:00-00:00", Color.primary), // 达成目标的黑色实心
+        ("早睡", "23:00-00:00", Color.primary), // 达成目标的黑色实心
         ("拖延", "00:00-01:00", Color.orange), // 警告橙
         ("熬夜", "01:00-02:00", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
         ("通宵", "02:00 后", Color.purple) // 危险紫
