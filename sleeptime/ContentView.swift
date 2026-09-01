@@ -734,20 +734,53 @@ struct SleepTrendView: View {
                             }
                         }
                         
-                        // 3. 原点指示器 (嵌在横轴上)
-                        let position: CGFloat = 5.0 
-                        let dotSize: CGFloat = 14
+                        // 3. 航班偏航轨迹 (抛物线虚线)
+                        // 目标时间 23:30 (第5个小格)，实际时间 00:20 (第6.66个小格)
+                        let targetPosition: CGFloat = 5.0 
+                        let actualPosition: CGFloat = 6.66 
                         
-                        Circle()
-                            .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
-                            .frame(width: dotSize, height: dotSize)
-                            .overlay(
-                                Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
+                        let targetX = (itemWidth / 2) + (stepWidth * targetPosition)
+                        let actualX = (itemWidth / 2) + (stepWidth * actualPosition)
+                        let centerY: CGFloat = 10.5 // ZStack总高12，横轴高3沉底(y:9~12)，中心是10.5
+                        
+                        // 绘制向上的抛物线轨迹
+                        Path { path in
+                            path.move(to: CGPoint(x: targetX, y: centerY))
+                            let controlY = centerY - 24 // 向上突起的控制点
+                            path.addQuadCurve(
+                                to: CGPoint(x: actualX, y: centerY),
+                                control: CGPoint(x: (targetX + actualX) / 2, y: controlY)
                             )
-                            .offset(
-                                x: (itemWidth / 2) + (stepWidth * position) - (dotSize / 2),
-                                y: 5.5 // 向下偏移，使圆心正好对准高度为3的横轴中心
-                            )
+                        }
+                        .stroke(Color(UIColor.tertiaryLabel), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
+                        
+                        // 4. 计划着陆点 (空心锚点)
+                        ZStack {
+                            Circle().fill(Color.white).frame(width: 12, height: 12)
+                            Circle().stroke(Color(UIColor.tertiaryLabel), lineWidth: 3)
+                            Circle().fill(Color(UIColor.tertiaryLabel)).frame(width: 4, height: 4)
+                        }
+                        .position(x: targetX, y: centerY)
+                        
+                        // 5. 实际着陆点 (带箭头的指示器)
+                        ZStack {
+                            Circle()
+                                .fill(Color(red: 0.98, green: 0.45, blue: 0.52))
+                                .frame(width: 16, height: 16)
+                                .overlay(
+                                    Circle().stroke(Color(red: 0.98, green: 0.97, blue: 0.95), lineWidth: 3)
+                                )
+                            
+                            // 箭头图标，指示偏航方向 (迟睡向右，早睡向左)
+                            Image(systemName: "location.north.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 8, height: 8)
+                                .foregroundColor(.white)
+                                .rotationEffect(.degrees(actualX > targetX ? 90 : -90))
+                                .offset(x: actualX > targetX ? 1 : -1) // 微调图标让视觉更居中
+                        }
+                        .position(x: actualX, y: centerY)
                     }
                     
                     // 下半部：时间文字
