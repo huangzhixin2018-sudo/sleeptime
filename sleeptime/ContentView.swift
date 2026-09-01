@@ -1009,25 +1009,29 @@ struct SleepTrajectoryView: View {
                     let category = categories[index]
                     let count = distribution[index]
                     
-                    HStack(spacing: 12) {
-                        Text(category.0)
-                            .font(.system(size: 16, weight: .heavy))
-                            .foregroundColor(.primary)
-                            .frame(width: 44, alignment: .leading)
-                        
-                        // 积木模块
-                        HStack(spacing: 8) {
-                            ForEach(0..<maxBlocks, id: \.self) { blockIndex in
-                                if blockIndex < count {
-                                    // 实体块
-                                    Capsule() // 改回胶囊形状，视觉更圆润
-                                        .fill(category.1)
-                                        .frame(width: 36, height: 20) // 固定宽度，不要被拉伸
-                                } else {
-                                    // 虚线空心块
-                                    Capsule()
-                                        .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                                        .frame(width: 36, height: 20)
+                    // 如果天数为 0，则直接隐藏整行
+                    if count > 0 {
+                        HStack(spacing: 12) {
+                            // 标题加上天数，例如 "提前 2天"
+                            Text("\(category.0) \(count)天")
+                                .font(.system(size: 16, weight: .heavy))
+                                .foregroundColor(.primary)
+                                .frame(width: 80, alignment: .leading) // 加宽以容纳更长的文字，保证积木依然左对齐
+                            
+                            // 积木模块
+                            HStack(spacing: 8) {
+                                ForEach(0..<maxBlocks, id: \.self) { blockIndex in
+                                    if blockIndex < count {
+                                        // 实体块
+                                        Capsule() // 改回胶囊形状，视觉更圆润
+                                            .fill(category.1)
+                                            .frame(width: 36, height: 20) // 固定宽度，不要被拉伸
+                                    } else {
+                                        // 虚线空心块
+                                        Capsule()
+                                            .stroke(Color(UIColor.tertiaryLabel).opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                                            .frame(width: 36, height: 20)
+                                    }
                                 }
                             }
                         }
