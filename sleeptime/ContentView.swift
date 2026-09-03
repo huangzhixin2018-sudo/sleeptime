@@ -5,9 +5,11 @@
 
 import SwiftUI
 import UIKit
+import Combine
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .home
+    @StateObject private var tabBarVisibility = SleepTabBarVisibility()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -36,9 +38,133 @@ struct ContentView: View {
             }
             .tag(AppTab.profile)
         }
+        .environmentObject(tabBarVisibility)
+        .background(
+            SleepTabBarVisibilityBridge(isHidden: tabBarVisibility.isHidden)
+                .frame(width: 0, height: 0)
+        )
         .onChange(of: selectedTab) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.8)
         }
+    }
+}
+
+final class SleepTabBarVisibility: ObservableObject {
+    let objectWillChange = ObservableObjectPublisher()
+
+    var isHidden = false {
+        willSet { objectWillChange.send() }
+    }
+}
+
+private struct SleepTabBarVisibilityBridge: UIViewControllerRepresentable {
+    let isHidden: Bool
+
+    func makeUIViewController(context: Context) -> Controller {
+        let controller = Controller()
+        controller.setTabBarHidden(isHidden)
+        return controller
+    }
+
+    func updateUIViewController(_ controller: Controller, context: Context) {
+        controller.setTabBarHidden(isHidden)
+    }
+
+    final class Controller: UIViewController {
+        private var shouldHideTabBar = false
+        private weak var legacyAdjustedViewController: UIViewController?
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            updateTabBarVisibility()
+        }
+
+        func setTabBarHidden(_ isHidden: Bool) {
+            shouldHideTabBar = isHidden
+            updateTabBarVisibility()
+        }
+
+        private func updateTabBarVisibility() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self,
+                      let tabBarController = findTabBarController(from: view.window?.rootViewController) else {
+                    return
+                }
+
+                if #available(iOS 18.0, *) {
+                    guard tabBarController.isTabBarHidden != shouldHideTabBar else { return }
+                    tabBarController.setTabBarHidden(shouldHideTabBar, animated: false)
+                } else {
+                    updateLegacyTabBarVisibility(in: tabBarController)
+                }
+
+                tabBarController.view.setNeedsLayout()
+                tabBarController.view.layoutIfNeeded()
+            }
+        }
+
+        private func updateLegacyTabBarVisibility(in tabBarController: UITabBarController) {
+            let selectedViewController = tabBarController.selectedViewController
+            let tabBarHeight = tabBarController.tabBar.frame.height
+
+            if legacyAdjustedViewController !== selectedViewController {
+                legacyAdjustedViewController?.additionalSafeAreaInsets.bottom = 0
+                legacyAdjustedViewController = selectedViewController
+            }
+
+            tabBarController.tabBar.isHidden = shouldHideTabBar
+            selectedViewController?.additionalSafeAreaInsets.bottom = shouldHideTabBar ? -tabBarHeight : 0
+
+            if !shouldHideTabBar {
+                legacyAdjustedViewController = nil
+            }
+        }
+
+        private func findTabBarController(from controller: UIViewController?) -> UITabBarController? {
+            guard let controller else { return nil }
+            if let tabBarController = controller as? UITabBarController {
+                return tabBarController
+            }
+
+            for child in controller.children {
+                if let tabBarController = findTabBarController(from: child) {
+                    return tabBarController
+                }
+            }
+
+            return findTabBarController(from: controller.presentedViewController)
+        }
+    }
+}
+
+private struct SleepDetailChromeModifier: ViewModifier {
+    @ObservedObject var tabBarVisibility: SleepTabBarVisibility
+
+    func body(content: Content) -> some View {
+        content
+            .ignoresSafeArea(.container, edges: .bottom)
+            .modifier(SleepBottomScrollEdgeEffectModifier())
+            .toolbar(.hidden, for: .tabBar)
+            .toolbarBackground(.hidden, for: .tabBar)
+            .onAppear { tabBarVisibility.isHidden = true }
+            .onDisappear { tabBarVisibility.isHidden = false }
+    }
+}
+
+private struct SleepBottomScrollEdgeEffectModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.scrollEdgeEffectHidden(true, for: .bottom)
+        } else {
+            content
+        }
+    }
+}
+
+private extension View {
+    func sleepDetailChrome(_ tabBarVisibility: SleepTabBarVisibility) -> some View {
+        modifier(SleepDetailChromeModifier(tabBarVisibility: tabBarVisibility))
     }
 }
 
@@ -466,44 +592,64 @@ struct BadgeProgressCard: View {
 }
 
 struct ProfileView: View {
+    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
+
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    ProfileSummaryView()
+                    NavigationLink {
+                        EmptyProfileDetailView()
+                            .sleepDetailChrome(tabBarVisibility)
+                    } label: {
+                        ProfileSummaryView()
+                    }
+                    .buttonStyle(.plain)
 
                     ProfileSection {
-                        NavigationLink(destination: SleepTrackingDetailView()) {
+                        NavigationLink {
+                            SleepTrackingDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
                             ProfileRowView(icon: "chart.xyaxis.line", title: "睡眠追踪", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
-                        NavigationLink(destination: SleepProgressView()) {
+                        NavigationLink {
+                            SleepProgressView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
                             ProfileRowView(icon: "moon.stars", title: "早睡计划", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
-                        NavigationLink(destination: AnnualGoalView()) {
+                        NavigationLink {
+                            AnnualGoalView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
                             ProfileRowView(icon: "target", title: "年度目标", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
-                        NavigationLink(destination: SleepDistributionView()) {
+                        NavigationLink {
+                            SleepDistributionView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
                             ProfileRowView(icon: "chart.bar.fill", title: "入睡分布", showDivider: false)
                         }
                         .buttonStyle(.plain)
                     }
 
                     ProfileSection {
-                        ProfileRowView(icon: "tag", title: "标签管理", showDivider: true)
-                        ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
+                        emptyProfileNavigationRow(icon: "tag", title: "标签管理", showDivider: true)
+                        emptyProfileNavigationRow(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
                     }
 
                     ProfileSection {
-                        ProfileRowView(icon: "bell", title: "通知", trailingText: "未开启", showDivider: true)
-                        ProfileRowView(icon: "square.grid.2x2", title: "小组件", showDivider: true)
-                        ProfileRowView(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
-                        ProfileRowView(icon: "circle.lefthalf.filled", title: "主题外观", trailingText: "浅色模式", showDivider: false)
+                        emptyProfileNavigationRow(icon: "bell", title: "通知", trailingText: "未开启", showDivider: true)
+                        emptyProfileNavigationRow(icon: "square.grid.2x2", title: "小组件", showDivider: true)
+                        emptyProfileNavigationRow(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
+                        emptyProfileNavigationRow(icon: "circle.lefthalf.filled", title: "主题外观", trailingText: "浅色模式", showDivider: false)
                     }
                 }
                 .padding(.horizontal, 18)
@@ -514,6 +660,31 @@ struct ProfileView: View {
             .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.large)
         }
+    }
+
+    @ViewBuilder
+    private func emptyProfileNavigationRow(
+        icon: String,
+        title: String,
+        trailingText: String? = nil,
+        showDivider: Bool
+    ) -> some View {
+        NavigationLink {
+            EmptyProfileDetailView()
+                .sleepDetailChrome(tabBarVisibility)
+        } label: {
+            ProfileRowView(icon: icon, title: title, trailingText: trailingText, showDivider: showDivider)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct EmptyProfileDetailView: View {
+    var body: some View {
+        AppTheme.pageBackground
+            .ignoresSafeArea()
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
 
