@@ -599,7 +599,7 @@ struct ProfileView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     NavigationLink {
-                        EmptyProfileDetailView()
+                        SleepGoalDetailView()
                             .sleepDetailChrome(tabBarVisibility)
                     } label: {
                         ProfileSummaryView()
@@ -607,6 +607,8 @@ struct ProfileView: View {
                     .buttonStyle(.plain)
 
                     ProfileSection {
+                        emptyProfileNavigationRow(icon: "calendar", title: "日历", showDivider: true)
+
                         NavigationLink {
                             SleepTrackingDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
@@ -616,7 +618,7 @@ struct ProfileView: View {
                         .buttonStyle(.plain)
 
                         NavigationLink {
-                            SleepProgressView()
+                            EmptyProfileDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "moon.stars", title: "早睡计划", showDivider: true)
@@ -679,6 +681,359 @@ struct ProfileView: View {
     }
 }
 
+private struct SleepGoalDetailView: View {
+    @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
+    @AppStorage("sleepGoal.weekendSelection") private var weekendSelection = "1,7"
+    @AppStorage("sleepGoal.workdayBedtime") private var workdayBedtime = 23 * 60
+    @AppStorage("sleepGoal.workdayWakeTime") private var workdayWakeTime = 7 * 60
+    @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
+    @AppStorage("sleepGoal.weekendWakeTime") private var weekendWakeTime = 7 * 60
+    @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
+    @State private var editingGroup: SleepGoalGroup?
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 18) {
+                SleepGoalCard(
+                    title: "工作日",
+                    selectedDays: workdayDays,
+                    bedtime: minutesBinding(for: $workdayBedtime),
+                    wakeTime: minutesBinding(for: $workdayWakeTime),
+                    onSelectDays: { editingGroup = .workday }
+                )
+
+                SleepGoalCard(
+                    title: "周末",
+                    selectedDays: weekendDays,
+                    bedtime: minutesBinding(for: $weekendBedtime),
+                    wakeTime: minutesBinding(for: $weekendWakeTime),
+                    onSelectDays: { editingGroup = .weekend }
+                )
+
+                SleepGoalDeviationSection(selection: $allowedDeviation)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+            .padding(.bottom, 40)
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("睡眠目标")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editingGroup) { group in
+            weekdaySheet(for: group)
+        }
+    }
+
+    @ViewBuilder
+    private func weekdaySheet(for group: SleepGoalGroup) -> some View {
+        if group == .workday {
+            SleepGoalWeekdaySheet(
+                title: "工作日",
+                selectedDays: workdayDays,
+                onToggleDay: toggleWorkday
+            )
+        } else {
+            SleepGoalWeekdaySheet(
+                title: "周末",
+                selectedDays: weekendDays,
+                onToggleDay: toggleWeekend
+            )
+        }
+    }
+
+    private var workdayDays: Set<Int> {
+        decodedDays(workdaySelection)
+    }
+
+    private var weekendDays: Set<Int> {
+        decodedDays(weekendSelection)
+    }
+
+    private func toggleWorkday(_ day: Int) {
+        var workdays = workdayDays
+        var weekends = weekendDays
+        if workdays.contains(day) {
+            workdays.remove(day)
+        } else {
+            workdays.insert(day)
+            weekends.remove(day)
+        }
+        workdaySelection = encodedDays(workdays)
+        weekendSelection = encodedDays(weekends)
+    }
+
+    private func toggleWeekend(_ day: Int) {
+        var workdays = workdayDays
+        var weekends = weekendDays
+        if weekends.contains(day) {
+            weekends.remove(day)
+        } else {
+            weekends.insert(day)
+            workdays.remove(day)
+        }
+        workdaySelection = encodedDays(workdays)
+        weekendSelection = encodedDays(weekends)
+    }
+
+    private func decodedDays(_ value: String) -> Set<Int> {
+        Set(value.split(separator: ",").compactMap { Int($0) })
+    }
+
+    private func encodedDays(_ days: Set<Int>) -> String {
+        days.sorted().map(String.init).joined(separator: ",")
+    }
+
+    private func minutesBinding(for storage: Binding<Int>) -> Binding<Date> {
+        Binding(
+            get: {
+                let minutes = storage.wrappedValue
+                return Calendar.current.date(
+                    bySettingHour: minutes / 60,
+                    minute: minutes % 60,
+                    second: 0,
+                    of: Date()
+                ) ?? Date()
+            },
+            set: { date in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                storage.wrappedValue = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+            }
+        )
+    }
+}
+
+private struct SleepGoalDeviationSection: View {
+    @Binding var selection: Int
+
+    private let options = [0, 5, 10, 15, 20, 30, 45, 60]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.48, green: 0.40, blue: 0.76))
+                    .frame(width: 30)
+
+                Text("允许偏差")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 8)
+
+                Menu {
+                    ForEach(options, id: \.self) { minutes in
+                        Button {
+                            selection = minutes
+                        } label: {
+                            if selection == minutes {
+                                Label("\(minutes) 分钟", systemImage: "checkmark")
+                            } else {
+                                Text("\(minutes) 分钟")
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("\(selection) 分钟")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                    }
+                }
+            }
+            .frame(height: 58)
+            .padding(.horizontal, 18)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            Text("系统将结合睡眠目标与允许偏差，判断睡眠记录是否属于晚睡或早起。")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 4)
+        }
+    }
+}
+
+private enum SleepGoalGroup: String, Identifiable {
+    case workday
+    case weekend
+
+    var id: String { rawValue }
+}
+
+private struct SleepGoalCard: View {
+    let title: String
+    let selectedDays: Set<Int>
+    @Binding var bedtime: Date
+    @Binding var wakeTime: Date
+    let onSelectDays: () -> Void
+
+    private let days = [
+        (id: 2, title: "一"),
+        (id: 3, title: "二"),
+        (id: 4, title: "三"),
+        (id: 5, title: "四"),
+        (id: 6, title: "五"),
+        (id: 7, title: "六"),
+        (id: 1, title: "日")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.primary)
+
+            VStack(spacing: 0) {
+                Button(action: onSelectDays) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundStyle(AppTheme.accent)
+                            .frame(width: 30)
+
+                        Text("星期")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        Spacer(minLength: 8)
+
+                        Text(selectedDaysText)
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                    }
+                    .frame(height: 50)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                SleepGoalTimeRow(
+                    icon: "moon.fill",
+                    iconColor: Color(red: 0.20, green: 0.47, blue: 0.95),
+                    title: "目标就寝时间",
+                    selection: $bedtime
+                )
+
+                SleepGoalTimeRow(
+                    icon: "sun.horizon.fill",
+                    iconColor: Color(red: 0.96, green: 0.58, blue: 0.18),
+                    title: "目标起床时间",
+                    selection: $wakeTime
+                )
+            }
+            .padding(.horizontal, 16)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+
+    private var selectedDaysText: String {
+        let selected = days.filter { selectedDays.contains($0.id) }
+        if selected.map(\.id) == [2, 3, 4, 5, 6] { return "周一至周五" }
+        if selected.map(\.id) == [7, 1] { return "周六、周日" }
+        if selected.isEmpty { return "未选择日期" }
+        return selected.map { "周\($0.title)" }.joined(separator: " ")
+    }
+}
+
+private struct SleepGoalWeekdaySheet: View {
+    let title: String
+    let selectedDays: Set<Int>
+    let onToggleDay: (Int) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private let days = [
+        (id: 2, title: "周一"),
+        (id: 3, title: "周二"),
+        (id: 4, title: "周三"),
+        (id: 5, title: "周四"),
+        (id: 6, title: "周五"),
+        (id: 7, title: "周六"),
+        (id: 1, title: "周日")
+    ]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
+                    Button {
+                        onToggleDay(day.id)
+                    } label: {
+                        HStack {
+                            Text(day.title)
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if selectedDays.contains(day.id) {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(AppTheme.accent)
+                            }
+                        }
+                        .frame(height: 54)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < days.count - 1 {
+                        Divider()
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .background(Color.white)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private struct SleepGoalTimeRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    @Binding var selection: Date
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 30)
+
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.primary)
+
+            Spacer(minLength: 8)
+
+            DatePicker("", selection: $selection, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .environment(\.locale, Locale(identifier: "zh_CN"))
+                .tint(AppTheme.accent)
+        }
+        .frame(height: 58)
+    }
+}
+
 private struct EmptyProfileDetailView: View {
     var body: some View {
         AppTheme.pageBackground
@@ -704,7 +1059,7 @@ private struct ProfileCardSurface: ViewModifier {
 
 private struct ProfileSummaryView: View {
     var body: some View {
-        ProfileRowView(icon: "moon.zzz", title: "睡眠档案", showDivider: false)
+        ProfileRowView(icon: "moon.zzz", title: "睡眠目标", showDivider: false)
             .modifier(ProfileCardSurface())
     }
 }
