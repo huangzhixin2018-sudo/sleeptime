@@ -7,8 +7,10 @@ import SwiftUI
 import UIKit
 
 struct ContentView: View {
+    @State private var selectedTab: AppTab = .home
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             VStack {
                 Image(systemName: "moon.stars.fill")
                     .imageScale(.large)
@@ -20,16 +22,50 @@ struct ContentView: View {
             .tabItem {
                 Label("首页", systemImage: "moon.stars.fill")
             }
+            .tag(AppTab.home)
             
             SleepProgressView()
             .tabItem {
                 Label("计划", systemImage: "star.fill")
             }
+            .tag(AppTab.plan)
             
             ProfileView()
             .tabItem {
                 Label("我的", systemImage: "person.fill")
             }
+            .tag(AppTab.profile)
+        }
+        .onChange(of: selectedTab) {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.8)
+        }
+    }
+}
+
+private enum AppTab: CaseIterable {
+    case home
+    case plan
+    case profile
+
+    var title: String {
+        switch self {
+        case .home:
+            return "首页"
+        case .plan:
+            return "计划"
+        case .profile:
+            return "我的"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .home:
+            return "moon.stars.fill"
+        case .plan:
+            return "star.fill"
+        case .profile:
+            return "person.fill"
         }
     }
 }
@@ -143,7 +179,7 @@ struct SleepProgressView: View {
                     // 标题区 (去掉返回箭头)
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("夜猫子改造营")
+                            Text("21天早睡计划")
                                 .font(.system(size: 28, weight: .black))
                                 .tracking(-0.5) // 字距微调，更紧凑
                                 .foregroundColor(.primary)
@@ -268,7 +304,7 @@ struct PlanShareImageView: View {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("夜猫子改造营")
+                        Text("21天早睡计划")
                             .font(.system(size: 28, weight: .black))
                             .foregroundColor(.primary)
 
@@ -327,7 +363,7 @@ struct PlanShareImageView: View {
 
                 SleepDistributionCardView()
 
-                HabitStreakView()
+                HabitStreakView(renderForExport: true)
 
                 EarlySleepDayGridView()
                     .padding(.horizontal, 16)
@@ -432,66 +468,84 @@ struct BadgeProgressCard: View {
 struct ProfileView: View {
     var body: some View {
         NavigationStack {
-            ZStack {
-                // 背景色：保持我们的燕麦白
-                Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // 独立卡片：睡眠追踪
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    ProfileSummaryView()
+
+                    ProfileSection {
                         NavigationLink(destination: SleepTrackingDetailView()) {
-                            ProfileRowView(icon: "chart.xyaxis.line", title: "睡眠追踪", showDivider: false)
+                            ProfileRowView(icon: "chart.xyaxis.line", title: "睡眠追踪", showDivider: true)
                         }
                         .buttonStyle(.plain)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(20)
-                        
-                        // 分组卡片：设置组
-                        VStack(spacing: 0) {
-                            NavigationLink(destination: AnnualGoalView()) {
-                                ProfileRowView(icon: "gearshape", title: "年度目标", showDivider: false)
-                            }
-                            .buttonStyle(.plain)
-                            
-                            NavigationLink(destination: SleepDistributionView()) {
-                                ProfileRowView(icon: "chart.bar.fill", title: "入睡分布", showDivider: false)
-                            }
-                            .buttonStyle(.plain)
-                            
-                            ProfileRowView(icon: "tag", title: "标签管理", showDivider: false)
-                            ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
+
+                        NavigationLink(destination: SleepProgressView()) {
+                            ProfileRowView(icon: "moon.stars", title: "早睡计划", showDivider: true)
                         }
-                        .background(Color(.systemBackground))
-                        .cornerRadius(20)
-                        
-                        // 分组卡片：偏好组
-                        VStack(spacing: 0) {
-                            ProfileRowView(icon: "bell", title: "通知", trailingText: "未开启", showDivider: false)
-                            ProfileRowView(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: false)
-                            ProfileRowView(icon: "paintbrush", title: "主题外观", trailingText: "浅色模式", showDivider: false)
+                        .buttonStyle(.plain)
+
+                        NavigationLink(destination: AnnualGoalView()) {
+                            ProfileRowView(icon: "target", title: "年度目标", showDivider: true)
                         }
-                        .background(Color(.systemBackground))
-                        .cornerRadius(20)
+                        .buttonStyle(.plain)
+
+                        NavigationLink(destination: SleepDistributionView()) {
+                            ProfileRowView(icon: "chart.bar.fill", title: "入睡分布", showDivider: false)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 32)
+
+                    ProfileSection {
+                        ProfileRowView(icon: "tag", title: "标签管理", showDivider: true)
+                        ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
+                    }
+
+                    ProfileSection {
+                        ProfileRowView(icon: "bell", title: "通知", trailingText: "未开启", showDivider: true)
+                        ProfileRowView(icon: "square.grid.2x2", title: "小组件", showDivider: true)
+                        ProfileRowView(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
+                        ProfileRowView(icon: "circle.lefthalf.filled", title: "主题外观", trailingText: "浅色模式", showDivider: false)
+                    }
                 }
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
+            .background(AppTheme.pageBackground.ignoresSafeArea())
             .navigationTitle("我的")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        // 设置动作
-                    }) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
-                }
-            }
+            .navigationBarTitleDisplayMode(.large)
         }
+    }
+}
+
+private enum AppTheme {
+    static let pageBackground = Color(red: 0.97, green: 0.97, blue: 0.98)
+    static let accent = Color(red: 0.16, green: 0.16, blue: 0.18)
+}
+
+private struct ProfileCardSurface: ViewModifier {
+    private let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+
+    func body(content: Content) -> some View {
+        content
+            .background(Color.white, in: shape)
+    }
+}
+
+private struct ProfileSummaryView: View {
+    var body: some View {
+        ProfileRowView(icon: "moon.zzz", title: "睡眠档案", showDivider: false)
+            .modifier(ProfileCardSurface())
+    }
+}
+
+private struct ProfileSection<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+        }
+        .modifier(ProfileCardSurface())
     }
 }
 
@@ -503,35 +557,36 @@ struct ProfileRowView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 16) {
+            HStack(spacing: 13) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(.primary)
-                    .frame(width: 24) // 统一图标宽度以便文字对齐
+                    .font(.system(size: 19, weight: .regular))
+                    .foregroundStyle(AppTheme.accent)
+                    .frame(width: 34, height: 34)
                 
                 Text(title)
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(.primary)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(.primary)
                 
                 Spacer()
                 
                 if let trailingText = trailingText {
                     Text(trailingText)
                         .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(Color(UIColor.tertiaryLabel))
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Color(uiColor: .tertiaryLabel))
             }
-            .padding(.vertical, 16)
-            .padding(.horizontal, 20)
-            .contentShape(Rectangle()) // 保证整行可点击
+            .frame(minHeight: 58)
+            .padding(.horizontal, 16)
+            .contentShape(Rectangle())
             
             if showDivider {
                 Divider()
-                    .padding(.leading, 60) // 分割线与文字左对齐
+                    .padding(.leading, 63)
             }
         }
     }
@@ -724,52 +779,60 @@ struct DashedLine: Shape {
 
 // MARK: - 连续规律记录组件 (横向滚动卡片)
 struct HabitStreakView: View {
+    let renderForExport: Bool
+
+    init(renderForExport: Bool = false) {
+        self.renderForExport = renderForExport
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("连续趋势")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
             .padding(.horizontal, 16)
-            
-            // 横向滑动的卡片列表
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    // 高亮激活的卡片
-                    HabitCard(
-                        title: "连续早睡",
-                        count: "3天",
-                        dateRange: "8.29 - 8.31",
-                        isActive: true,
-                        themeColor: Color(red: 0.95, green: 0.77, blue: 0.2) // 明黄色
-                    )
-                    
-                    // 黑色未激活卡片
-                    HabitCard(
-                        title: "连续熬夜",
-                        count: "2天",
-                        dateRange: "8.25 - 8.26",
-                        isActive: false,
-                        themeColor: Color(red: 0.82, green: 0.95, blue: 0.84)
-                    )
-                    
-                    HabitCard(
-                        title: "连续早睡",
-                        count: "2天",
-                        dateRange: "8.22 - 8.23",
-                        isActive: false,
-                        themeColor: Color(red: 0.2, green: 0.8, blue: 0.5) // 翠绿色
-                    )
-                    
-                    HabitCard(
-                        title: "午休",
-                        count: "1天",
-                        dateRange: "8.21",
-                        isActive: false,
-                        themeColor: Color(red: 0.3, green: 0.6, blue: 0.9) // 亮蓝色
-                    )
-                }
-                .padding(.horizontal, 16)
-                // 左右边缘留白
+
+            if renderForExport {
+                trendCards(cardWidth: 140)
+                    .padding(.horizontal, 16)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    trendCards(cardWidth: 140)
+                    }
+                    .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private func trendCards(cardWidth: CGFloat) -> some View {
+        HStack(spacing: 12) {
+            HabitCard(
+                title: "连续早睡",
+                count: "3天",
+                dateRange: "8.29 - 8.31",
+                isActive: true,
+                themeColor: Color(red: 0.95, green: 0.77, blue: 0.2),
+                width: cardWidth
+            )
+
+            HabitCard(
+                title: "连续熬夜",
+                count: "2天",
+                dateRange: "8.25 - 8.26",
+                isActive: false,
+                themeColor: Color(red: 0.82, green: 0.95, blue: 0.84),
+                width: cardWidth
+            )
+
+            if !renderForExport {
+                HabitCard(
+                    title: "早睡",
+                    count: "1天",
+                    dateRange: "8.24",
+                    isActive: false,
+                    themeColor: Color(red: 0.95, green: 0.77, blue: 0.2),
+                    width: cardWidth
+                )
             }
         }
     }
@@ -781,6 +844,7 @@ struct HabitCard: View {
     let dateRange: String
     let isActive: Bool
     let themeColor: Color
+    let width: CGFloat
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -811,9 +875,11 @@ struct HabitCard: View {
             Text(dateRange)
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(Color(UIColor.secondaryLabel))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .padding(16)
-        .frame(width: 140, height: 150, alignment: .topLeading)
+        .frame(width: width, height: 150, alignment: .topLeading)
         .background(Color.white) // 统一采用干净的纯白底色
         .cornerRadius(24)
     }
@@ -827,9 +893,17 @@ struct EarlySleepDayGridView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("21天早睡计划")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.primary)
+            HStack(alignment: .firstTextBaseline) {
+                Text("21天早睡计划")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+
+                Spacer(minLength: 8)
+
+                Text("8月26日 - 9月15日")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
 
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(1...totalDays, id: \.self) { day in
@@ -914,7 +988,7 @@ struct DayTimelineCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 20) {
-                Text("时间规划")
+                Text("入睡准备")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.primary)
 
@@ -1097,7 +1171,7 @@ struct SleepDistributionCardView: View {
                                     
                                     Text(category.1)
                                         .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(Color(UIColor.tertiaryLabel))
+                                        .foregroundColor(.primary)
                                 }
                                 
                                 Spacer()
