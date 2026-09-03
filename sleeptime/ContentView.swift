@@ -689,7 +689,9 @@ private struct SleepGoalDetailView: View {
     @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
     @AppStorage("sleepGoal.weekendWakeTime") private var weekendWakeTime = 7 * 60
     @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
+    @AppStorage("sleepSettings.intervals") private var encodedIntervals = ""
     @State private var editingGroup: SleepGoalGroup?
+    @State private var isEditingIntervals = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -711,16 +713,28 @@ private struct SleepGoalDetailView: View {
                 )
 
                 SleepGoalDeviationSection(selection: $allowedDeviation)
+
+                SleepIntervalSection(
+                    intervals: sleepIntervals,
+                    onEdit: { isEditingIntervals = true }
+                )
             }
             .padding(.horizontal, 18)
             .padding(.top, 18)
             .padding(.bottom, 40)
         }
         .background(AppTheme.pageBackground.ignoresSafeArea())
-        .navigationTitle("睡眠目标")
+        .navigationTitle("睡眠设置")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $editingGroup) { group in
             weekdaySheet(for: group)
+        }
+        .sheet(isPresented: $isEditingIntervals) {
+            SleepIntervalEditorSheet(intervals: sleepIntervals) { intervals in
+                guard let data = try? JSONEncoder().encode(intervals),
+                      let value = String(data: data, encoding: .utf8) else { return }
+                encodedIntervals = value
+            }
         }
     }
 
@@ -747,6 +761,15 @@ private struct SleepGoalDetailView: View {
 
     private var weekendDays: Set<Int> {
         decodedDays(weekendSelection)
+    }
+
+    private var sleepIntervals: [SleepInterval] {
+        guard let data = encodedIntervals.data(using: .utf8),
+              let intervals = try? JSONDecoder().decode([SleepInterval].self, from: data),
+              intervals.count == 5 else {
+            return SleepInterval.defaults
+        }
+        return intervals
     }
 
     private func toggleWorkday(_ day: Int) {
@@ -797,6 +820,201 @@ private struct SleepGoalDetailView: View {
             set: { date in
                 let components = Calendar.current.dateComponents([.hour, .minute], from: date)
                 storage.wrappedValue = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+            }
+        )
+    }
+}
+
+private struct SleepInterval: Identifiable, Codable, Equatable {
+    var id: UUID = UUID()
+    var name: String
+    var startMinutes: Int
+    var endMinutes: Int
+
+    static let defaults = [
+        SleepInterval(name: "早睡", startMinutes: 20 * 60, endMinutes: 22 * 60),
+        SleepInterval(name: "正常入睡", startMinutes: 22 * 60, endMinutes: 23 * 60 + 30),
+        SleepInterval(name: "轻度晚睡", startMinutes: 23 * 60 + 30, endMinutes: 30),
+        SleepInterval(name: "晚睡", startMinutes: 30, endMinutes: 2 * 60),
+        SleepInterval(name: "深夜入睡", startMinutes: 2 * 60, endMinutes: 6 * 60)
+    ]
+}
+
+private struct SleepIntervalSection: View {
+    let intervals: [SleepInterval]
+    let onEdit: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("睡眠区间")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Button("修改", action: onEdit)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(AppTheme.accent)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(Array(intervals.enumerated()), id: \.element.id) { index, interval in
+                    HStack(spacing: 12) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color(uiColor: .secondaryLabel))
+                            .frame(width: 26)
+
+                        Text(interval.name)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        Spacer(minLength: 8)
+
+                        Text("\(timeText(interval.startMinutes))–\(timeText(interval.endMinutes))")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(height: 52)
+
+                    if index < intervals.count - 1 {
+                        Divider()
+                            .padding(.leading, 38)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+
+    private func timeText(_ minutes: Int) -> String {
+        String(format: "%02d:%02d", minutes / 60, minutes % 60)
+    }
+}
+
+private struct SleepIntervalEditorSheet: View {
+    let onSave: ([SleepInterval]) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var intervals: [SleepInterval]
+
+    init(intervals: [SleepInterval], onSave: @escaping ([SleepInterval]) -> Void) {
+        self.onSave = onSave
+        _intervals = State(initialValue: intervals)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 14) {
+                    ForEach($intervals) { $interval in
+                        SleepIntervalEditCard(interval: $interval)
+                    }
+                }
+                .padding(18)
+                .padding(.bottom, 24)
+            }
+            .background(AppTheme.pageBackground.ignoresSafeArea())
+            .navigationTitle("修改睡眠区间")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        onSave(intervals)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(!canSave)
+                }
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    private var canSave: Bool {
+        intervals.allSatisfy {
+            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            $0.startMinutes != $0.endMinutes
+        } && !hasOverlappingIntervals
+    }
+
+    private var hasOverlappingIntervals: Bool {
+        let ranges = intervals.map(splitRanges)
+        for firstIndex in intervals.indices {
+            for secondIndex in intervals.indices where secondIndex > firstIndex {
+                if ranges[firstIndex].contains(where: { first in
+                    ranges[secondIndex].contains(where: { second in
+                        first.lowerBound < second.upperBound && second.lowerBound < first.upperBound
+                    })
+                }) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    private func splitRanges(_ interval: SleepInterval) -> [Range<Int>] {
+        if interval.endMinutes > interval.startMinutes {
+            return [interval.startMinutes..<interval.endMinutes]
+        }
+        return [interval.startMinutes..<1440, 0..<interval.endMinutes]
+    }
+}
+
+private struct SleepIntervalEditCard: View {
+    @Binding var interval: SleepInterval
+
+    var body: some View {
+        VStack(spacing: 12) {
+            TextField("区间名称", text: $interval.name)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.primary)
+
+            HStack(spacing: 10) {
+                intervalTimeField(title: "开始", minutes: $interval.startMinutes)
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                intervalTimeField(title: "结束", minutes: $interval.endMinutes)
+            }
+        }
+        .padding(16)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private func intervalTimeField(title: String, minutes: Binding<Int>) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            DatePicker("", selection: dateBinding(minutes), displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .environment(\.locale, Locale(identifier: "zh_CN"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func dateBinding(_ minutes: Binding<Int>) -> Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(
+                    bySettingHour: minutes.wrappedValue / 60,
+                    minute: minutes.wrappedValue % 60,
+                    second: 0,
+                    of: Date()
+                ) ?? Date()
+            },
+            set: { date in
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                minutes.wrappedValue = (components.hour ?? 0) * 60 + (components.minute ?? 0)
             }
         )
     }
@@ -1059,7 +1277,7 @@ private struct ProfileCardSurface: ViewModifier {
 
 private struct ProfileSummaryView: View {
     var body: some View {
-        ProfileRowView(icon: "moon.zzz", title: "睡眠目标", showDivider: false)
+        ProfileRowView(icon: "moon.zzz", title: "睡眠设置", showDivider: false)
             .modifier(ProfileCardSurface())
     }
 }
