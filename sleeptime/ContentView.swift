@@ -608,6 +608,28 @@ struct ProfileView: View {
 
                     ProfileSection {
                         NavigationLink {
+                            EarlySleepPlanDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "moon.stars", title: "早睡计划", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+
+                        emptyProfileNavigationRow(icon: "alarm", title: "闹钟提醒", trailingText: "未开启", showDivider: true)
+                        NavigationLink {
+                            WidgetGalleryDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "square.grid.2x2", title: "小组件", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+                        emptyProfileNavigationRow(icon: "lock", title: "应用锁", trailingText: "未开启", showDivider: true)
+                        emptyProfileNavigationRow(icon: "person.crop.circle", title: "名人作息", showDivider: true)
+                        emptyProfileNavigationRow(icon: "note.text", title: "睡眠札记", showDivider: false)
+                    }
+
+                    ProfileSection {
+                        NavigationLink {
                             CalendarDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
@@ -620,14 +642,6 @@ struct ProfileView: View {
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "chart.xyaxis.line", title: "睡眠追踪", showDivider: true)
-                        }
-                        .buttonStyle(.plain)
-
-                        NavigationLink {
-                            EmptyProfileDetailView()
-                                .sleepDetailChrome(tabBarVisibility)
-                        } label: {
-                            ProfileRowView(icon: "moon.stars", title: "早睡计划", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
@@ -654,8 +668,6 @@ struct ProfileView: View {
                     }
 
                     ProfileSection {
-                        emptyProfileNavigationRow(icon: "bell", title: "通知", trailingText: "未开启", showDivider: true)
-                        emptyProfileNavigationRow(icon: "square.grid.2x2", title: "小组件", showDivider: true)
                         emptyProfileNavigationRow(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
                         emptyProfileNavigationRow(icon: "circle.lefthalf.filled", title: "主题外观", trailingText: "浅色模式", showDivider: false)
                     }
@@ -1277,6 +1289,317 @@ private struct EmptyProfileDetailView: View {
             .ignoresSafeArea()
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct WidgetGalleryDetailView: View {
+    @AppStorage("widget.sleepCheckIn.completed") private var isSleepCheckedIn = false
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
+    ]
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            let progress = WidgetTimeProgress(date: context.date)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    Label("小尺寸", systemImage: "square")
+                        .font(.system(size: 21, weight: .semibold))
+                        .foregroundStyle(.primary)
+
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 14) {
+                        WidgetProgressCard(
+                            title: progress.dateTitle,
+                            percentage: progress.dayPercentage,
+                            remainingText: progress.remainingHoursText,
+                            columns: 6,
+                            rows: 4,
+                            progress: progress.dayProgress
+                        )
+
+                        WidgetProgressCard(
+                            title: progress.timeTitle,
+                            percentage: progress.minutePercentage,
+                            remainingText: progress.remainingMinutesText,
+                            columns: 10,
+                            rows: 6,
+                            progress: progress.minuteProgress
+                        )
+
+                        SleepCheckInWidgetCard(
+                            date: context.date,
+                            isCheckedIn: $isSleepCheckedIn
+                        )
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 32)
+            }
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("小组件")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct SleepCheckInWidgetCard: View {
+    let date: Date
+    @Binding var isCheckedIn: Bool
+
+    var body: some View {
+        WidgetSquareCard {
+            VStack(alignment: .center, spacing: 0) {
+                Text("入睡时间")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                Spacer(minLength: 10)
+
+                Text(timeText)
+                    .font(.system(size: 38, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Spacer(minLength: 10)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isCheckedIn.toggle()
+                    }
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
+                } label: {
+                    Text(isCheckedIn ? "已打卡" : "晚安打卡")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(isCheckedIn ? Color.secondary : Color.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(
+                            isCheckedIn ? Color(uiColor: .systemGray5) : Color.primary,
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var timeText: String {
+        let calendar = Calendar.current
+        return String(
+            format: "%02d:%02d",
+            calendar.component(.hour, from: date),
+            calendar.component(.minute, from: date)
+        )
+    }
+}
+
+private struct WidgetProgressCard: View {
+    let title: String
+    let percentage: Int
+    let remainingText: String
+    let columns: Int
+    let rows: Int
+    let progress: Double
+
+    var body: some View {
+        WidgetSquareCard {
+            VStack(spacing: 0) {
+                HStack {
+                    Text(title)
+                    Spacer()
+                    Text("\(percentage)%")
+                }
+                .font(.system(size: 16, weight: .semibold))
+
+                Spacer(minLength: 16)
+
+                WidgetDotGrid(columns: columns, rows: rows, progress: progress)
+
+                Spacer(minLength: 16)
+
+                Text(remainingText)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+private struct WidgetSquareCard<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                content
+                    .padding(18)
+            }
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+private struct WidgetDotGrid: View {
+    let columns: Int
+    let rows: Int
+    let progress: Double
+
+    var body: some View {
+        GeometryReader { geometry in
+            let horizontalSpacing = columns > 1 ? (geometry.size.width - CGFloat(columns * 7)) / CGFloat(columns - 1) : 0
+            let verticalSpacing = rows > 1 ? (geometry.size.height - CGFloat(rows * 7)) / CGFloat(rows - 1) : 0
+            let total = columns * rows
+            let filled = progress * Double(total)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.fixed(7), spacing: horizontalSpacing), count: columns),
+                spacing: verticalSpacing
+            ) {
+                ForEach(0..<total, id: \.self) { index in
+                    Circle()
+                        .fill(dotColor(at: index, filled: filled))
+                        .frame(width: 7, height: 7)
+                }
+            }
+        }
+        .frame(height: rows == 4 ? 54 : 66)
+    }
+
+    private func dotColor(at index: Int, filled: Double) -> Color {
+        if Double(index + 1) <= filled {
+            return .primary
+        }
+        if Double(index) < filled {
+            return Color(uiColor: .systemGray2)
+        }
+        return Color(uiColor: .systemGray5)
+    }
+}
+
+private struct WidgetTimeProgress {
+    let date: Date
+    private let calendar = Calendar.current
+
+    private var minutesElapsed: Int {
+        calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+    }
+
+    var dayProgress: Double { Double(minutesElapsed) / 1_440 }
+    var minuteProgress: Double { Double(calendar.component(.second, from: date)) / 60 }
+    var dayPercentage: Int { Int(dayProgress * 100) }
+    var minutePercentage: Int { Int(minuteProgress * 100) }
+    var remainingHoursText: String { "还剩 \((1_440 - minutesElapsed + 59) / 60) 小时" }
+    var remainingMinutesText: String { "还剩 \(60 - calendar.component(.second, from: date)) 分钟" }
+
+    var dateTitle: String {
+        "\(calendar.component(.month, from: date))月\(calendar.component(.day, from: date))日"
+    }
+
+    var timeTitle: String {
+        String(format: "%02d:%02d", calendar.component(.hour, from: date), calendar.component(.minute, from: date))
+    }
+}
+
+private struct EarlySleepPlanDetailView: View {
+    private let plans = [
+        EarlySleepPlan(
+            title: "循序早睡",
+            subtitle: "慢慢提前入睡时间，让身体自然适应新节奏",
+            icon: "clock.arrow.circlepath",
+            color: Color(red: 0.23, green: 0.48, blue: 0.95)
+        ),
+        EarlySleepPlan(
+            title: "固定作息",
+            subtitle: "稳定每天的入睡时间，建立更规律的睡眠习惯",
+            icon: "moon.stars.fill",
+            color: Color(red: 0.43, green: 0.35, blue: 0.88)
+        ),
+        EarlySleepPlan(
+            title: "睡前放松",
+            subtitle: "留出安静的睡前时间，帮助身心平稳入睡",
+            icon: "wind",
+            color: Color(red: 0.13, green: 0.66, blue: 0.55)
+        ),
+        EarlySleepPlan(
+            title: "减少睡前用机",
+            subtitle: "提前放下手机，减少屏幕对入睡状态的影响",
+            icon: "iphone.slash",
+            color: Color(red: 0.95, green: 0.48, blue: 0.22)
+        )
+    ]
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 14) {
+                ForEach(plans) { plan in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
+                    } label: {
+                        EarlySleepPlanCard(plan: plan)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("早睡计划")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+private struct EarlySleepPlan: Identifiable {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+
+    var id: String { title }
+}
+
+private struct EarlySleepPlanCard: View {
+    let plan: EarlySleepPlan
+
+    var body: some View {
+        HStack(spacing: 15) {
+            Image(systemName: plan.icon)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 52, height: 52)
+                .background(plan.color, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(plan.title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Text(plan.subtitle)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color(uiColor: .tertiaryLabel))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 17)
+        .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
