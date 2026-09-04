@@ -607,7 +607,13 @@ struct ProfileView: View {
                     .buttonStyle(.plain)
 
                     ProfileSection {
-                        emptyProfileNavigationRow(icon: "calendar", title: "日历", showDivider: true)
+                        NavigationLink {
+                            CalendarDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "calendar", title: "日历", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
 
                         NavigationLink {
                             SleepTrackingDetailView()
@@ -695,9 +701,13 @@ private struct SleepGoalDetailView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 18) {
+            VStack(spacing: 24) {
+                SleepGoalDeviationSection(selection: $allowedDeviation)
+
                 SleepGoalCard(
                     title: "工作日",
+                    icon: "briefcase.fill",
+                    iconColor: Color(red: 0.20, green: 0.47, blue: 0.95),
                     selectedDays: workdayDays,
                     bedtime: minutesBinding(for: $workdayBedtime),
                     wakeTime: minutesBinding(for: $workdayWakeTime),
@@ -706,13 +716,13 @@ private struct SleepGoalDetailView: View {
 
                 SleepGoalCard(
                     title: "周末",
+                    icon: "sparkles",
+                    iconColor: Color(red: 0.18, green: 0.68, blue: 0.45),
                     selectedDays: weekendDays,
                     bedtime: minutesBinding(for: $weekendBedtime),
                     wakeTime: minutesBinding(for: $weekendWakeTime),
                     onSelectDays: { editingGroup = .weekend }
                 )
-
-                SleepGoalDeviationSection(selection: $allowedDeviation)
 
                 SleepIntervalSection(
                     intervals: sleepIntervals,
@@ -720,7 +730,7 @@ private struct SleepGoalDetailView: View {
                 )
             }
             .padding(.horizontal, 18)
-            .padding(.top, 18)
+            .padding(.top, 20)
             .padding(.bottom, 40)
         }
         .background(AppTheme.pageBackground.ignoresSafeArea())
@@ -845,48 +855,58 @@ private struct SleepIntervalSection: View {
     let onEdit: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("睡眠区间")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                Button("修改", action: onEdit)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(AppTheme.accent)
-            }
-
-            VStack(spacing: 0) {
-                ForEach(Array(intervals.enumerated()), id: \.element.id) { index, interval in
-                    HStack(spacing: 12) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color(uiColor: .secondaryLabel))
-                            .frame(width: 26)
-
-                        Text(interval.name)
-                            .font(.system(size: 16, weight: .medium))
+        VStack(spacing: 0) {
+            Button(action: onEdit) {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("睡眠时段")
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.primary)
 
-                        Spacer(minLength: 8)
-
-                        Text("\(timeText(interval.startMinutes))–\(timeText(interval.endMinutes))")
-                            .font(.system(size: 15))
+                        Text("用于统计睡眠分布和看见作息规律")
+                            .font(.system(size: 14))
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .frame(height: 52)
 
-                    if index < intervals.count - 1 {
-                        Divider()
-                            .padding(.leading, 38)
-                    }
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 15)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+                .padding(.leading, 16)
+
+            ForEach(Array(intervals.enumerated()), id: \.element.id) { index, interval in
+                HStack(spacing: 12) {
+                    Text(interval.name)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.primary)
+
+                    Spacer(minLength: 8)
+
+                    Text("\(timeText(interval.startMinutes))–\(timeText(interval.endMinutes))")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .frame(height: 54)
+                .padding(.horizontal, 16)
+
+                if index < intervals.count - 1 {
+                    Divider()
+                        .padding(.leading, 16)
                 }
             }
-            .padding(.horizontal, 16)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func timeText(_ minutes: Int) -> String {
@@ -1026,7 +1046,7 @@ private struct SleepGoalDeviationSection: View {
     private let options = [0, 5, 10, 15, 20, 30, 45, 60]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 13) {
             HStack(spacing: 14) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 19, weight: .semibold))
@@ -1085,6 +1105,8 @@ private enum SleepGoalGroup: String, Identifiable {
 
 private struct SleepGoalCard: View {
     let title: String
+    let icon: String
+    let iconColor: Color
     let selectedDays: Set<Int>
     @Binding var bedtime: Date
     @Binding var wakeTime: Date
@@ -1101,20 +1123,16 @@ private struct SleepGoalCard: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-
+        VStack(alignment: .leading, spacing: 0) {
             VStack(spacing: 0) {
                 Button(action: onSelectDays) {
                     HStack(spacing: 14) {
-                        Image(systemName: "calendar")
+                        Image(systemName: icon)
                             .font(.system(size: 19, weight: .semibold))
-                            .foregroundStyle(AppTheme.accent)
+                            .foregroundStyle(iconColor)
                             .frame(width: 30)
 
-                        Text("星期")
+                        Text(title)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(.primary)
 
@@ -1148,6 +1166,7 @@ private struct SleepGoalCard: View {
                     title: "目标起床时间",
                     selection: $wakeTime
                 )
+
             }
             .padding(.horizontal, 16)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -1262,7 +1281,8 @@ private struct EmptyProfileDetailView: View {
 }
 
 private enum AppTheme {
-    static let pageBackground = Color(red: 0.97, green: 0.97, blue: 0.98)
+    static let pageBackground = Color(uiColor: .systemGroupedBackground)
+    static let cardBackground = Color(uiColor: .secondarySystemGroupedBackground)
     static let accent = Color(red: 0.16, green: 0.16, blue: 0.18)
 }
 
