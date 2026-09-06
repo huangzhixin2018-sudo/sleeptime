@@ -637,7 +637,13 @@ struct ProfileView: View {
                             )
                         }
                         .buttonStyle(.plain)
-                        emptyProfileNavigationRow(icon: "person.crop.circle", title: "名人作息", showDivider: true)
+                        NavigationLink {
+                            CelebrityRoutineView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "person.crop.circle", title: "名人作息", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
                         emptyProfileNavigationRow(icon: "note.text", title: "睡眠札记", showDivider: false)
                     }
 
@@ -670,7 +676,15 @@ struct ProfileView: View {
                             SleepDistributionView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
-                            ProfileRowView(icon: "chart.bar.fill", title: "入睡分布", showDivider: false)
+                            ProfileRowView(icon: "chart.bar.fill", title: "入睡分布", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            ClockDistributionView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "clock.badge.checkmark", title: "时钟分布", showDivider: false)
                         }
                         .buttonStyle(.plain)
                     }
@@ -2417,5 +2431,307 @@ struct SleepDistributionCardView: View {
             .cornerRadius(16)
             .padding(.horizontal, 16)
         }
+    }
+}
+
+// MARK: - 时钟分布 (Clock Distribution View)
+struct ClockDistributionView: View {
+    @State private var selectedTab: Int = 0 // 0: 入睡, 1: 起床
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 24) {
+                headerSection
+                
+                segmentedControl
+                
+                clockCanvasSection
+                
+                statCardsSection
+                
+                Spacer(minLength: 40)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+        }
+        .background(Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea())
+        .navigationTitle("时钟分布")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    @ViewBuilder
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("分钟级入睡与起床聚类图谱")
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
+                .tracking(1.5)
+            
+            Text("时钟分布")
+                .font(.system(size: 28, weight: .black))
+                .foregroundColor(.primary)
+            
+            Text("将21天的入睡与起床分钟映射至极坐标表盘，精准观测习惯集中度。")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundColor(Color(uiColor: .secondaryLabel))
+                .lineSpacing(4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    @ViewBuilder
+    private var segmentedControl: some View {
+        HStack(spacing: 0) {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    selectedTab = 0
+                }
+            } label: {
+                Text("入睡分钟聚类")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(selectedTab == 0 ? .white : Color(uiColor: .secondaryLabel))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(selectedTab == 0 ? Color.primary : Color.clear)
+                    .cornerRadius(12)
+            }
+            
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    selectedTab = 1
+                }
+            } label: {
+                Text("起床分钟聚类")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(selectedTab == 1 ? .white : Color(uiColor: .secondaryLabel))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(selectedTab == 1 ? Color.primary : Color.clear)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(4)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+    }
+    
+    @ViewBuilder
+    private var clockCanvasSection: some View {
+        VStack(spacing: 20) {
+            // 纯粹表盘：内部无任何文本叠加
+            ClockDialCanvas(mode: selectedTab)
+                .frame(width: 300, height: 300)
+            
+            // 底部集中度摘要条
+            VStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(selectedTab == 0 ? "核心入睡集中区" : "核心起床集中区")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
+                    
+                    Text(selectedTab == 0 ? ":15 - :38" : ":05 - :22")
+                        .font(.system(size: 16, weight: .black, design: .monospaced))
+                        .foregroundColor(.primary)
+                }
+                
+                Text(selectedTab == 0 ? "76.2% 的天数在此分钟段" : "84.5% 的天数在此分钟段")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(uiColor: .secondaryLabel))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(red: 0.95, green: 0.97, blue: 0.95))
+            .cornerRadius(12)
+            
+            // 图例标识
+            HStack(spacing: 24) {
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(hex: "A7F3D0"))
+                        .frame(width: 14, height: 14)
+                    Text(selectedTab == 0 ? "次要分布区间" : "预备唤醒区间")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(uiColor: .secondaryLabel))
+                }
+                
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(hex: "10B981"))
+                        .frame(width: 14, height: 14)
+                    Text(selectedTab == 0 ? "高频集中区间" : "高峰响铃区间")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
+        )
+    }
+    
+    @ViewBuilder
+    private var statCardsSection: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                statCard(
+                    title: selectedTab == 0 ? "平均入睡" : "平均起床",
+                    value: selectedTab == 0 ? ":23分" : ":14分",
+                    desc: "正负偏差 < 5分钟"
+                )
+                
+                statCard(
+                    title: "节律集中度",
+                    value: selectedTab == 0 ? "88%" : "92%",
+                    desc: "高度规律型作息"
+                )
+            }
+            
+            HStack(spacing: 12) {
+                statCard(
+                    title: "离散分布",
+                    value: selectedTab == 0 ? "3天" : "1天",
+                    desc: selectedTab == 0 ? "晚于 :45分入睡" : "晚于 :30分起床"
+                )
+                
+                statCard(
+                    title: "最佳状态区间",
+                    value: selectedTab == 0 ? ":20-:30" : ":10-:20",
+                    desc: "次日精力评分最高"
+                )
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func statCard(title: String, value: String, desc: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(uiColor: .secondaryLabel))
+            
+            Text(value)
+                .font(.system(size: 22, weight: .bold, design: .monospaced))
+                .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
+            
+            Text(desc)
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(Color(uiColor: .tertiaryLabel))
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
+        )
+    }
+}
+
+// MARK: - 时钟表盘 Canvas 绘制组件 (刻度与外置标签)
+fileprivate struct ClockDialCanvas: View {
+    let mode: Int // 0: 入睡, 1: 起床
+    
+    var body: some View {
+        Canvas { ctx, size in
+            let cx = size.width / 2
+            let cy = size.height / 2
+            let center = CGPoint(x: cx, y: cy)
+            
+            // 弧带半径
+            let sectorRadius: CGFloat = 100
+            
+            // 1. 绘制扇形区域
+            drawSectors(ctx: ctx, center: center, radius: sectorRadius)
+            
+            // 2. 绘制 60 个刻度线
+            drawTicks(ctx: ctx, center: center, radius: sectorRadius)
+            
+            // 3. 绘制 :00, :15, :30, :45 标签 (放在刻度圈外面: distance: 130)
+            drawLabels(ctx: ctx, center: center)
+        }
+    }
+    
+    private func drawSectors(ctx: GraphicsContext, center: CGPoint, radius: CGFloat) {
+        let backStartMin: Double = mode == 0 ? 0.0 : 55.0
+        let backEndMin: Double = mode == 0 ? 15.0 : 5.0
+        let frontStartMin: Double = mode == 0 ? 15.0 : 5.0
+        let frontEndMin: Double = mode == 0 ? 38.0 : 22.0
+        
+        // 绘制 back sector (#A7F3D0 淡柔绿)
+        var backPath = Path()
+        backPath.move(to: center)
+        let a1 = Angle(radians: (backStartMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
+        let a2 = Angle(radians: (backEndMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
+        backPath.addArc(center: center, radius: radius, startAngle: a1, endAngle: a2, clockwise: false)
+        backPath.closeSubpath()
+        ctx.fill(backPath, with: .color(Color(hex: "A7F3D0")))
+        
+        // 绘制 front sector (#10B981 鲜明翡翠绿)
+        var frontPath = Path()
+        frontPath.move(to: center)
+        let a3 = Angle(radians: (frontStartMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
+        let a4 = Angle(radians: (frontEndMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
+        frontPath.addArc(center: center, radius: radius, startAngle: a3, endAngle: a4, clockwise: false)
+        frontPath.closeSubpath()
+        ctx.fill(frontPath, with: .color(Color(hex: "10B981")))
+    }
+    
+    private func drawTicks(ctx: GraphicsContext, center: CGPoint, radius: CGFloat) {
+        for i in 0..<60 {
+            let frac = Double(i) / 60.0
+            let angle = frac * 2.0 * .pi - (.pi / 2.0)
+            let isMajor = (i % 5 == 0)
+            
+            let r1: CGFloat = isMajor ? radius : radius + 3
+            let r2: CGFloat = isMajor ? radius + 13 : radius + 8
+            
+            let x1 = center.x + CGFloat(cos(angle)) * r1
+            let y1 = center.y + CGFloat(sin(angle)) * r1
+            let x2 = center.x + CGFloat(cos(angle)) * r2
+            let y2 = center.y + CGFloat(sin(angle)) * r2
+            
+            var linePath = Path()
+            linePath.move(to: CGPoint(x: x1, y: y1))
+            linePath.addLine(to: CGPoint(x: x2, y: y2))
+            
+            let color = isMajor ? Color(hex: "1F1F24") : Color(hex: "A0A0A5")
+            let lineWidth: CGFloat = isMajor ? 2.5 : 1.5
+            ctx.stroke(linePath, with: .color(color), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+        }
+    }
+    
+    private func drawLabels(ctx: GraphicsContext, center: CGPoint) {
+        let labelColor = Color(hex: "4B5563")
+        let font = Font.system(size: 13, weight: .bold, design: .monospaced)
+        
+        // 放置在刻度线圈之外的距离 (130pt)
+        let distance: CGFloat = 130
+        
+        // :00 (top)
+        ctx.draw(Text(":00").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x, y: center.y - distance), anchor: .bottom)
+        // :15 (right)
+        ctx.draw(Text(":15").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x + distance, y: center.y), anchor: .leading)
+        // :30 (bottom)
+        ctx.draw(Text(":30").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x, y: center.y + distance), anchor: .top)
+        // :45 (left)
+        ctx.draw(Text(":45").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x - distance, y: center.y), anchor: .trailing)
+    }
+}
+
+fileprivate extension Color {
+    init(hex string: String) {
+        let hex = string.trimmingCharacters(in: .alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        self.init(
+            red:   Double((int >> 16) & 0xFF) / 255,
+            green: Double((int >>  8) & 0xFF) / 255,
+            blue:  Double( int        & 0xFF) / 255
+        )
     }
 }
