@@ -43,6 +43,7 @@ private let kWeekdayLabels = ["一", "二", "三", "四", "五", "六", "日"]
 struct CalendarDetailView: View {
 
     @State private var viewMode: CalendarViewMode = .year
+    @State private var isYearVisualizationStyle: Bool = false
     private let displayYear: Int = 2026 // Currently hardcoded for the annual view
     private let initialMonth: Int = Calendar.current.component(.month, from: Date()) - 1
 
@@ -51,23 +52,29 @@ struct CalendarDetailView: View {
             Group {
                 switch viewMode {
                 case .year:
-                    ScrollViewReader { proxy in
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 0) {
-                                ForEach(kAllMonths) { month in
-                                    monthSection(month)
-                                        .id(month.index)
+                    if isYearVisualizationStyle {
+                        YearVisualizationView(year: displayYear)
+                    } else {
+                        ScrollViewReader { proxy in
+                            ScrollView(showsIndicators: false) {
+                                VStack(spacing: 0) {
+                                    ForEach(kAllMonths) { month in
+                                        monthSection(month)
+                                            .id(month.index)
+                                    }
+                                    Color.clear.frame(height: 100) // Padding for bottom picker
                                 }
-                                Color.clear.frame(height: 100) // Padding for bottom picker
                             }
-                        }
-                        .onAppear {
-                            proxy.scrollTo(initialMonth, anchor: .top)
+                            .onAppear {
+                                proxy.scrollTo(initialMonth, anchor: .top)
+                            }
                         }
                     }
                 case .month:
                     MonthGridDetailView(year: displayYear, monthIndex: initialMonth)
-                case .day, .total:
+                case .total:
+                    TotalSummaryArchiveView(year: displayYear)
+                case .day:
                     Color.clear // 空白占位
                 }
             }
@@ -76,16 +83,34 @@ struct CalendarDetailView: View {
             ViewModePicker(selectedMode: $viewMode)
         }
         .background(Color(.systemBackground).ignoresSafeArea())
-        .navigationTitle("年度日历")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    // 分享逻辑
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
+                HStack(spacing: 16) {
+                    if viewMode == .year {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isYearVisualizationStyle.toggle()
+                            }
+                        } label: {
+                            Image(systemName: "circle.grid.2x2")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(isYearVisualizationStyle ? .accentColor : .primary)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                    }
+                    
+                    Button {
+                        // 分享逻辑
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
                 }
             }
         }
@@ -370,6 +395,216 @@ struct MonthGridDetailView: View {
         guard let date = Calendar.current.date(from: c) else { return 0 }
         let weekday = Calendar.current.component(.weekday, from: date)
         return (weekday + 5) % 7
+    }
+}
+
+// MARK: - Total Summary Archive View
+struct TotalSummaryArchiveView: View {
+    let year: Int
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack {
+                Spacer().frame(height: 32)
+                
+                VStack(spacing: 0) {
+                    // Top header
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("\(year)")
+                                .font(.custom("AvenirNext-Regular", size: 36))
+                                .foregroundColor(Color.primary.opacity(0.85))
+                            Text("ANNUAL ARCHIVE · 睡眠年卷")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color.primary.opacity(0.5))
+                                .tracking(1.5)
+                        }
+                        
+                        Spacer()
+                        
+                        Text("安 睡")
+                            .font(.system(size: 18, weight: .light))
+                            .tracking(3)
+                            .foregroundColor(Color.primary.opacity(0.85))
+                    }
+                    .padding(.top, 28)
+                    .padding(.horizontal, 28)
+                    
+                    Divider()
+                        .padding(.vertical, 28)
+                        .padding(.horizontal, 28)
+                        .opacity(0.6)
+                    
+                    // Poem / Quote
+                    VStack(spacing: 16) {
+                        Text("日出而作，日入而息。")
+                        Text("给时间以时间，")
+                        Text("给睡眠以安宁。")
+                    }
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(Color.primary.opacity(0.7))
+                    .tracking(2)
+                    .multilineTextAlignment(.center)
+                    
+                    Text("—— 时隙 / 留白")
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundColor(Color.primary.opacity(0.4))
+                        .padding(.top, 24)
+                    
+                    Divider()
+                        .padding(.vertical, 28)
+                        .padding(.horizontal, 28)
+                        .opacity(0.6)
+                    
+                    // Stats
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("YEARLY TOTAL")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color.primary.opacity(0.5))
+                                .tracking(1)
+                            
+                            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                                Text("238")
+                                    .font(.custom("AvenirNext-Regular", size: 34))
+                                    .foregroundColor(Color.primary.opacity(0.85))
+                                Text("天早睡")
+                                    .font(.system(size: 12, weight: .light))
+                                    .foregroundColor(Color.primary.opacity(0.6))
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Text("AVG DURATION")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color.primary.opacity(0.5))
+                                .tracking(1)
+                            
+                            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                                Text("7.4")
+                                    .font(.custom("AvenirNext-Regular", size: 34))
+                                    .foregroundColor(Color.primary.opacity(0.85))
+                                Text("小时")
+                                    .font(.system(size: 12, weight: .light))
+                                    .foregroundColor(Color.primary.opacity(0.6))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 32)
+                }
+                .background(Color(red: 0.98, green: 0.97, blue: 0.95))
+                .cornerRadius(24)
+                .padding(.horizontal, 24)
+                
+                Color.clear.frame(height: 120) // bottom padding
+            }
+        }
+    }
+}
+
+// MARK: - Year Visualization View
+struct YearVisualizationView: View {
+    let year: Int
+    
+    // 极简色彩配置：拒绝花里胡哨，使用莫兰迪高级灰调
+    private let colorEarly = Color(red: 0.45, green: 0.55, blue: 0.50) // 沉稳灰绿 (早睡)
+    private let colorLate = Color(red: 0.75, green: 0.55, blue: 0.50)  // 柔和陶土色 (熬夜)
+    private let colorEmpty = Color(UIColor.quaternarySystemFill)       // 极淡灰色 (空白)
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 32) {
+                // 顶部标题
+                HStack {
+                    Text("\(year)")
+                        .font(.custom("AvenirNext-Bold", size: 40))
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                
+                // 纵向瀑布流网格 (1列日期 + 12列月份 + 1列右侧平衡占位)
+                // 缩减间距，让方格更紧凑密集，提升可视化的高级“颗粒感”
+                let gridColumns = [GridItem(.fixed(20), spacing: 10)] + Array(repeating: GridItem(.flexible(), spacing: 3), count: 12) + [GridItem(.fixed(20), spacing: 0)]
+                
+                LazyVGrid(columns: gridColumns, spacing: 3) {
+                    // 表头：月份 1~12
+                    Text("") // 左上角占位
+                    ForEach(1...12, id: \.self) { m in
+                        Text("\(m)")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary) // 更大更清晰的纯黑
+                    }
+                    Text("") // 右侧平衡占位
+                    
+                    // 主体：31天的数据
+                    ForEach(1...31, id: \.self) { day in
+                        // 第一列：纵轴的日期刻度
+                        Text("\(day)")
+                            .font(.custom("AvenirNext-Bold", size: 12))
+                            .foregroundColor(Color.primary.opacity(0.75)) // 放大并加深颜色，保证清晰
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        
+                        // 后12列：每个月的方块
+                        ForEach(0..<12, id: \.self) { monthIndex in
+                            let totalDays = daysInMonth(year: year, monthIndex: monthIndex)
+                            if day <= totalDays {
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(mockColor(for: day, month: monthIndex))
+                                    .aspectRatio(1, contentMode: .fit)
+                            } else {
+                                // 处理月份不足31天的情况，留出完美的空白占位
+                                Color.clear
+                                    .aspectRatio(1, contentMode: .fit)
+                            }
+                        }
+                        
+                        // 最后一列：右侧平衡占位
+                        Text("")
+                        
+                        // 每 7 天插入一个空行，拉开空间感（周期的视觉节奏）
+                        if day % 7 == 0 && day != 31 {
+                            ForEach(0..<14, id: \.self) { _ in
+                                Color.clear.frame(height: 6) // 控制空行的高度
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                
+                Color.clear.frame(height: 120) // 底部留白
+            }
+        }
+        .background(Color(.systemBackground).ignoresSafeArea())
+    }
+    
+    // 生成伪造颜色，避免花里胡哨，只有绿、红、灰
+    private func mockColor(for day: Int, month: Int) -> Color {
+        // 让数据看起来有一些随机连贯性
+        let seed = day * 13 + month * 7
+        let randomVal = seed % 10
+        
+        if randomVal < 5 {
+            return colorEarly // 50% 早睡
+        } else if randomVal < 7 {
+            return colorLate // 20% 熬夜
+        } else {
+            return colorEmpty // 30% 空缺
+        }
+    }
+    
+    private func daysInMonth(year: Int, monthIndex: Int) -> Int {
+        var c = DateComponents()
+        c.year  = year
+        c.month = monthIndex + 1
+        guard let date  = Calendar.current.date(from: c),
+              let range = Calendar.current.range(of: .day, in: .month, for: date)
+        else { return 30 }
+        return range.count
     }
 }
 
