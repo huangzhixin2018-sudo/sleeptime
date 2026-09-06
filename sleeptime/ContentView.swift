@@ -646,7 +646,7 @@ struct ProfileView: View {
                             CalendarDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
-                            ProfileRowView(icon: "calendar", title: "日历", showDivider: true)
+                            ProfileRowView(icon: "calendar", title: "年度日历", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
