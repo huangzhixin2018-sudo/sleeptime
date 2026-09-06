@@ -6,6 +6,7 @@
 import SwiftUI
 import UIKit
 import Combine
+import LocalAuthentication
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .home
@@ -593,6 +594,7 @@ struct BadgeProgressCard: View {
 
 struct ProfileView: View {
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
+    @AppStorage("appLock.isEnabled") private var isAppLockEnabled = false
 
     var body: some View {
         NavigationStack {
@@ -623,7 +625,18 @@ struct ProfileView: View {
                             ProfileRowView(icon: "square.grid.2x2", title: "小组件", showDivider: true)
                         }
                         .buttonStyle(.plain)
-                        emptyProfileNavigationRow(icon: "lock", title: "应用锁", trailingText: "未开启", showDivider: true)
+                        NavigationLink {
+                            AppLockDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(
+                                icon: "lock",
+                                title: "应用锁",
+                                trailingText: isAppLockEnabled ? "已开启" : "未开启",
+                                showDivider: true
+                            )
+                        }
+                        .buttonStyle(.plain)
                         emptyProfileNavigationRow(icon: "person.crop.circle", title: "名人作息", showDivider: true)
                         emptyProfileNavigationRow(icon: "note.text", title: "睡眠札记", showDivider: false)
                     }
@@ -1292,6 +1305,117 @@ private struct EmptyProfileDetailView: View {
     }
 }
 
+private struct AppLockDetailView: View {
+    @AppStorage("appLock.isEnabled") private var isEnabled = false
+    @State private var authenticationState: AuthenticationState = .requesting
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 34)
+
+            Image(systemName: isEnabled ? "lock.fill" : "lock.open")
+                .font(.system(size: 34, weight: .medium))
+                .foregroundStyle(isEnabled ? Color.white : Color.primary)
+                .frame(width: 72, height: 72)
+                .background(
+                    isEnabled ? Color.primary : Color.white,
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                )
+
+            Text(isEnabled ? "应用锁已开启" : "使用生物识别保护应用")
+                .font(.system(size: 21, weight: .semibold))
+                .padding(.top, 20)
+
+            Text(statusText)
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 36)
+                .padding(.top, 8)
+
+            if authenticationState == .failed || authenticationState == .unavailable {
+                Button("重新验证") {
+                    authenticate()
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(height: 42)
+                .padding(.horizontal, 28)
+                .background(Color.primary, in: Capsule())
+                .padding(.top, 24)
+            }
+
+            Spacer()
+
+            if isEnabled {
+                Button("关闭应用锁") {
+                    isEnabled = false
+                    authenticationState = .idle
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.red)
+                .padding(.bottom, 28)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("应用锁")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            guard !isEnabled else {
+                authenticationState = .authenticated
+                return
+            }
+            authenticate()
+        }
+    }
+
+    private var statusText: String {
+        switch authenticationState {
+        case .requesting:
+            return "正在请求 Face ID 或 Touch ID 验证"
+        case .authenticated:
+            return "再次打开应用时，将通过 Face ID 或 Touch ID 验证身份"
+        case .failed:
+            return "验证未完成，应用锁尚未开启"
+        case .unavailable:
+            return "当前设备无法使用 Face ID 或 Touch ID"
+        case .idle:
+            return "开启后，再次打开应用需要验证身份"
+        }
+    }
+
+    private func authenticate() {
+        authenticationState = .requesting
+        let context = LAContext()
+        context.localizedCancelTitle = "取消"
+        var error: NSError?
+
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            authenticationState = .unavailable
+            return
+        }
+
+        context.evaluatePolicy(
+            .deviceOwnerAuthenticationWithBiometrics,
+            localizedReason: "验证身份以开启应用锁"
+        ) { success, _ in
+            DispatchQueue.main.async {
+                isEnabled = success
+                authenticationState = success ? .authenticated : .failed
+            }
+        }
+    }
+
+    private enum AuthenticationState {
+        case idle
+        case requesting
+        case authenticated
+        case failed
+        case unavailable
+    }
+}
+
 private struct WidgetGalleryDetailView: View {
     @AppStorage("widget.sleepCheckIn.completed") private var isSleepCheckedIn = false
 
@@ -1376,10 +1500,10 @@ private struct SleepCheckInWidgetCard: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
                 } label: {
                     Text(isCheckedIn ? "已打卡" : "晚安打卡")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(isCheckedIn ? Color.secondary : Color.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 42)
+                        .frame(height: 36)
                         .background(
                             isCheckedIn ? Color(uiColor: .systemGray5) : Color.primary,
                             in: Capsule()
@@ -1530,8 +1654,8 @@ private struct EarlySleepPlanDetailView: View {
             color: Color(red: 0.13, green: 0.66, blue: 0.55)
         ),
         EarlySleepPlan(
-            title: "减少睡前用机",
-            subtitle: "提前放下手机，减少屏幕对入睡状态的影响",
+            title: "连续达成",
+            subtitle: "连续达到设定目标，帮助身体逐步适应新的作息",
             icon: "iphone.slash",
             color: Color(red: 0.95, green: 0.48, blue: 0.22)
         )
