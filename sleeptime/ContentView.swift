@@ -214,7 +214,7 @@ struct SleepTrackingDetailView: View {
                         count: Int.random(in: 1...10),
                         highlightColor: .blue
                     )
-                    
+
                     // 熬夜卡片：使用紫色（代表夜晚/熬夜），透明底色会非常干净通透
                     SleepTrackingCardView(
                         title: "连续熬夜",
@@ -256,14 +256,14 @@ struct SleepTrackingCardView: View {
                         .font(.custom("AvenirNext-CondensedBold", size: 48))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
-                    
+
                     if days.contains("+") {
                         Text("+")
                             .font(.headline)
                             .foregroundColor(.primary)
                     }
                 }
-                
+
                 Text("天")
                     .font(.headline)
                     .foregroundColor(.secondary)
@@ -296,29 +296,78 @@ struct ContentView_Previews: PreviewProvider {
 
 struct BlankPlanView: View {
     var body: some View {
-        NavigationStack {
-            VStack {
-                Spacer()
-                Text("敬请期待")
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppTheme.pageBackground.ignoresSafeArea())
-            .navigationTitle("计划")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+        VStack(spacing: 0) {
+            // 自定义顶部：大标题与管理图标在同一高度
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center) {
+                    Text("计划")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // “山寨版”带白色包裹卡片的管理图标
                     Button {
                         // 预留管理入口
                     } label: {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.primary)
+                            .frame(width: 36, height: 36)
+                            .background(Color(.systemBackground))
+                            .clipShape(Circle())
                     }
                 }
+
+                Text("让行动听从自己的选择")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.secondary)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            // 一行两列的卡片区
+            HStack(spacing: 16) {
+                // 原则卡片
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("原则")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text("看看什么正在指引你")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineSpacing(2)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(16)
+                .background(AppTheme.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                // 回顾卡片
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("回顾")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text("看见自己是怎么做到的")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineSpacing(2)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(16)
+                .background(AppTheme.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.pageBackground.ignoresSafeArea())
     }
 }
 
