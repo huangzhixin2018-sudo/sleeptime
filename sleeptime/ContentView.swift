@@ -363,6 +363,9 @@ struct BlankPlanView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
 
+                    TodayWorkCardView()
+                        .padding(.bottom, 16)
+
                     SleepRecordPanelView()
                 }
                 .padding(.horizontal, 24)
@@ -375,10 +378,91 @@ struct BlankPlanView: View {
     }
 }
 
+struct TodayWorkCardView: View {
+    let textDark = Color(red: 50/255, green: 50/255, blue: 70/255)
+    let textGrey = Color(red: 100/255, green: 110/255, blue: 130/255)
+    let cardBg = Color.white
+
+    let trackBg = Color(red: 190/255, green: 185/255, blue: 180/255)
+    let trackFill = Color(red: 80/255, green: 210/255, blue: 180/255)
+
+    let btnAttackBg = Color(red: 185/255, green: 140/255, blue: 255/255)
+    let btnDeleteBg = Color(red: 250/255, green: 100/255, blue: 100/255)
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 20) {
+            // Left column: Avatar + Title
+            VStack(spacing: 8) {
+                Image("stay_up_late_demon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+
+                Text("熬夜魔")
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundColor(textDark)
+            }
+
+            // Right column: Stats and Buttons
+            VStack(alignment: .leading, spacing: 14) {
+                // Combo text
+                HStack(alignment: .bottom) {
+                    Text("熬夜5天")
+                        .font(.system(size: 26, weight: .black, design: .default))
+                        .foregroundColor(textDark)
+                    Spacer()
+                    Text("-2")
+                        .font(.system(size: 32, weight: .black, design: .monospaced))
+                        .foregroundColor(btnDeleteBg)
+                }
+
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(trackBg)
+                            .frame(height: 8)
+                        Capsule()
+                            .fill(trackFill)
+                            .frame(width: geo.size.width * 0.15, height: 8)
+                    }
+                }
+                .frame(height: 8)
+                .padding(.bottom, 6)
+
+                // Attack Button
+                Button(action: {}) {
+                    Text("有点忍不住想熬夜")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(btnAttackBg)
+                        .clipShape(Capsule())
+                }
+
+                // Delete Button
+                Button(action: {}) {
+                    Text("弱点")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(btnDeleteBg)
+                        .clipShape(Capsule())
+                }
+            }
+        }
+        .padding(20)
+        .background(cardBg)
+        .cornerRadius(20)
+    }
+}
+
 struct SleepRecordPanelView: View {
     let textDark = Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0)
     let borderLight = Color(red: 220.0/255.0, green: 236.0/255.0, blue: 239.0/255.0)
-    let tealColor = AppTheme.accent
+    let tealColor = Color(red: 70.0/255.0, green: 200.0/255.0, blue: 170.0/255.0)
     let yellowColor = Color(red: 255.0/255.0, green: 220.0/255.0, blue: 89.0/255.0)
     let progressColor = Color(red: 103.0/255.0, green: 201.0/255.0, blue: 223.0/255.0)
     let partialColor = Color(red: 168.0/255.0, green: 187.0/255.0, blue: 192.0/255.0)
