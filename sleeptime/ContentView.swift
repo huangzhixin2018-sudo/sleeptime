@@ -1962,27 +1962,23 @@ private struct WidgetTimeProgress {
 private struct EarlySleepPlanDetailView: View {
     private let plans = [
         EarlySleepPlan(
-            title: "循序早睡",
-            subtitle: "慢慢提前入睡时间，让身体自然适应新节奏",
-            icon: "clock.arrow.circlepath",
+            title: "越来越早",
+            subtitle: "最晚入睡时间",
             color: Color(red: 0.23, green: 0.48, blue: 0.95)
         ),
         EarlySleepPlan(
-            title: "固定作息",
-            subtitle: "稳定每天的入睡时间，建立更规律的睡眠习惯",
-            icon: "moon.stars.fill",
+            title: "越来越稳定",
+            subtitle: "入睡时间波动",
             color: Color(red: 0.43, green: 0.35, blue: 0.88)
         ),
         EarlySleepPlan(
-            title: "睡前放松",
-            subtitle: "留出安静的睡前时间，帮助身心平稳入睡",
-            icon: "wind",
+            title: "越来越少",
+            subtitle: "熬夜天数",
             color: Color(red: 0.13, green: 0.66, blue: 0.55)
         ),
         EarlySleepPlan(
-            title: "连续达成",
-            subtitle: "连续达到设定目标，帮助身体逐步适应新的作息",
-            icon: "iphone.slash",
+            title: "越来越短",
+            subtitle: "最长连续熬夜天数",
             color: Color(red: 0.95, green: 0.48, blue: 0.22)
         )
     ]
@@ -2012,7 +2008,6 @@ private struct EarlySleepPlanDetailView: View {
 private struct EarlySleepPlan: Identifiable {
     let title: String
     let subtitle: String
-    let icon: String
     let color: Color
 
     var id: String { title }
@@ -2023,12 +2018,6 @@ private struct EarlySleepPlanCard: View {
 
     var body: some View {
         HStack(spacing: 15) {
-            Image(systemName: plan.icon)
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 52, height: 52)
-                .background(plan.color, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
             VStack(alignment: .leading, spacing: 6) {
                 Text(plan.title)
                     .font(.system(size: 17, weight: .semibold))
@@ -2046,8 +2035,8 @@ private struct EarlySleepPlanCard: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color(uiColor: .tertiaryLabel))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 17)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
         .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
