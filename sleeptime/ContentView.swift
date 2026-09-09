@@ -26,13 +26,13 @@ struct ContentView: View {
                 Label("首页", systemImage: "moon.stars.fill")
             }
             .tag(AppTab.home)
-            
+
             BlankPlanView()
             .tabItem {
                 Label("计划", systemImage: "star.fill")
             }
             .tag(AppTab.plan)
-            
+
             ProfileView()
             .tabItem {
                 Label("我的", systemImage: "person.fill")
@@ -199,7 +199,7 @@ private enum AppTab: CaseIterable {
 
 struct SleepTrackingDetailView: View {
     let daysList = ["2", "3", "4", "5", "6", "7", "8+"]
-    
+
     var body: some View {
         ScrollView {
             LazyVGrid(columns: [
@@ -237,7 +237,7 @@ struct SleepTrackingCardView: View {
     let days: String
     let count: Int
     let highlightColor: Color
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
             HStack(alignment: .top) {
@@ -246,10 +246,10 @@ struct SleepTrackingCardView: View {
                     .foregroundColor(.primary)
 
                 Spacer()
-                
+
                 // 顶部右侧留白，让标题更加独立
             }
-            
+
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 HStack(alignment: .lastTextBaseline, spacing: 0) {
                     Text(days.replacingOccurrences(of: "+", with: ""))
@@ -267,9 +267,9 @@ struct SleepTrackingCardView: View {
                 Text("天")
                     .font(.headline)
                     .foregroundColor(.secondary)
-                
+
                 Spacer()
-                
+
                 // 把彩色胶囊移回右下角，并放大增强可读性
                 Text("× \(count)")
                     .font(.system(size: 20, weight: .heavy, design: .rounded))
@@ -328,46 +328,179 @@ struct BlankPlanView: View {
             .padding(.top, 16)
             .padding(.bottom, 8)
 
-            // 一行两列的卡片区
-            HStack(spacing: 16) {
-                // 原则卡片
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("原则")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.primary)
-                    Text("看看什么正在指引你")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineSpacing(2)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(16)
-                .background(AppTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // 一行两列的卡片区
+                    HStack(spacing: 16) {
+                        // 原则卡片
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("原则")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("看看什么正在指引你")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundColor(.secondary)
+                                .lineSpacing(2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(16)
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                // 回顾卡片
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("回顾")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.primary)
-                    Text("看见自己是怎么做到的")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineSpacing(2)
+                        // 回顾卡片
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("回顾")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(.primary)
+                            Text("看见自己是怎么做到的")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundColor(.secondary)
+                                .lineSpacing(2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                        .padding(16)
+                        .background(AppTheme.cardBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+
+                    SleepRecordPanelView()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(16)
-                .background(AppTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 40)
             }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppTheme.pageBackground.ignoresSafeArea())
+    }
+}
+
+struct SleepRecordPanelView: View {
+    let textDark = Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0)
+    let borderLight = Color(red: 220.0/255.0, green: 236.0/255.0, blue: 239.0/255.0)
+    let tealColor = AppTheme.accent
+    let yellowColor = Color(red: 255.0/255.0, green: 220.0/255.0, blue: 89.0/255.0)
+    let progressColor = Color(red: 103.0/255.0, green: 201.0/255.0, blue: 223.0/255.0)
+    let partialColor = Color(red: 168.0/255.0, green: 187.0/255.0, blue: 192.0/255.0)
+    let noteColor = Color(red: 139.0/255.0, green: 179.0/255.0, blue: 189.0/255.0)
+    let dateColor = Color(red: 143.0/255.0, green: 183.0/255.0, blue: 193.0/255.0)
+    let trackBgColor = Color(red: 237.0/255.0, green: 247.0/255.0, blue: 249.0/255.0)
+
+    struct DayItem: Identifiable {
+        let id = UUID()
+        let weekday: String
+        let dateStr: String
+        let hours: String
+        let showAdjust: Bool
+        let trackBg: Color
+        let fillColor: Color?
+        let fillOffset: CGFloat?
+        let fillWidth: CGFloat?
+    }
+
+    var body: some View {
+        let days: [DayItem] = [
+            DayItem(weekday: "一", dateStr: "9/7", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
+            DayItem(weekday: "二", dateStr: "9/8", hours: "12.6h", showAdjust: false, trackBg: tealColor, fillColor: yellowColor, fillOffset: 0.5, fillWidth: 0.5),
+            DayItem(weekday: "三", dateStr: "9/9", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
+            DayItem(weekday: "四", dateStr: "9/10", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
+            DayItem(weekday: "五", dateStr: "9/11", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
+            DayItem(weekday: "六", dateStr: "9/12", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
+            DayItem(weekday: "日", dateStr: "9/13", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil)
+        ]
+
+        VStack(alignment: .leading, spacing: 0) {
+            // Summary Cards
+            HStack(spacing: 9) {
+                // Card 1
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("完成天数")
+                        .font(.system(size: 10, weight: .regular))
+                    Spacer()
+                    Text("1天")
+                        .font(.custom("Courier", size: 25))
+                        .tracking(-1)
+                }
+                .foregroundColor(.white)
+                .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 75)
+                .background(tealColor)
+                .cornerRadius(7)
+
+                // Card 2
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .top, spacing: 2) {
+                        Text("熬夜超额时长")
+                            .font(.system(size: 10, weight: .regular))
+                        Text("?")
+                            .font(.custom("Georgia", size: 9))
+                            .frame(width: 13, height: 13)
+                            .overlay(Circle().stroke(textDark, lineWidth: 1.4))
+                    }
+                    Spacer()
+                    Text("6.6h")
+                        .font(.custom("Courier", size: 25))
+                        .tracking(-1)
+                }
+                .foregroundColor(textDark)
+                .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 75)
+                .background(yellowColor)
+                .cornerRadius(7)
+                .overlay(RoundedRectangle(cornerRadius: 7).stroke(textDark, lineWidth: 1.5))
+            }
+            .padding(.bottom, 18)
+
+            // Days
+            VStack(spacing: 22) {
+                ForEach(days) { day in
+                    VStack(spacing: 0) {
+                        HStack(spacing: 5) {
+                            Text(day.weekday)
+                                .font(.system(size: 15, design: .serif))
+                                .foregroundColor(textDark)
+                                .frame(width: 31, alignment: .center)
+                            Text(day.dateStr)
+                                .font(.system(size: 9))
+                                .foregroundColor(dateColor)
+                                .frame(width: 39, alignment: .leading)
+                            Text(day.hours)
+                                .font(.custom("Courier", size: 11))
+                                .foregroundColor(textDark)
+                            Spacer()
+                            if day.showAdjust {
+                                Text("调整 ⌄")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(noteColor)
+                            }
+                        }
+                        .frame(height: 22)
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                Rectangle().fill(day.trackBg)
+
+                                if let fillCol = day.fillColor, let fillW = day.fillWidth, let fillOff = day.fillOffset {
+                                    Rectangle()
+                                        .fill(fillCol)
+                                        .frame(width: geo.size.width * fillW)
+                                        .offset(x: geo.size.width * fillOff)
+                                }
+
+                                Rectangle()
+                                    .fill(textDark)
+                                    .frame(width: 1.5)
+                                    .padding(.vertical, -3)
+                                    .offset(x: geo.size.width * 0.5 - 0.75)
+                            }
+                        }
+                        .frame(height: 17)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -377,7 +510,7 @@ struct EarlySleepPlan1DetailView: View {
     var body: some View {
         ZStack {
             Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea()
-            
+
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     // 标题区 (去掉返回箭头)
@@ -740,7 +873,7 @@ struct ProfileView: View {
                             ProfileRowView(icon: "clock.arrow.circlepath", title: "时间穿梭", showDivider: true)
                         }
                         .buttonStyle(.plain)
-                        
+
                         NavigationLink {
                             EmotionDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
@@ -1891,7 +2024,7 @@ struct ProfileRowView: View {
     let title: String
     var trailingText: String? = nil
     let showDivider: Bool
-    
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 13) {
@@ -1899,20 +2032,20 @@ struct ProfileRowView: View {
                     .font(.system(size: 19, weight: .regular))
                     .foregroundStyle(AppTheme.accent)
                     .frame(width: 34, height: 34)
-                
+
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.primary)
-                
+
                 Spacer()
-                
+
                 if let trailingText = trailingText {
                     Text(trailingText)
                         .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                
+
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .regular))
                     .foregroundStyle(Color(uiColor: .tertiaryLabel))
@@ -1920,7 +2053,7 @@ struct ProfileRowView: View {
             .frame(minHeight: 58)
             .padding(.horizontal, 16)
             .contentShape(Rectangle())
-            
+
             if showDivider {
                 Divider()
                     .padding(.leading, 63)
@@ -1936,13 +2069,13 @@ struct WavyLine: Shape {
         let width = rect.width
         let height = rect.height
         let midHeight = height / 2
-        
+
         // 既然波浪线只覆盖前 5 个字，波浪周期也相应减少，保持舒缓感
         let cycles: CGFloat = 2.8
         let wavelength = width / cycles
-        
+
         path.move(to: CGPoint(x: 0, y: midHeight))
-        
+
         for x in stride(from: 0, to: width, by: 1) {
             let relativeX = x / wavelength
             // 在 iOS 坐标系中，y 往下是正的。sin() 从 0 开始增加，会向下弯曲，正好契合截图的起始下划轨迹
@@ -1950,7 +2083,7 @@ struct WavyLine: Shape {
             let y = midHeight + sine * (height / 2)
             path.addLine(to: CGPoint(x: x, y: y))
         }
-        
+
         return path
     }
 }
@@ -1963,20 +2096,20 @@ struct TargetCardView: View {
     let themeColor: Color
     let rotationAngle: Double
     let titleFontSize: CGFloat = 16
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.system(size: titleFontSize, weight: .bold))
                 .foregroundColor(.primary)
-            
+
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(value)
                     .font(.custom("AvenirNext-CondensedBold", size: 36))
                     .foregroundColor(.primary)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
-                
+
                 if !unit.isEmpty {
                     Text(unit)
                         .font(.system(size: 16, weight: .bold))
@@ -2007,15 +2140,15 @@ struct DayRecordCardView: View {
                 Text("第 1 天")
                     .font(.system(size: 17, weight: .bold)) // 字号微调
                     .foregroundColor(.primary)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "plus")
                     .font(.system(size: 22, weight: .medium))
                     .foregroundColor(.blue)
             }
             .padding(.bottom, 24)
-            
+
             // 四个核心数据指标 (均匀分布)
             HStack {
                 MetricColumn(value: "23:30", label: "入睡时间", dotColor: .blue)
@@ -2027,25 +2160,25 @@ struct DayRecordCardView: View {
                 MetricColumn(value: "看书", label: "11点行为", dotColor: .orange)
             }
             .padding(.bottom, 24)
-            
+
             // 分割线与子标题
             HStack(spacing: 12) {
                 DashedLine()
                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
                     .frame(height: 1)
                     .foregroundColor(Color(UIColor.separator).opacity(0.5))
-                
+
                 Text("行为列表")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(Color(UIColor.tertiaryLabel))
-                
+
                 DashedLine()
                     .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
                     .frame(height: 1)
                     .foregroundColor(Color(UIColor.separator).opacity(0.5))
             }
             .padding(.bottom, 20)
-            
+
             // 底部列表项：一比一还原“食物列表”那样的结构
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
@@ -2056,9 +2189,9 @@ struct DayRecordCardView: View {
                         .font(.system(size: 13))
                         .foregroundColor(Color(UIColor.secondaryLabel))
                 }
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 4) {
                     Text("已完成")
                         .font(.system(size: 15))
@@ -2082,18 +2215,18 @@ struct MetricColumn: View {
     let value: String
     let label: String
     let dotColor: Color
-    
+
     var body: some View {
         VStack(spacing: 6) { // 收紧上下间距
             Text(value)
                 .font(.system(size: 20, weight: .semibold)) // 调整为半粗体，显得更干净
                 .foregroundColor(.primary)
-            
+
             HStack(spacing: 4) {
                 Circle()
                     .fill(dotColor)
                     .frame(width: 5, height: 5) // 极小号的纯色圆点
-                
+
                 Text(label)
                     .font(.system(size: 11, weight: .medium)) // 辅助文字做得非常小且淡
                     .foregroundColor(Color(UIColor.secondaryLabel))
@@ -2182,7 +2315,7 @@ struct HabitCard: View {
     let isActive: Bool
     let themeColor: Color
     let width: CGFloat
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 左上角徽章 (全员继承第一张卡片的黑色粗边框+主题色底)
@@ -2199,15 +2332,15 @@ struct HabitCard: View {
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(Color.black, lineWidth: 3)
             )
-            
+
             Spacer()
-            
+
             // 中间大字：天数
             Text(count)
                 .font(.system(size: 26, weight: .heavy))
                 .foregroundColor(.primary)
                 .padding(.bottom, 2)
-            
+
             // 底部小字：日期段
             Text(dateRange)
                 .font(.system(size: 15, weight: .bold))
@@ -2393,7 +2526,7 @@ struct SleepDistributionView: View {
     // 模拟数据：分别对应 提前, 早睡, 拖延, 熬夜, 通宵 的天数
     let distribution = [8, 3, 5, 2, 0]
     let maxCount = 8
-    
+
     // 配置：标签, 颜色
     let categories = [
         ("提前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
@@ -2402,7 +2535,7 @@ struct SleepDistributionView: View {
         ("熬夜", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
         ("通宵", Color.purple) // 危险紫
     ]
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
@@ -2411,7 +2544,7 @@ struct SleepDistributionView: View {
                     Text("你的入睡分布")
                         .font(.system(size: 26, weight: .black))
                         .foregroundColor(.primary)
-                    
+
                     Text("最近 21 天的数据统计。好的坏的，都在这里。")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(Color(UIColor.secondaryLabel))
@@ -2419,27 +2552,27 @@ struct SleepDistributionView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
-                
+
                 // 横向条形图区
                 VStack(spacing: 24) {
                     ForEach(0..<categories.count, id: \.self) { index in
                         let category = categories[index]
                         let count = distribution[index]
                         let widthPercent = maxCount > 0 ? CGFloat(count) / CGFloat(maxCount) : 0
-                        
+
                         HStack(spacing: 16) {
                             Text(category.0)
                                 .font(.system(size: 18, weight: .heavy))
                                 .foregroundColor(.primary)
                                 .frame(width: 44, alignment: .leading)
-                            
+
                             // 进度条
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     // 背景槽 (极简风，浅灰色)
                                     Capsule()
                                         .fill(Color(UIColor.tertiaryLabel).opacity(0.15))
-                                    
+
                                     // 实际数据条
                                     if count > 0 {
                                         Capsule()
@@ -2450,7 +2583,7 @@ struct SleepDistributionView: View {
                                 }
                             }
                             .frame(height: 24)
-                            
+
                             Text("\(count)天")
                                 .font(.custom("AvenirNext-Bold", size: 18))
                                 .foregroundColor(count > 0 ? .primary : Color(UIColor.tertiaryLabel))
@@ -2473,7 +2606,7 @@ struct SleepDistributionCardView: View {
     // 模拟数据：最近 21 天的数据统计
     let distribution = [8, 3, 5, 2, 0]
     let maxCount = 8 // 用于计算进度条比例
-    
+
     // 配置：标签, 时间区间, 颜色
     let categories = [
         ("提前", "23:00 前", Color(red: 0.2, green: 0.8, blue: 0.6)), // 健康绿
@@ -2482,21 +2615,21 @@ struct SleepDistributionCardView: View {
         ("熬夜", "01:00-02:00", Color(red: 0.98, green: 0.45, blue: 0.52)), // 严重粉红
         ("通宵", "02:00 后", Color.purple) // 危险紫
     ]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("入睡分布")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
             .padding(.horizontal, 16)
-            
+
             // 连续进度条图表区 (包裹在白色卡片内部)
             VStack(spacing: 16) {
                 ForEach(0..<categories.count, id: \.self) { index in
                     let category = categories[index]
                     let count = distribution[index]
                     let widthPercent = maxCount > 0 ? CGFloat(count) / CGFloat(maxCount) : 0
-                    
+
                     if count > 0 {
                         VStack(alignment: .leading, spacing: 8) {
                             // 文本行：左侧是 "标签 · 时间"，右侧是 "天数"
@@ -2505,26 +2638,26 @@ struct SleepDistributionCardView: View {
                                     Text(category.0)
                                         .font(.system(size: 15, weight: .bold))
                                         .foregroundColor(.primary)
-                                    
+
                                     Text(category.1)
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundColor(.primary)
                                 }
-                                
+
                                 Spacer()
-                                
+
                                 Text("\(count)天")
                                     .font(.custom("AvenirNext-DemiBold", size: 15))
                                     .foregroundColor(.primary)
                             }
-                            
+
                             // 进度条行
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     // 背景槽 (浅灰色)
                                     Capsule()
                                         .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                                    
+
                                     // 实际数据条
                                     if count > 0 {
                                         Capsule()
@@ -2549,19 +2682,19 @@ struct SleepDistributionCardView: View {
 // MARK: - 时钟分布 (Clock Distribution View)
 struct ClockDistributionView: View {
     @State private var selectedSector: Int = 0 // 0: 核心高频段 (23:00-00:30), 1: 预备次要段 (22:00-23:00)
-    
+
     private let habits = [
         ("刷牙洗漱", "21次", Color(red: 0.1, green: 0.65, blue: 0.45)),
         ("放下手机", "18次", Color(red: 0.95, green: 0.6, blue: 0.2)),
         ("睡前冥想", "15次", Color(red: 0.4, green: 0.45, blue: 0.9))
     ]
-    
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
                 // 1. 日期阶段头部
                 dateRangeHeader
-                
+
                 // 2. 12时辰入睡表盘 (支持点击色块)
                 VStack(spacing: 12) {
                     ClockDialCanvas(selectedSector: selectedSector) { tappedSector in
@@ -2571,17 +2704,17 @@ struct ClockDistributionView: View {
                     }
                     .frame(width: 340, height: 340)
                     .padding(.vertical, 4)
-                    
+
                     // 可点击的扇形色块选择按钮图例
                     sectorSelectorButtons
                 }
-                
+
                 // 3. 最早 / 最晚 入睡时间卡片
                 extremeTimesRow
-                
+
                 // 4. 睡前准备色块与习惯次数
                 preSleepHabitsCard
-                
+
                 Spacer(minLength: 40)
             }
             .padding(.horizontal, 20)
@@ -2591,7 +2724,7 @@ struct ClockDistributionView: View {
         .navigationTitle("时钟分布")
         .navigationBarTitleDisplayMode(.inline)
     }
-    
+
     // 1. 日期阶段头部
     @ViewBuilder
     private var dateRangeHeader: some View {
@@ -2604,9 +2737,9 @@ struct ClockDistributionView: View {
                     .font(.system(size: 18, weight: .black))
                     .foregroundColor(.primary)
             }
-            
+
             Spacer()
-            
+
             Text("近 21 天")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
@@ -2616,7 +2749,7 @@ struct ClockDistributionView: View {
                 .cornerRadius(8)
         }
     }
-    
+
     // 2. 可点击扇形色块图例按钮
     @ViewBuilder
     private var sectorSelectorButtons: some View {
@@ -2645,7 +2778,7 @@ struct ClockDistributionView: View {
                 )
             }
             .buttonStyle(.plain)
-            
+
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                     selectedSector = 1
@@ -2672,7 +2805,7 @@ struct ClockDistributionView: View {
             .buttonStyle(.plain)
         }
     }
-    
+
     // 3. 最早 / 最晚 入睡时间区间
     @ViewBuilder
     private var extremeTimesRow: some View {
@@ -2692,7 +2825,7 @@ struct ClockDistributionView: View {
             .background(Color.white)
             .cornerRadius(18)
             .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
-            
+
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("最晚入睡")
@@ -2710,7 +2843,7 @@ struct ClockDistributionView: View {
             .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
         }
     }
-    
+
     // 4. 睡前准备色块与习惯次数
     @ViewBuilder
     private var preSleepHabitsCard: some View {
@@ -2723,27 +2856,27 @@ struct ClockDistributionView: View {
                     .padding(.vertical, 5)
                     .background(Color(red: 0.05, green: 0.65, blue: 0.38))
                     .cornerRadius(8)
-                
+
                 Spacer()
-                
+
                 Text("习惯完成率")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(Color(uiColor: .tertiaryLabel))
             }
-            
+
             VStack(spacing: 10) {
                 ForEach(habits, id: \.0) { habit in
                     HStack {
                         Circle()
                             .fill(habit.2)
                             .frame(width: 8, height: 8)
-                        
+
                         Text(habit.0)
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.primary)
-                        
+
                         Spacer()
-                        
+
                         Text(habit.1)
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(.primary)
@@ -2766,28 +2899,28 @@ struct ClockDistributionView: View {
 fileprivate struct ClockDialCanvas: View {
     let selectedSector: Int
     let onTapSector: (Int) -> Void
-    
+
     var body: some View {
         Canvas { ctx, size in
             let cx = size.width / 2
             let cy = size.height / 2
             let center = CGPoint(x: cx, y: cy)
-            
+
             // 扩大后的表盘整体半径
             let sectorRadius: CGFloat = 135
-            
+
             // 0. 绘制表盘底图背景边框圆圈
             var dialBgPath = Path()
             dialBgPath.addEllipse(in: CGRect(x: cx - sectorRadius, y: cy - sectorRadius, width: sectorRadius * 2, height: sectorRadius * 2))
             ctx.fill(dialBgPath, with: .color(Color(hex: "F3F4F6").opacity(0.6)))
             ctx.stroke(dialBgPath, with: .color(Color(hex: "E5E7EB")), style: StrokeStyle(lineWidth: 1.5))
-            
+
             // 1. 绘制作息时段扇形区域
             drawSectors(ctx: ctx, center: center, radius: sectorRadius)
-            
+
             // 2. 绘制 12 点/时辰刻度线 (刻度线朝向表盘内侧)
             drawTicks(ctx: ctx, center: center, radius: sectorRadius)
-            
+
             // 3. 绘制 12点, 3点, 6点, 9点 内部文字 (完全位于时钟表盘内部)
             drawLabels(ctx: ctx, center: center)
         }
@@ -2798,13 +2931,13 @@ fileprivate struct ClockDialCanvas: View {
             let dx = location.x - cx
             let dy = location.y - cy
             let dist = sqrt(dx*dx + dy*dy)
-            
+
             if dist <= 140 {
                 // 计算从12点方向顺时针的角度(0..12h)
                 var angle = atan2(dy, dx) + .pi / 2.0
                 if angle < 0 { angle += 2.0 * .pi }
                 let hour = (angle / (2.0 * .pi)) * 12.0
-                
+
                 // 预备段 22:00 - 23:00 (10.0 - 11.0 hour)
                 if hour >= 10.0 && hour < 11.0 {
                     onTapSector(1)
@@ -2819,7 +2952,7 @@ fileprivate struct ClockDialCanvas: View {
             }
         }
     }
-    
+
     private func drawSectors(ctx: GraphicsContext, center: CGPoint, radius: CGFloat) {
         // 次要段 (22:00-23:00, 10点到11点)
         let backStartHour: Double = 10.0
@@ -2827,7 +2960,7 @@ fileprivate struct ClockDialCanvas: View {
         // 核心段 (23:00-00:30, 11点到12.5点)
         let frontStartHour: Double = 11.0
         let frontEndHour: Double = 12.5
-        
+
         // 绘制 back sector (#A7F3D0 淡柔绿)
         var backPath = Path()
         backPath.move(to: center)
@@ -2836,7 +2969,7 @@ fileprivate struct ClockDialCanvas: View {
         backPath.addArc(center: center, radius: radius, startAngle: a1, endAngle: a2, clockwise: false)
         backPath.closeSubpath()
         ctx.fill(backPath, with: .color(Color(hex: "A7F3D0")))
-        
+
         // 绘制 front sector (#10B981 鲜明翡翠绿)
         var frontPath = Path()
         frontPath.move(to: center)
@@ -2846,39 +2979,39 @@ fileprivate struct ClockDialCanvas: View {
         frontPath.closeSubpath()
         ctx.fill(frontPath, with: .color(Color(hex: "10B981")))
     }
-    
+
     private func drawTicks(ctx: GraphicsContext, center: CGPoint, radius: CGFloat) {
         // 12大刻度 (整点), 48小刻度 (每15分钟)
         for i in 0..<60 {
             let frac = Double(i) / 60.0
             let angle = frac * 2.0 * .pi - (.pi / 2.0)
             let isMajor = (i % 5 == 0) // 整点
-            
+
             let r1: CGFloat = isMajor ? radius - 14 : radius - 8
             let r2: CGFloat = radius
-            
+
             let x1 = center.x + CGFloat(cos(angle)) * r1
             let y1 = center.y + CGFloat(sin(angle)) * r1
             let x2 = center.x + CGFloat(cos(angle)) * r2
             let y2 = center.y + CGFloat(sin(angle)) * r2
-            
+
             var linePath = Path()
             linePath.move(to: CGPoint(x: x1, y: y1))
             linePath.addLine(to: CGPoint(x: x2, y: y2))
-            
+
             let color = isMajor ? Color(hex: "1F1F24") : Color(hex: "A0A0A5")
             let lineWidth: CGFloat = isMajor ? 2.5 : 1.5
             ctx.stroke(linePath, with: .color(color), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
         }
     }
-    
+
     private func drawLabels(ctx: GraphicsContext, center: CGPoint) {
         let darkColor = Color(hex: "374151")
         let font = Font.system(size: 14, weight: .bold)
-        
+
         // 放置在时钟表盘内侧 (距离中心 92pt)
         let distance: CGFloat = 92
-        
+
         // 12点 (位于顶侧绿块内，使用白色高亮)
         ctx.draw(Text("12点").font(font).foregroundColor(.white), at: CGPoint(x: center.x, y: center.y - distance), anchor: .center)
         // 3点 (右侧)
