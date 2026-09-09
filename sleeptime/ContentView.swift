@@ -300,7 +300,7 @@ struct BlankPlanView: View {
             // 自定义顶部：大标题与管理图标在同一高度
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .center) {
-                    Text("计划")
+                    Text("Day 1")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
@@ -329,42 +329,43 @@ struct BlankPlanView: View {
             .padding(.bottom, 8)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    // 一行两列的卡片区
-                    HStack(spacing: 16) {
-                        // 原则卡片
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("原则")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundColor(.primary)
-                            Text("看看什么正在指引你")
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundColor(.secondary)
-                                .lineSpacing(2)
+                VStack(spacing: 16) {
+                    // 数据统计卡片（移至顶部）
+                    HStack(spacing: 9) {
+                        // Card 1
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("完成天数")
+                                .font(.system(size: 14, weight: .medium))
+                            Spacer()
+                            Text("1天")
+                                .font(.custom("Courier", size: 25))
+                                .tracking(-1)
                         }
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(16)
-                        .background(AppTheme.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .foregroundColor(.white)
+                        .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(height: 75)
+                        .background(Color(red: 100.0/255.0, green: 160.0/255.0, blue: 255.0/255.0))
+                        .cornerRadius(7)
 
-                        // 回顾卡片
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("回顾")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundColor(.primary)
-                            Text("看见自己是怎么做到的")
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundColor(.secondary)
-                                .lineSpacing(2)
+                        // Card 2
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("最晚入睡时间")
+                                .font(.system(size: 14, weight: .medium))
+                            Spacer()
+                            Text("03:15")
+                                .font(.custom("Courier", size: 25))
+                                .tracking(-1)
                         }
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(16)
-                        .background(AppTheme.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .foregroundColor(Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0))
+                        .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(height: 75)
+                        .background(Color(red: 255.0/255.0, green: 220.0/255.0, blue: 89.0/255.0))
+                        .cornerRadius(7)
                     }
 
                     TodayWorkCardView()
-                        .padding(.bottom, 16)
 
                     SleepRecordPanelView()
                 }
@@ -390,66 +391,61 @@ struct TodayWorkCardView: View {
     let btnDeleteBg = Color(red: 250/255, green: 100/255, blue: 100/255)
 
     var body: some View {
-        HStack(alignment: .top, spacing: 20) {
-            // Left column: Avatar + Title
-            VStack(spacing: 8) {
-                Image("stay_up_late_demon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-
-                Text("熬夜魔")
-                    .font(.system(size: 22, weight: .heavy))
+        VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("7天早睡计划")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(textDark)
-            }
 
-            // Right column: Stats and Buttons
-            VStack(alignment: .leading, spacing: 14) {
-                // Combo text
-                HStack(alignment: .bottom) {
-                    Text("熬夜5天")
-                        .font(.system(size: 26, weight: .black, design: .default))
-                        .foregroundColor(textDark)
-                    Spacer()
-                    Text("-2")
-                        .font(.system(size: 32, weight: .black, design: .monospaced))
-                        .foregroundColor(btnDeleteBg)
-                }
+                HStack(spacing: 8) {
+                    let weekdays = ["一", "二", "三", "四", "五", "六", "日"]
+                    ForEach(0..<7, id: \.self) { index in
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(index < 2 ? trackFill : trackBg.opacity(0.3)) // 前2天设为已打卡颜色
 
-                // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(trackBg)
-                            .frame(height: 8)
-                        Capsule()
-                            .fill(trackFill)
-                            .frame(width: geo.size.width * 0.15, height: 8)
+                            Text(weekdays[index])
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(index < 2 ? .white : textGrey)
+                        }
+                        .frame(height: 36)
                     }
                 }
-                .frame(height: 8)
-                .padding(.bottom, 6)
+            }
 
-                // Attack Button
-                Button(action: {}) {
-                    Text("有点忍不住想熬夜")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(btnAttackBg)
-                        .clipShape(Capsule())
+            HStack(alignment: .center, spacing: 20) {
+                VStack(spacing: 8) {
+                    Image("stay_up_late_demon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+
+                    Text("熬夜魔")
+                        .font(.system(size: 22, weight: .heavy))
+                        .foregroundColor(textDark)
                 }
+                .frame(width: 96)
 
-                // Delete Button
-                Button(action: {}) {
-                    Text("弱点")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(btnDeleteBg)
-                        .clipShape(Capsule())
+                VStack(spacing: 12) {
+                    Button(action: {}) {
+                        Text("有点忍不住想熬夜")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(btnAttackBg)
+                            .clipShape(Capsule())
+                    }
+
+                    Button(action: {}) {
+                        Text("弱点")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(btnDeleteBg)
+                            .clipShape(Capsule())
+                    }
                 }
             }
         }
@@ -462,7 +458,7 @@ struct TodayWorkCardView: View {
 struct SleepRecordPanelView: View {
     let textDark = Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0)
     let borderLight = Color(red: 220.0/255.0, green: 236.0/255.0, blue: 239.0/255.0)
-    let tealColor = Color(red: 70.0/255.0, green: 200.0/255.0, blue: 170.0/255.0)
+    let tealColor = Color(red: 100.0/255.0, green: 160.0/255.0, blue: 255.0/255.0)
     let yellowColor = Color(red: 255.0/255.0, green: 220.0/255.0, blue: 89.0/255.0)
     let progressColor = Color(red: 103.0/255.0, green: 201.0/255.0, blue: 223.0/255.0)
     let partialColor = Color(red: 168.0/255.0, green: 187.0/255.0, blue: 192.0/255.0)
@@ -495,45 +491,37 @@ struct SleepRecordPanelView: View {
 
         VStack(alignment: .leading, spacing: 0) {
             // Summary Cards
-            HStack(spacing: 9) {
-                // Card 1
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("完成天数")
-                        .font(.system(size: 10, weight: .regular))
-                    Spacer()
-                    Text("1天")
-                        .font(.custom("Courier", size: 25))
-                        .tracking(-1)
+            // 原则与回顾卡片（移至下部）
+            HStack(spacing: 16) {
+                // 原则卡片
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("原则")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text("看看什么正在指引你")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineSpacing(2)
                 }
-                .foregroundColor(.white)
-                .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 75)
-                .background(tealColor)
-                .cornerRadius(7)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(16)
+                .background(AppTheme.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                // Card 2
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .top, spacing: 2) {
-                        Text("熬夜超额时长")
-                            .font(.system(size: 10, weight: .regular))
-                        Text("?")
-                            .font(.custom("Georgia", size: 9))
-                            .frame(width: 13, height: 13)
-                            .overlay(Circle().stroke(textDark, lineWidth: 1.4))
-                    }
-                    Spacer()
-                    Text("6.6h")
-                        .font(.custom("Courier", size: 25))
-                        .tracking(-1)
+                // 回顾卡片
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("回顾")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.primary)
+                    Text("看见自己是怎么做到的")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineSpacing(2)
                 }
-                .foregroundColor(textDark)
-                .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 75)
-                .background(yellowColor)
-                .cornerRadius(7)
-                .overlay(RoundedRectangle(cornerRadius: 7).stroke(textDark, lineWidth: 1.5))
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(16)
+                .background(AppTheme.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .padding(.bottom, 18)
 
@@ -541,26 +529,21 @@ struct SleepRecordPanelView: View {
             VStack(spacing: 22) {
                 ForEach(days) { day in
                     VStack(spacing: 0) {
-                        HStack(spacing: 5) {
+                        HStack(spacing: 8) {
                             Text(day.weekday)
-                                .font(.system(size: 15, design: .serif))
+                                .font(.system(size: 18, weight: .bold, design: .serif))
                                 .foregroundColor(textDark)
-                                .frame(width: 31, alignment: .center)
+                                .frame(width: 36, alignment: .center)
                             Text(day.dateStr)
-                                .font(.system(size: 9))
+                                .font(.system(size: 13))
                                 .foregroundColor(dateColor)
-                                .frame(width: 39, alignment: .leading)
+                                .frame(width: 44, alignment: .leading)
                             Text(day.hours)
-                                .font(.custom("Courier", size: 11))
+                                .font(.custom("Courier", size: 14))
                                 .foregroundColor(textDark)
                             Spacer()
-                            if day.showAdjust {
-                                Text("调整 ⌄")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(noteColor)
-                            }
                         }
-                        .frame(height: 22)
+                        .frame(height: 24)
 
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
@@ -600,14 +583,14 @@ struct EarlySleepPlan1DetailView: View {
                     // 标题区 (去掉返回箭头)
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("21天早睡计划")
+                            Text("Day 1")
                                 .font(.system(size: 28, weight: .black))
                                 .tracking(-0.5) // 字距微调，更紧凑
                                 .foregroundColor(.primary)
 
                             WavyLine()
                                 .stroke(Color(red: 0.2, green: 0.75, blue: 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                                .frame(width: 120, height: 7)
+                                .frame(width: 70, height: 7)
                                 .padding(.leading, 2)
                         }
 
@@ -727,7 +710,7 @@ struct PlanShareImageView: View {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("21天早睡计划")
+                        Text("Day 1")
                             .font(.system(size: 28, weight: .black))
                             .foregroundColor(.primary)
 
@@ -2448,7 +2431,7 @@ struct EarlySleepDayGridView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
-                Text("21天早睡计划")
+                Text("Day 1")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.primary)
 
