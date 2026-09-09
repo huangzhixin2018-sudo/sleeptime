@@ -27,7 +27,7 @@ struct ContentView: View {
             }
             .tag(AppTab.home)
             
-            SleepProgressView()
+            BlankPlanView()
             .tabItem {
                 Label("计划", systemImage: "star.fill")
             }
@@ -294,7 +294,20 @@ struct ContentView_Previews: PreviewProvider {
     }
 }
 
-struct SleepProgressView: View {
+struct BlankPlanView: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            Text("敬请期待")
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground).ignoresSafeArea())
+    }
+}
+
+struct EarlySleepPlan1DetailView: View {
     @State private var exportedPlan: ExportedPlanImage?
 
     var body: some View {
@@ -399,6 +412,8 @@ struct SleepProgressView: View {
             .padding(.bottom, 40) // 底部留白，防止滚动到底部时贴边
             }
         }
+        .navigationTitle("早睡方案1")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $exportedPlan) { plan in
             ActivityShareSheet(items: [plan.image])
         }
@@ -644,7 +659,13 @@ struct ProfileView: View {
                             ProfileRowView(icon: "person.crop.circle", title: "名人作息", showDivider: true)
                         }
                         .buttonStyle(.plain)
-                        emptyProfileNavigationRow(icon: "note.text", title: "睡眠札记", showDivider: false)
+                        NavigationLink {
+                            EarlySleepPlan1DetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "star", title: "早睡方案1", showDivider: false)
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     ProfileSection {
@@ -653,6 +674,14 @@ struct ProfileView: View {
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "clock.arrow.circlepath", title: "时间穿梭", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        NavigationLink {
+                            EmotionDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "face.smiling", title: "情绪", showDivider: true)
                         }
                         .buttonStyle(.plain)
 

@@ -896,6 +896,9 @@ struct MonthHangingVisualizationView: View {
                 }
                 .frame(height: 570)
                 
+                DialScaleView()
+                    .padding(.top, 20)
+                
                 Color.clear.frame(height: 120)
             }
         }
@@ -1689,6 +1692,37 @@ struct ConvergenceShiftView: View {
             ("02", [nil, nil, nil, c_orange, c_red]),
             ("01", [nil, nil, c_blue, c_orange, nil])
         ]
+    }
+}
+
+// MARK: - Dial Scale View (刻度风铃盘)
+struct DialScaleView: View {
+    var body: some View {
+        VStack {
+            // Ticks Arc only
+            ZStack(alignment: .top) {
+                Color.clear.frame(height: 80)
+                ZStack {
+                    ForEach(0..<41, id: \.self) { i in
+                        let isMajor = i % 5 == 0
+                        let isBright = i == 5 // 模拟发光刻度
+                        
+                        let tickColor: Color = isBright ? .primary : (isMajor ? Color.primary.opacity(0.6) : Color.primary.opacity(0.3))
+                        
+                        Rectangle()
+                            .fill(tickColor)
+                            .frame(width: isBright ? 3 : 2, height: isMajor ? 16 : 10)
+                            .shadow(color: isBright ? Color.primary.opacity(0.9) : .clear, radius: 4, x: 0, y: 0)
+                            .offset(y: -220)
+                            .rotationEffect(.degrees(Double(i - 20) * 1.5))
+                    }
+                }
+                .offset(y: 220)
+            }
+            .frame(height: 80)
+            .clipped()
+        }
+        .padding(.vertical, 20)
     }
 }
 
