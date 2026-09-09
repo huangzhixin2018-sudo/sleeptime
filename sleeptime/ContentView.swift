@@ -649,6 +649,14 @@ struct ProfileView: View {
 
                     ProfileSection {
                         NavigationLink {
+                            TimeTravelDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "clock.arrow.circlepath", title: "时间穿梭", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
                             CalendarDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
@@ -2436,18 +2444,39 @@ struct SleepDistributionCardView: View {
 
 // MARK: - 时钟分布 (Clock Distribution View)
 struct ClockDistributionView: View {
-    @State private var selectedTab: Int = 0 // 0: 入睡, 1: 起床
+    @State private var selectedSector: Int = 0 // 0: 核心高频段 (23:00-00:30), 1: 预备次要段 (22:00-23:00)
+    
+    private let habits = [
+        ("刷牙洗漱", "21次", Color(red: 0.1, green: 0.65, blue: 0.45)),
+        ("放下手机", "18次", Color(red: 0.95, green: 0.6, blue: 0.2)),
+        ("睡前冥想", "15次", Color(red: 0.4, green: 0.45, blue: 0.9))
+    ]
     
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 24) {
-                headerSection
+            VStack(spacing: 20) {
+                // 1. 日期阶段头部
+                dateRangeHeader
                 
-                segmentedControl
+                // 2. 12时辰入睡表盘 (支持点击色块)
+                VStack(spacing: 12) {
+                    ClockDialCanvas(selectedSector: selectedSector) { tappedSector in
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            selectedSector = tappedSector
+                        }
+                    }
+                    .frame(width: 340, height: 340)
+                    .padding(.vertical, 4)
+                    
+                    // 可点击的扇形色块选择按钮图例
+                    sectorSelectorButtons
+                }
                 
-                clockCanvasSection
+                // 3. 最早 / 最晚 入睡时间卡片
+                extremeTimesRow
                 
-                statCardsSection
+                // 4. 睡前准备色块与习惯次数
+                preSleepHabitsCard
                 
                 Spacer(minLength: 40)
             }
@@ -2459,182 +2488,180 @@ struct ClockDistributionView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
     
+    // 1. 日期阶段头部
     @ViewBuilder
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("分钟级入睡与起床聚类图谱")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+    private var dateRangeHeader: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("日期阶段")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                Text("8月26日 - 9月15日")
+                    .font(.system(size: 18, weight: .black))
+                    .foregroundColor(.primary)
+            }
+            
+            Spacer()
+            
+            Text("近 21 天")
+                .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
-                .tracking(1.5)
-            
-            Text("时钟分布")
-                .font(.system(size: 28, weight: .black))
-                .foregroundColor(.primary)
-            
-            Text("将21天的入睡与起床分钟映射至极坐标表盘，精准观测习惯集中度。")
-                .font(.system(size: 13, weight: .regular))
-                .foregroundColor(Color(uiColor: .secondaryLabel))
-                .lineSpacing(4)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color(red: 0.9, green: 0.96, blue: 0.92))
+                .cornerRadius(8)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
+    // 2. 可点击扇形色块图例按钮
     @ViewBuilder
-    private var segmentedControl: some View {
-        HStack(spacing: 0) {
+    private var sectorSelectorButtons: some View {
+        HStack(spacing: 12) {
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                    selectedTab = 0
+                    selectedSector = 0
                 }
             } label: {
-                Text("入睡分钟聚类")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(selectedTab == 0 ? .white : Color(uiColor: .secondaryLabel))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(selectedTab == 0 ? Color.primary : Color.clear)
-                    .cornerRadius(12)
-            }
-            
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                    selectedTab = 1
-                }
-            } label: {
-                Text("起床分钟聚类")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(selectedTab == 1 ? .white : Color(uiColor: .secondaryLabel))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(selectedTab == 1 ? Color.primary : Color.clear)
-                    .cornerRadius(12)
-            }
-        }
-        .padding(4)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-    }
-    
-    @ViewBuilder
-    private var clockCanvasSection: some View {
-        VStack(spacing: 20) {
-            // 纯粹表盘：内部无任何文本叠加
-            ClockDialCanvas(mode: selectedTab)
-                .frame(width: 300, height: 300)
-            
-            // 底部集中度摘要条
-            VStack(spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(selectedTab == 0 ? "核心入睡集中区" : "核心起床集中区")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
-                    
-                    Text(selectedTab == 0 ? ":15 - :38" : ":05 - :22")
-                        .font(.system(size: 16, weight: .black, design: .monospaced))
-                        .foregroundColor(.primary)
+                    Circle()
+                        .fill(Color(hex: "10B981"))
+                        .frame(width: 10, height: 10)
+                    Text("高频核心段 (23:00 - 00:30)")
+                        .font(.system(size: 12, weight: selectedSector == 0 ? .bold : .medium))
+                        .foregroundColor(selectedSector == 0 ? .primary : Color(uiColor: .secondaryLabel))
                 }
-                
-                Text(selectedTab == 0 ? "76.2% 的天数在此分钟段" : "84.5% 的天数在此分钟段")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(uiColor: .secondaryLabel))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(selectedSector == 0 ? Color.white : Color.clear)
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(selectedSector == 0 ? 0.04 : 0), radius: 4, x: 0, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(selectedSector == 0 ? Color(hex: "10B981") : Color.clear, lineWidth: 1.5)
+                )
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color(red: 0.95, green: 0.97, blue: 0.95))
-            .cornerRadius(12)
+            .buttonStyle(.plain)
             
-            // 图例标识
-            HStack(spacing: 24) {
-                HStack(spacing: 8) {
-                    RoundedRectangle(cornerRadius: 3)
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    selectedSector = 1
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Circle()
                         .fill(Color(hex: "A7F3D0"))
-                        .frame(width: 14, height: 14)
-                    Text(selectedTab == 0 ? "次要分布区间" : "预备唤醒区间")
+                        .frame(width: 10, height: 10)
+                    Text("预备入睡段 (22:00 - 23:00)")
+                        .font(.system(size: 12, weight: selectedSector == 1 ? .bold : .medium))
+                        .foregroundColor(selectedSector == 1 ? .primary : Color(uiColor: .secondaryLabel))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(selectedSector == 1 ? Color.white : Color.clear)
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(selectedSector == 1 ? 0.04 : 0), radius: 4, x: 0, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(selectedSector == 1 ? Color(hex: "10B981") : Color.clear, lineWidth: 1.5)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    
+    // 3. 最早 / 最晚 入睡时间区间
+    @ViewBuilder
+    private var extremeTimesRow: some View {
+        HStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("最早入睡")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(Color(uiColor: .secondaryLabel))
+                    Text("22:15")
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
                 }
-                
-                HStack(spacing: 8) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(hex: "10B981"))
-                        .frame(width: 14, height: 14)
-                    Text(selectedTab == 0 ? "高频集中区间" : "高峰响铃区间")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.primary)
-                }
+                Spacer()
             }
-        }
-        .padding(.vertical, 24)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
-        )
-    }
-    
-    @ViewBuilder
-    private var statCardsSection: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                statCard(
-                    title: selectedTab == 0 ? "平均入睡" : "平均起床",
-                    value: selectedTab == 0 ? ":23分" : ":14分",
-                    desc: "正负偏差 < 5分钟"
-                )
-                
-                statCard(
-                    title: "节律集中度",
-                    value: selectedTab == 0 ? "88%" : "92%",
-                    desc: "高度规律型作息"
-                )
-            }
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(18)
+            .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
             
-            HStack(spacing: 12) {
-                statCard(
-                    title: "离散分布",
-                    value: selectedTab == 0 ? "3天" : "1天",
-                    desc: selectedTab == 0 ? "晚于 :45分入睡" : "晚于 :30分起床"
-                )
-                
-                statCard(
-                    title: "最佳状态区间",
-                    value: selectedTab == 0 ? ":20-:30" : ":10-:20",
-                    desc: "次日精力评分最高"
-                )
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("最晚入睡")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(uiColor: .secondaryLabel))
+                    Text("01:20")
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(Color(red: 0.85, green: 0.3, blue: 0.3))
+                }
+                Spacer()
             }
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(18)
+            .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
         }
     }
     
+    // 4. 睡前准备色块与习惯次数
     @ViewBuilder
-    private func statCard(title: String, value: String, desc: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(uiColor: .secondaryLabel))
+    private var preSleepHabitsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("睡前准备")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color(red: 0.05, green: 0.65, blue: 0.38))
+                    .cornerRadius(8)
+                
+                Spacer()
+                
+                Text("习惯完成率")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+            }
             
-            Text(value)
-                .font(.system(size: 22, weight: .bold, design: .monospaced))
-                .foregroundColor(Color(red: 0.05, green: 0.65, blue: 0.38))
-            
-            Text(desc)
-                .font(.system(size: 11, weight: .regular))
-                .foregroundColor(Color(uiColor: .tertiaryLabel))
+            VStack(spacing: 10) {
+                ForEach(habits, id: \.0) { habit in
+                    HStack {
+                        Circle()
+                            .fill(habit.2)
+                            .frame(width: 8, height: 8)
+                        
+                        Text(habit.0)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Text(habit.1)
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .cornerRadius(6)
+                    }
+                }
+            }
         }
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
-        )
+        .background(Color.white)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
     }
 }
 
-// MARK: - 时钟表盘 Canvas 绘制组件 (刻度与外置标签)
+// MARK: - 时钟表盘 Canvas 绘制组件 (支持扇形点击交互)
 fileprivate struct ClockDialCanvas: View {
-    let mode: Int // 0: 入睡, 1: 起床
+    let selectedSector: Int
+    let onTapSector: (Int) -> Void
     
     var body: some View {
         Canvas { ctx, size in
@@ -2642,31 +2669,66 @@ fileprivate struct ClockDialCanvas: View {
             let cy = size.height / 2
             let center = CGPoint(x: cx, y: cy)
             
-            // 弧带半径
-            let sectorRadius: CGFloat = 100
+            // 扩大后的表盘整体半径
+            let sectorRadius: CGFloat = 135
             
-            // 1. 绘制扇形区域
+            // 0. 绘制表盘底图背景边框圆圈
+            var dialBgPath = Path()
+            dialBgPath.addEllipse(in: CGRect(x: cx - sectorRadius, y: cy - sectorRadius, width: sectorRadius * 2, height: sectorRadius * 2))
+            ctx.fill(dialBgPath, with: .color(Color(hex: "F3F4F6").opacity(0.6)))
+            ctx.stroke(dialBgPath, with: .color(Color(hex: "E5E7EB")), style: StrokeStyle(lineWidth: 1.5))
+            
+            // 1. 绘制作息时段扇形区域
             drawSectors(ctx: ctx, center: center, radius: sectorRadius)
             
-            // 2. 绘制 60 个刻度线
+            // 2. 绘制 12 点/时辰刻度线 (刻度线朝向表盘内侧)
             drawTicks(ctx: ctx, center: center, radius: sectorRadius)
             
-            // 3. 绘制 :00, :15, :30, :45 标签 (放在刻度圈外面: distance: 130)
+            // 3. 绘制 12点, 3点, 6点, 9点 内部文字 (完全位于时钟表盘内部)
             drawLabels(ctx: ctx, center: center)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { location in
+            let cx: CGFloat = 170
+            let cy: CGFloat = 170
+            let dx = location.x - cx
+            let dy = location.y - cy
+            let dist = sqrt(dx*dx + dy*dy)
+            
+            if dist <= 140 {
+                // 计算从12点方向顺时针的角度(0..12h)
+                var angle = atan2(dy, dx) + .pi / 2.0
+                if angle < 0 { angle += 2.0 * .pi }
+                let hour = (angle / (2.0 * .pi)) * 12.0
+                
+                // 预备段 22:00 - 23:00 (10.0 - 11.0 hour)
+                if hour >= 10.0 && hour < 11.0 {
+                    onTapSector(1)
+                } else if hour >= 11.0 || hour <= 0.5 {
+                    // 核心段 23:00 - 00:30 (11.0 - 12.5 hour)
+                    onTapSector(0)
+                } else {
+                    onTapSector(selectedSector == 0 ? 1 : 0)
+                }
+            } else {
+                onTapSector(selectedSector == 0 ? 1 : 0)
+            }
         }
     }
     
     private func drawSectors(ctx: GraphicsContext, center: CGPoint, radius: CGFloat) {
-        let backStartMin: Double = mode == 0 ? 0.0 : 55.0
-        let backEndMin: Double = mode == 0 ? 15.0 : 5.0
-        let frontStartMin: Double = mode == 0 ? 15.0 : 5.0
-        let frontEndMin: Double = mode == 0 ? 38.0 : 22.0
+        // 次要段 (22:00-23:00, 10点到11点)
+        let backStartHour: Double = 10.0
+        let backEndHour: Double = 11.0
+        // 核心段 (23:00-00:30, 11点到12.5点)
+        let frontStartHour: Double = 11.0
+        let frontEndHour: Double = 12.5
         
         // 绘制 back sector (#A7F3D0 淡柔绿)
         var backPath = Path()
         backPath.move(to: center)
-        let a1 = Angle(radians: (backStartMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
-        let a2 = Angle(radians: (backEndMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
+        let a1 = Angle(radians: (backStartHour / 12.0) * 2.0 * .pi - (.pi / 2.0))
+        let a2 = Angle(radians: (backEndHour / 12.0) * 2.0 * .pi - (.pi / 2.0))
         backPath.addArc(center: center, radius: radius, startAngle: a1, endAngle: a2, clockwise: false)
         backPath.closeSubpath()
         ctx.fill(backPath, with: .color(Color(hex: "A7F3D0")))
@@ -2674,21 +2736,22 @@ fileprivate struct ClockDialCanvas: View {
         // 绘制 front sector (#10B981 鲜明翡翠绿)
         var frontPath = Path()
         frontPath.move(to: center)
-        let a3 = Angle(radians: (frontStartMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
-        let a4 = Angle(radians: (frontEndMin / 60.0) * 2.0 * .pi - (.pi / 2.0))
+        let a3 = Angle(radians: (frontStartHour / 12.0) * 2.0 * .pi - (.pi / 2.0))
+        let a4 = Angle(radians: (frontEndHour / 12.0) * 2.0 * .pi - (.pi / 2.0))
         frontPath.addArc(center: center, radius: radius, startAngle: a3, endAngle: a4, clockwise: false)
         frontPath.closeSubpath()
         ctx.fill(frontPath, with: .color(Color(hex: "10B981")))
     }
     
     private func drawTicks(ctx: GraphicsContext, center: CGPoint, radius: CGFloat) {
+        // 12大刻度 (整点), 48小刻度 (每15分钟)
         for i in 0..<60 {
             let frac = Double(i) / 60.0
             let angle = frac * 2.0 * .pi - (.pi / 2.0)
-            let isMajor = (i % 5 == 0)
+            let isMajor = (i % 5 == 0) // 整点
             
-            let r1: CGFloat = isMajor ? radius : radius + 3
-            let r2: CGFloat = isMajor ? radius + 13 : radius + 8
+            let r1: CGFloat = isMajor ? radius - 14 : radius - 8
+            let r2: CGFloat = radius
             
             let x1 = center.x + CGFloat(cos(angle)) * r1
             let y1 = center.y + CGFloat(sin(angle)) * r1
@@ -2706,20 +2769,20 @@ fileprivate struct ClockDialCanvas: View {
     }
     
     private func drawLabels(ctx: GraphicsContext, center: CGPoint) {
-        let labelColor = Color(hex: "4B5563")
-        let font = Font.system(size: 13, weight: .bold, design: .monospaced)
+        let darkColor = Color(hex: "374151")
+        let font = Font.system(size: 14, weight: .bold)
         
-        // 放置在刻度线圈之外的距离 (130pt)
-        let distance: CGFloat = 130
+        // 放置在时钟表盘内侧 (距离中心 92pt)
+        let distance: CGFloat = 92
         
-        // :00 (top)
-        ctx.draw(Text(":00").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x, y: center.y - distance), anchor: .bottom)
-        // :15 (right)
-        ctx.draw(Text(":15").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x + distance, y: center.y), anchor: .leading)
-        // :30 (bottom)
-        ctx.draw(Text(":30").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x, y: center.y + distance), anchor: .top)
-        // :45 (left)
-        ctx.draw(Text(":45").font(font).foregroundColor(labelColor), at: CGPoint(x: center.x - distance, y: center.y), anchor: .trailing)
+        // 12点 (位于顶侧绿块内，使用白色高亮)
+        ctx.draw(Text("12点").font(font).foregroundColor(.white), at: CGPoint(x: center.x, y: center.y - distance), anchor: .center)
+        // 3点 (右侧)
+        ctx.draw(Text("3点").font(font).foregroundColor(darkColor), at: CGPoint(x: center.x + distance, y: center.y), anchor: .center)
+        // 6点 (底侧)
+        ctx.draw(Text("6点").font(font).foregroundColor(darkColor), at: CGPoint(x: center.x, y: center.y + distance), anchor: .center)
+        // 9点 (左侧)
+        ctx.draw(Text("9点").font(font).foregroundColor(darkColor), at: CGPoint(x: center.x - distance, y: center.y), anchor: .center)
     }
 }
 

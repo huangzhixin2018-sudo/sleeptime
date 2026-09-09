@@ -46,6 +46,7 @@ struct CalendarDetailView: View {
     @State private var isYearVisualizationStyle: Bool = false
     @State private var isMonthVisualizationStyle: Bool = false
     @State private var isDayVisualizationStyle: Bool = false
+    @State private var isTotalVisualizationStyle: Bool = false
     private let displayYear: Int = 2026 // Currently hardcoded for the annual view
     private let initialMonth: Int = Calendar.current.component(.month, from: Date()) - 1
 
@@ -79,7 +80,11 @@ struct CalendarDetailView: View {
                         MonthGridDetailView(year: displayYear, monthIndex: initialMonth)
                     }
                 case .total:
-                    TotalSummaryArchiveView(year: displayYear)
+                    if isTotalVisualizationStyle {
+                        ConvergenceShiftView(year: displayYear)
+                    } else {
+                        TotalSummaryArchiveView(year: displayYear)
+                    }
                 case .day:
                     if isDayVisualizationStyle {
                         DayTearOffCalendarView()
@@ -131,6 +136,18 @@ struct CalendarDetailView: View {
                             Image(systemName: isDayVisualizationStyle ? "doc.plaintext" : "bookmark")
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(isDayVisualizationStyle ? .accentColor : .primary)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                    } else if viewMode == .total {
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                isTotalVisualizationStyle.toggle()
+                            }
+                        } label: {
+                            Image(systemName: isTotalVisualizationStyle ? "chart.xyaxis.line" : "chart.bar")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(isTotalVisualizationStyle ? .accentColor : .primary)
                                 .frame(width: 36, height: 36)
                                 .contentShape(Rectangle())
                         }
@@ -1485,6 +1502,193 @@ fileprivate struct CircadianClockCanvas: View {
         var dotPath = Path()
         dotPath.addEllipse(in: CGRect(x: px - 3.5, y: py - 3.5, width: 7.0, height: 7.0))
         ctx.fill(dotPath, with: .color(Color.red))
+    }
+}
+
+// MARK: - Convergence Shift View
+struct ConvergenceShiftView: View {
+    let year: Int
+    
+    private let c_gold = Color(hex: "E6A100")
+    private let c_green = Color(hex: "34C759")
+    private let c_blue = Color(hex: "007AFF")
+    private let c_orange = Color(hex: "FF9500")
+    private let c_red = Color(hex: "FF3B30")
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 32) {
+                // Header
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Convergence Shift")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "8E8E93"))
+                        .tracking(1.2)
+                        .textCase(.uppercase)
+                    Text("历年入睡区间收敛演变")
+                        .font(.system(size: 24, weight: .heavy))
+                        .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 44)
+                
+                // Timeline stream
+                VStack(spacing: 36) {
+                    yearGroup(year: 2026, dotColor: Color(hex: "34C759"), months: mock2026())
+                    yearGroup(year: 2025, dotColor: Color(hex: "007AFF"), months: mock2025())
+                    yearGroup(year: 2024, dotColor: Color(hex: "FF3B30"), months: mock2024(), isLast: true)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 60)
+            }
+        }
+        .background(Color(hex: "FFFFFF").ignoresSafeArea())
+    }
+    
+    private func yearGroup(year: Int, dotColor: Color, months: [(String, [Color?])], isLast: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            // Axis
+            VStack(spacing: 0) {
+                Circle()
+                    .stroke(dotColor, lineWidth: 2)
+                    .background(Circle().fill(Color.white))
+                    .frame(width: 9, height: 9)
+                    .padding(.top, 12)
+                    .zIndex(2)
+                
+                if !isLast {
+                    Rectangle()
+                        .fill(Color(hex: "E5E5EA"))
+                        .frame(width: 1)
+                        .padding(.bottom, -36)
+                        .zIndex(1)
+                } else {
+                    Spacer()
+                }
+            }
+            .frame(width: 18)
+            
+            // Content
+            VStack(alignment: .leading, spacing: 8) {
+                // Year placed above 12
+                Text(String(year))
+                    .font(.system(size: 26, weight: .heavy))
+                    .foregroundColor(.primary)
+                    .padding(.bottom, 4)
+                
+                if year == 2026 {
+                    scaleHeaderView
+                        .padding(.top, 4)
+                }
+                
+                // Months
+                VStack(spacing: 8) {
+                    ForEach(months.indices, id: \.self) { idx in
+                        let monthData = months[idx]
+                        HStack(spacing: 8) {
+                            Text(monthData.0)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                                .frame(width: 24, alignment: .leading)
+                            
+                            HStack(spacing: 4) {
+                                ForEach(0..<5, id: \.self) { cellIdx in
+                                    RoundedRectangle(cornerRadius: 2.5)
+                                        .fill(monthData.1[cellIdx] ?? Color(hex: "F2F2F7"))
+                                        .frame(height: 7)
+                                        .frame(maxWidth: .infinity)
+                                }
+                            }
+                        }
+                        .frame(height: 16)
+                    }
+                }
+            }
+            .padding(.leading, 8)
+        }
+    }
+    
+    private var scaleHeaderView: some View {
+        HStack(spacing: 0) {
+            Color.clear.frame(width: 32)
+            HStack(spacing: 4) {
+                let times = ["22:30", "23:00", "00:00", "01:00", "02:00+"]
+                let colors: [Color] = [c_gold, c_green, c_blue, c_orange, c_red]
+                ForEach(0..<times.count, id: \.self) { idx in
+                    VStack(spacing: 6) {
+                        Text(times[idx])
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundColor(.primary)
+                        
+                        ZStack(alignment: .bottom) {
+                            Rectangle().fill(colors[idx]).frame(width: 2.5, height: 8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            if idx == times.count - 1 {
+                                Rectangle().fill(colors[idx]).frame(width: 2.5, height: 8)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .overlay(
+                Rectangle().frame(height: 1).foregroundColor(Color.primary.opacity(0.3)),
+                alignment: .bottom
+            )
+        }
+        .padding(.bottom, 10)
+    }
+    
+    private func mock2026() -> [(String, [Color?])] {
+        return [
+            ("12", [nil, c_green, nil, nil, nil]),
+            ("11", [nil, c_green, nil, nil, nil]),
+            ("10", [c_gold, nil, nil, nil, nil]),
+            ("09", [nil, c_green, nil, nil, nil]),
+            ("08", [nil, c_green, nil, nil, nil]),
+            ("07", [nil, c_green, nil, nil, nil]),
+            ("06", [c_gold, nil, nil, nil, nil]),
+            ("05", [nil, c_green, nil, nil, nil]),
+            ("04", [nil, c_green, nil, nil, nil]),
+            ("03", [nil, c_green, nil, nil, nil]),
+            ("02", [nil, c_green, nil, nil, nil]),
+            ("01", [c_gold, nil, nil, nil, nil])
+        ]
+    }
+    
+    private func mock2025() -> [(String, [Color?])] {
+        return [
+            ("12", [nil, c_green, nil, nil, nil]),
+            ("11", [nil, c_green, c_blue, nil, nil]),
+            ("10", [nil, c_green, c_blue, nil, nil]),
+            ("09", [nil, c_green, c_blue, nil, nil]),
+            ("08", [nil, nil, c_blue, c_orange, nil]),
+            ("07", [nil, nil, c_blue, c_orange, nil]),
+            ("06", [nil, nil, c_blue, c_orange, nil]),
+            ("05", [nil, c_green, c_blue, nil, nil]),
+            ("04", [nil, c_green, c_blue, nil, nil]),
+            ("03", [nil, nil, c_blue, c_orange, nil]),
+            ("02", [nil, nil, c_blue, c_orange, nil]),
+            ("01", [nil, nil, c_blue, c_orange, nil])
+        ]
+    }
+    
+    private func mock2024() -> [(String, [Color?])] {
+        return [
+            ("12", [nil, nil, c_blue, c_orange, nil]),
+            ("11", [nil, nil, c_blue, c_orange, nil]),
+            ("10", [nil, nil, c_blue, c_orange, c_red]),
+            ("09", [nil, nil, nil, c_orange, c_red]),
+            ("08", [nil, nil, c_blue, c_orange, c_red]),
+            ("07", [nil, nil, nil, c_orange, c_red]),
+            ("06", [nil, nil, c_blue, c_orange, c_red]),
+            ("05", [nil, nil, c_blue, c_orange, nil]),
+            ("04", [nil, nil, c_blue, c_orange, nil]),
+            ("03", [nil, nil, c_blue, c_orange, c_red]),
+            ("02", [nil, nil, nil, c_orange, c_red]),
+            ("01", [nil, nil, c_blue, c_orange, nil])
+        ]
     }
 }
 
