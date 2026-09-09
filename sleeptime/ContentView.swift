@@ -296,14 +296,29 @@ struct ContentView_Previews: PreviewProvider {
 
 struct BlankPlanView: View {
     var body: some View {
-        VStack {
-            Spacer()
-            Text("敬请期待")
-                .foregroundColor(.secondary)
-            Spacer()
+        NavigationStack {
+            VStack {
+                Spacer()
+                Text("敬请期待")
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppTheme.pageBackground.ignoresSafeArea())
+            .navigationTitle("计划")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        // 预留管理入口
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground).ignoresSafeArea())
     }
 }
 
@@ -743,6 +758,17 @@ struct ProfileView: View {
             .background(AppTheme.pageBackground.ignoresSafeArea())
             .navigationTitle("我的")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        // 预留管理页面入口
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                }
+            }
         }
     }
 
