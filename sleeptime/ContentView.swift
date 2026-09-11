@@ -729,6 +729,8 @@ struct BlankPlanView: View {
                     )
 
                     SleepRecordPanelView()
+
+                    EmptyPlanFrameworkCard()
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
@@ -739,6 +741,45 @@ struct BlankPlanView: View {
             .background(AppTheme.homeBackground.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
         }
+    }
+}
+
+private struct EmptyPlanFrameworkCard: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let dividerX = proxy.size.width * 0.32
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white)
+
+                Path { path in
+                    path.move(to: CGPoint(x: dividerX, y: 10))
+                    path.addLine(to: CGPoint(x: dividerX, y: proxy.size.height - 10))
+                }
+                .stroke(
+                    Color.black.opacity(0.18),
+                    style: StrokeStyle(lineWidth: 1.5, dash: [7, 7])
+                )
+
+                VStack {
+                    Circle()
+                        .fill(AppTheme.homeBackground)
+                        .frame(width: 14, height: 14)
+                        .offset(y: -7)
+
+                    Spacer()
+
+                    Circle()
+                        .fill(AppTheme.homeBackground)
+                        .frame(width: 14, height: 14)
+                        .offset(y: 7)
+                }
+                .position(x: dividerX, y: proxy.size.height / 2)
+            }
+        }
+        .frame(height: 124)
+        .accessibilityHidden(true)
     }
 }
 
