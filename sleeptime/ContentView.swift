@@ -642,6 +642,7 @@ private enum PlanTypography {
 }
 
 struct BlankPlanView: View {
+    @State private var exportedPlan: ExportedPlanImage?
     @AppStorage("shorterPlan.isActive") private var isShorterPlanActive = false
     @AppStorage("shorterPlan.durationDays") private var planDurationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
@@ -753,6 +754,20 @@ struct BlankPlanView: View {
                             shapeStyle: .right
                         )
                     }
+
+                    PlanHabitSection()
+
+                    Button {
+                        exportCurrentPlan()
+                    } label: {
+                        Label("导出图片", systemImage: "square.and.arrow.down")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
@@ -762,7 +777,189 @@ struct BlankPlanView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(AppTheme.homeBackground.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $exportedPlan) { plan in
+                ActivityShareSheet(items: [plan.image])
+            }
         }
+    }
+
+    @MainActor
+    private func exportCurrentPlan() {
+        let renderer = ImageRenderer(
+            content: CurrentPlanExportView(
+                currentDay: currentDay,
+                planDurationDays: planDurationDays,
+                maxLateStreak: maxLateStreak,
+                planStartedAt: planStartedAt,
+                isShorterPlanActive: isShorterPlanActive
+            )
+                .frame(width: 390)
+                .fixedSize(horizontal: false, vertical: true)
+        )
+        renderer.scale = 3
+
+        if let image = renderer.uiImage {
+            exportedPlan = ExportedPlanImage(image: image)
+        }
+    }
+}
+
+private struct CurrentPlanExportView: View {
+    let currentDay: Int
+    let planDurationDays: Int
+    let maxLateStreak: Int
+    let planStartedAt: Double
+    let isShorterPlanActive: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Day \(currentDay)")
+                .font(.system(size: 30, weight: .bold))
+                .monospacedDigit()
+
+            LongestEarlySleepCard(currentValue: 1)
+            EmptyPlanFrameworkCard()
+
+            TodayWorkCardView(
+                planDurationDays: planDurationDays,
+                maxLateStreak: maxLateStreak,
+                currentDay: currentDay,
+                planStartedAt: planStartedAt,
+                isShorterPlanActive: isShorterPlanActive
+            )
+
+            HStack(spacing: 8) {
+                PlanPatternCard(
+                    title: "原则",
+                    subtitle: nil,
+                    icon: "checkmark.shield.fill",
+                    tint: Color(red: 0.42, green: 0.56, blue: 0.16),
+                    shapeStyle: .left
+                )
+
+                PlanPatternCard(
+                    title: "方法",
+                    subtitle: nil,
+                    icon: "lightbulb.fill",
+                    tint: Color(red: 0.30, green: 0.52, blue: 0.78),
+                    shapeStyle: .plain
+                )
+
+                PlanPatternCard(
+                    title: "进步",
+                    subtitle: nil,
+                    icon: "moon.fill",
+                    tint: Color(red: 0.95, green: 0.40, blue: 0.38),
+                    usesFlowerIcon: true,
+                    shapeStyle: .right
+                )
+            }
+
+            PlanHabitSection()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 18)
+        .background(AppTheme.homeBackground)
+    }
+}
+
+private struct PlanHabitSection: View {
+    @State private var meditationCheckInTime: String?
+
+    private var isMeditationCompleted: Bool {
+        meditationCheckInTime != nil
+    }
+
+    var body: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                meditationCheckInTime = isMeditationCompleted ? nil : currentTimeText
+            }
+        } label: {
+            VStack(spacing: 12) {
+                HStack(alignment: .lastTextBaseline, spacing: 8) {
+                    Text("冥想")
+                        .font(.system(size: 23, weight: .bold))
+                        .foregroundStyle(Color.black)
+
+                    Text("12:00")
+                        .font(.system(size: 23, weight: .regular))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.black)
+
+                    Spacer()
+
+                    Circle()
+                        .fill(isMeditationCompleted ? AppTheme.accent : Color.clear)
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            Circle()
+                                .stroke(
+                                    isMeditationCompleted ? Color.clear : Color.black.opacity(0.18),
+                                    lineWidth: 1.5
+                                )
+                        }
+                        .overlay {
+                            if isMeditationCompleted {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                }
+
+                HStack(spacing: 6) {
+                    ForEach(1...7, id: \.self) { day in
+                        Group {
+                            if day == 1 && isMeditationCompleted {
+                                Text(meditationCheckInTime ?? "")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(Color.black.opacity(0.72))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.85)
+                            } else {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(Color.black.opacity(0.06))
+                                    .overlay {
+                                        Text(day == 1 ? "--:--" : "\(day)")
+                                            .font(.system(size: day == 1 ? 10 : 12, weight: .semibold))
+                                            .monospacedDigit()
+                                            .foregroundStyle(Color.black.opacity(0.52))
+                                    }
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { weekday in
+                        Text(weekday)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.black.opacity(0.46))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 18)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 148, alignment: .top)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("冥想")
+        .accessibilityValue(isMeditationCompleted ? "已完成" : "未完成")
+    }
+
+    private var currentTimeText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: Date())
     }
 }
 
@@ -996,16 +1193,16 @@ private struct LongestEarlySleepCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Text("最长连续早睡")
-                        .font(PlanTypography.cardTitle)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(accentColor)
 
                     Spacer(minLength: 8)
 
                     Text("让行动听从自己的选择")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(accentColor.opacity(0.66))
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundStyle(Color.black)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                        .minimumScaleFactor(0.72)
                 }
 
                 HStack(alignment: .lastTextBaseline, spacing: 5) {
@@ -1164,12 +1361,10 @@ struct TodayWorkCardView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            HStack(spacing: 10) {
-                Text("掌控力1次")
+            HStack(spacing: 2) {
+                Text("掌控力")
                     .font(.system(size: 19, weight: .bold))
                     .foregroundColor(textDark)
-
-                Spacer()
 
                 Button {
                     isShowingControlInfo = true
@@ -1177,10 +1372,24 @@ struct TodayWorkCardView: View {
                     Image(systemName: "questionmark.circle")
                         .font(.system(size: 19, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 24, height: 28)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("了解掌控力")
+
+                Spacer()
+
+                HStack(alignment: .lastTextBaseline, spacing: 7) {
+                    Text("2")
+                    Text("/")
+                        .foregroundStyle(Color.black.opacity(0.42))
+                    Text("4")
+                }
+                .font(.system(size: 19, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(textDark)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("掌控力2次，共4次")
             }
 
             HStack(spacing: 7) {
