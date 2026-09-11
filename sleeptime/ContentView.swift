@@ -718,16 +718,7 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    LateNightLimitProgressCard(
-                        currentValue: currentMaxLateStreak,
-                        limit: maxLateStreak,
-                        hasEnded: hasPlanEnded
-                    )
-
-                    HStack(spacing: 10) {
-                        PlanInfoTile(title: "早睡天数", value: "1天", usesMonospacedDigits: true)
-                        PlanInfoTile(title: "最晚入睡时间", value: "03:15", usesMonospacedDigits: true)
-                    }
+                    LongestEarlySleepCard(currentValue: 1)
 
                     TodayWorkCardView(
                         planDurationDays: planDurationDays,
@@ -737,11 +728,7 @@ struct BlankPlanView: View {
                         isShorterPlanActive: isShorterPlanActive
                     )
 
-                    SleepRecordPanelView(
-                        planDurationDays: planDurationDays,
-                        currentDay: currentDay,
-                        planStartedAt: planStartedAt
-                    )
+                    SleepRecordPanelView()
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
@@ -755,46 +742,69 @@ struct BlankPlanView: View {
     }
 }
 
-private struct LateNightLimitProgressCard: View {
+private struct LongestEarlySleepCard: View {
     let currentValue: Int
-    let limit: Int
-    let hasEnded: Bool
 
-    private var progressColor: Color {
-        if hasEnded { return currentValue <= limit ? .green : .red }
-        if currentValue > limit { return .red }
-        if currentValue == limit { return .orange }
-        return .blue
-    }
-
-    private var statusText: String {
-        if hasEnded { return currentValue <= limit ? "已达标" : "未达标" }
-        if currentValue > limit { return "已超出" }
-        if currentValue == limit { return "已到上限" }
-        return "守护中"
-    }
+    private let milestones = [1, 2, 3, 4, 5]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("最长连续熬夜")
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("最长连续早睡")
                     .font(PlanTypography.cardTitle)
+                    .foregroundStyle(Color.black.opacity(0.52))
 
-                Spacer()
+                HStack(alignment: .lastTextBaseline, spacing: 5) {
+                    Text("\(currentValue)")
+                        .font(.system(size: 40, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
 
-                Text(statusText)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(progressColor)
+                    Text("天")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.62))
+                }
             }
 
-            Text("\(currentValue)/\(limit)天")
-                .font(PlanTypography.metricValue)
-                .monospacedDigit()
-                .foregroundStyle(.primary)
+            VStack(spacing: 0) {
+                ZStack {
+                    Capsule()
+                        .fill(Color.black.opacity(0.06))
+                        .frame(height: 32)
+
+                    HStack {
+                        ForEach(milestones, id: \.self) { day in
+                            Circle()
+                                .fill(day <= currentValue ? AppTheme.accent : Color.white)
+                                .frame(width: 24, height: 24)
+                                .overlay {
+                                    if day == milestones.last {
+                                        Image(systemName: "flag.fill")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
+                                    } else if day <= currentValue {
+                                        Image(systemName: "moon.fill")
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundStyle(.white)
+                                    } else {
+                                        Text("\(day)")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .monospacedDigit()
+                                            .foregroundStyle(Color.black.opacity(0.38))
+                                    }
+                                }
+
+                            if day != milestones.last {
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+            }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 19)
-        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
     }
 }
@@ -992,125 +1002,6 @@ struct TodayWorkCardView: View {
     }
 }
 
-private struct BedtimeWeekPlanView: View {
-    @State private var expandedDay: Int?
-
-    let planDurationDays: Int
-    let currentDay: Int
-    let planStartedAt: Double
-
-    private var startDate: Date {
-        planStartedAt > 0 ? Date(timeIntervalSince1970: planStartedAt) : Date()
-    }
-
-    private var visibleDayNumbers: [Int] {
-        let weekStart = ((max(currentDay, 1) - 1) / 7) * 7 + 1
-        let weekEnd = min(weekStart + 6, max(planDurationDays, 1))
-        return Array(weekStart...weekEnd)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("睡前时间规划")
-                .font(.system(size: 20, weight: .bold))
-                .padding(.bottom, 2)
-
-            ForEach(visibleDayNumbers, id: \.self) { day in
-                let isExpanded = expandedDay == day
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        expandedDay = isExpanded ? nil : day
-                    }
-                } label: {
-                    VStack(spacing: 0) {
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(dayTitle(for: day))
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(.primary)
-
-                                Text("22:30 准备 · 23:30 上床")
-                                    .font(.system(size: 13))
-                                    .monospacedDigit()
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            HStack(spacing: 5) {
-                                Text(isExpanded ? "收起" : "展开")
-                                    .font(.system(size: 14, weight: .medium))
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                            }
-                            .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 13)
-
-                        if isExpanded {
-                            bedtimeSteps
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 14)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-            }
-        }
-    }
-
-    private var bedtimeSteps: some View {
-        VStack(spacing: 9) {
-            bedtimeStep(time: "22:30", title: "洗漱")
-            bedtimeStep(time: "23:00", title: "放下手机")
-            bedtimeStep(time: "23:30", title: "上床休息")
-        }
-    }
-
-    private func bedtimeStep(time: String, title: String) -> some View {
-        HStack(spacing: 12) {
-            Text(time)
-                .font(.system(size: 14, weight: .semibold))
-                .monospacedDigit()
-                .frame(width: 46, alignment: .leading)
-
-            Circle()
-                .fill(AppTheme.accent)
-                .frame(width: 6, height: 6)
-
-            Text(title)
-                .font(.system(size: 14))
-
-            Spacer()
-        }
-        .foregroundStyle(.primary)
-    }
-
-    private func date(for day: Int) -> Date {
-        Calendar.current.date(byAdding: .day, value: day - 1, to: startDate) ?? startDate
-    }
-
-    private func dateText(for day: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M月d日"
-        return formatter.string(from: date(for: day))
-    }
-
-    private func dayTitle(for day: Int) -> String {
-        let targetDate = date(for: day)
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "EEEE"
-        let weekday = formatter.string(from: targetDate)
-        return "\(dateText(for: day)) · \(weekday)"
-    }
-}
-
 private struct PlanInfoTile: View {
     let title: String
     let value: String?
@@ -1137,20 +1028,6 @@ private struct PlanInfoTile: View {
 }
 
 struct SleepRecordPanelView: View {
-    let planDurationDays: Int
-    let currentDay: Int
-    let planStartedAt: Double
-
-    let textDark = Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0)
-    let borderLight = Color(red: 220.0/255.0, green: 236.0/255.0, blue: 239.0/255.0)
-    let tealColor = Color(red: 100.0/255.0, green: 160.0/255.0, blue: 255.0/255.0)
-    let yellowColor = Color(red: 255.0/255.0, green: 220.0/255.0, blue: 89.0/255.0)
-    let progressColor = Color(red: 103.0/255.0, green: 201.0/255.0, blue: 223.0/255.0)
-    let partialColor = Color(red: 168.0/255.0, green: 187.0/255.0, blue: 192.0/255.0)
-    let noteColor = Color(red: 139.0/255.0, green: 179.0/255.0, blue: 189.0/255.0)
-    let dateColor = Color(red: 143.0/255.0, green: 183.0/255.0, blue: 193.0/255.0)
-    let trackBgColor = Color(red: 237.0/255.0, green: 247.0/255.0, blue: 249.0/255.0)
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             LazyVGrid(
@@ -1160,13 +1037,6 @@ struct SleepRecordPanelView: View {
                 PlanInfoTile(title: "原则", value: nil)
                 PlanInfoTile(title: "进步", value: nil)
             }
-            .padding(.bottom, 12)
-
-            BedtimeWeekPlanView(
-                planDurationDays: planDurationDays,
-                currentDay: currentDay,
-                planStartedAt: planStartedAt
-            )
         }
     }
 }
