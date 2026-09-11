@@ -708,9 +708,6 @@ struct BlankPlanView: View {
                     }
                 }
 
-                Text("让行动听从自己的选择")
-                    .font(PlanTypography.pageSubtitle)
-                    .foregroundColor(.secondary)
             }
             .padding(.horizontal, 14)
             .padding(.top, 16)
@@ -720,6 +717,8 @@ struct BlankPlanView: View {
                 VStack(spacing: 12) {
                     LongestEarlySleepCard(currentValue: 1)
 
+                    EmptyPlanFrameworkCard()
+
                     TodayWorkCardView(
                         planDurationDays: planDurationDays,
                         maxLateStreak: maxLateStreak,
@@ -728,9 +727,32 @@ struct BlankPlanView: View {
                         isShorterPlanActive: isShorterPlanActive
                     )
 
-                    SleepRecordPanelView()
+                    HStack(spacing: 8) {
+                        PlanPatternCard(
+                            title: "原则",
+                            subtitle: nil,
+                            icon: "checkmark.shield.fill",
+                            tint: Color(red: 0.42, green: 0.56, blue: 0.16),
+                            shapeStyle: .left
+                        )
 
-                    EmptyPlanFrameworkCard()
+                        PlanPatternCard(
+                            title: "方法",
+                            subtitle: nil,
+                            icon: "lightbulb.fill",
+                            tint: Color(red: 0.30, green: 0.52, blue: 0.78),
+                            shapeStyle: .plain
+                        )
+
+                        PlanPatternCard(
+                            title: "进步",
+                            subtitle: nil,
+                            icon: "moon.fill",
+                            tint: Color(red: 0.95, green: 0.40, blue: 0.38),
+                            usesFlowerIcon: true,
+                            shapeStyle: .right
+                        )
+                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
@@ -744,21 +766,183 @@ struct BlankPlanView: View {
     }
 }
 
+private struct PlanPatternCard: View {
+    let title: String
+    let subtitle: String?
+    let icon: String
+    let tint: Color
+    var usesFlowerIcon = false
+    let shapeStyle: PlanPatternCardShapeStyle
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ZStack {
+                if usesFlowerIcon {
+                    Image(systemName: "seal.fill")
+                        .font(.system(size: 25, weight: .regular))
+                        .foregroundStyle(tint)
+                        .overlay {
+                            Image(systemName: "seal.fill")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundStyle(Color.black.opacity(0.84))
+                        }
+                        .overlay {
+                            Circle()
+                                .fill(tint)
+                                .frame(width: 6, height: 6)
+                        }
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(tint)
+                }
+            }
+            .frame(width: 30, height: 30)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(Color.black.opacity(0.42))
+                }
+            }
+
+        }
+        .padding(.horizontal, 9)
+        .padding(.top, 15)
+        .padding(.bottom, 7)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(height: 66, alignment: .leading)
+        .background {
+            if shapeStyle == .plain {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white)
+                    .padding(.top, 14)
+            } else {
+                PatternFolderShape(mirrored: shapeStyle == .right)
+                    .fill(Color.white)
+            }
+        }
+    }
+}
+
+private enum PlanPatternCardShapeStyle {
+    case left
+    case plain
+    case right
+}
+
+private struct PatternFolderShape: Shape {
+    let mirrored: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let corner: CGFloat = 18
+        let shoulderX = rect.width * 0.43
+        let shoulderY: CGFloat = 14
+        var path = Path()
+
+        path.move(to: CGPoint(x: corner, y: 0))
+        path.addLine(to: CGPoint(x: shoulderX - 18, y: 0))
+        path.addCurve(
+            to: CGPoint(x: shoulderX + 16, y: shoulderY),
+            control1: CGPoint(x: shoulderX - 3, y: 0),
+            control2: CGPoint(x: shoulderX, y: shoulderY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - corner, y: shoulderY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: shoulderY + corner),
+            control: CGPoint(x: rect.maxX, y: shoulderY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - corner))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX - corner, y: rect.maxY),
+            control: CGPoint(x: rect.maxX, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: corner, y: rect.maxY))
+        path.addQuadCurve(
+            to: CGPoint(x: 0, y: rect.maxY - corner),
+            control: CGPoint(x: 0, y: rect.maxY)
+        )
+        path.addLine(to: CGPoint(x: 0, y: corner))
+        path.addQuadCurve(
+            to: CGPoint(x: corner, y: 0),
+            control: CGPoint(x: 0, y: 0)
+        )
+        path.closeSubpath()
+        if mirrored {
+            return path.applying(
+                CGAffineTransform(
+                    a: -1,
+                    b: 0,
+                    c: 0,
+                    d: 1,
+                    tx: rect.width,
+                    ty: 0
+                )
+            )
+        }
+        return path
+    }
+}
+
 private struct EmptyPlanFrameworkCard: View {
     var body: some View {
         GeometryReader { proxy in
-            let dividerX = proxy.size.width * 0.32
+            let dividerX = proxy.size.width * 0.24
 
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.white)
+
+                VStack(spacing: 4) {
+                    Text("3")
+                        .font(.system(size: 26, weight: .regular))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.black)
+
+                    Text("连续段数")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.black)
+                        .lineLimit(1)
+                }
+                .position(x: dividerX / 2, y: proxy.size.height / 2)
+
+                HStack(spacing: 0) {
+                    trackingMetric(
+                        title: "连续早睡",
+                        value: 2,
+                        color: Color.black
+                    )
+                    trackingMetric(
+                        title: "连续熬夜",
+                        value: 3,
+                        color: Color.black
+                    )
+                    trackingMetric(
+                        title: "早睡",
+                        value: 1,
+                        color: Color.black
+                    )
+                }
+                .padding(.horizontal, 8)
+                .frame(width: proxy.size.width - dividerX, height: proxy.size.height)
+                .position(
+                    x: dividerX + (proxy.size.width - dividerX) / 2,
+                    y: proxy.size.height / 2
+                )
 
                 Path { path in
                     path.move(to: CGPoint(x: dividerX, y: 10))
                     path.addLine(to: CGPoint(x: dividerX, y: proxy.size.height - 10))
                 }
                 .stroke(
-                    Color.black.opacity(0.18),
+                    Color.black.opacity(0.12),
                     style: StrokeStyle(lineWidth: 1.5, dash: [7, 7])
                 )
 
@@ -778,8 +962,26 @@ private struct EmptyPlanFrameworkCard: View {
                 .position(x: dividerX, y: proxy.size.height / 2)
             }
         }
-        .frame(height: 124)
+        .frame(height: 86)
         .accessibilityHidden(true)
+    }
+
+    private func trackingMetric(title: String, value: Int, color: Color) -> some View {
+        VStack(spacing: 5) {
+            Text("\(value)")
+                .font(.system(size: 26, weight: .regular))
+                .monospacedDigit()
+                .foregroundStyle(color)
+
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.black)
+                .tracking(0)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 68)
     }
 }
 
@@ -787,19 +989,30 @@ private struct LongestEarlySleepCard: View {
     let currentValue: Int
 
     private let milestones = [1, 2, 3, 4, 5]
+    private let accentColor = Color(red: 0.18, green: 0.48, blue: 0.36)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("最长连续早睡")
-                    .font(PlanTypography.cardTitle)
-                    .foregroundStyle(Color.black.opacity(0.52))
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text("最长连续早睡")
+                        .font(PlanTypography.cardTitle)
+                        .foregroundStyle(accentColor)
+
+                    Spacer(minLength: 8)
+
+                    Text("让行动听从自己的选择")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(accentColor.opacity(0.66))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
 
                 HStack(alignment: .lastTextBaseline, spacing: 5) {
-                    Text("\(currentValue)")
-                        .font(.system(size: 40, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
+                        Text("\(currentValue)")
+                            .font(.system(size: 40, weight: .medium))
+                            .monospacedDigit()
+                            .foregroundStyle(accentColor)
 
                     Text("天")
                         .font(.system(size: 18, weight: .semibold))
@@ -816,13 +1029,13 @@ private struct LongestEarlySleepCard: View {
                     HStack {
                         ForEach(milestones, id: \.self) { day in
                             Circle()
-                                .fill(day <= currentValue ? AppTheme.accent : Color.white)
+                                .fill(day <= currentValue ? accentColor : Color.white)
                                 .frame(width: 24, height: 24)
                                 .overlay {
                                     if day == milestones.last {
                                         Image(systemName: "flag.fill")
                                             .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
+                                            .foregroundStyle(accentColor)
                                     } else if day <= currentValue {
                                         Image(systemName: "moon.fill")
                                             .font(.system(size: 10, weight: .semibold))
@@ -1040,45 +1253,6 @@ struct TodayWorkCardView: View {
         let startDate = planStartedAt > 0 ? Date(timeIntervalSince1970: planStartedAt) : Date()
         let date = Calendar.current.date(byAdding: .day, value: index, to: startDate) ?? startDate
         return Calendar.current.component(.day, from: date)
-    }
-}
-
-private struct PlanInfoTile: View {
-    let title: String
-    let value: String?
-    var usesMonospacedDigits = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(PlanTypography.cardTitle)
-                .foregroundStyle(.primary)
-
-            if let value {
-                Text(value)
-                    .font(.system(size: usesMonospacedDigits ? 20 : 13, weight: usesMonospacedDigits ? .semibold : .regular))
-                    .monospacedDigit()
-                    .foregroundStyle(usesMonospacedDigits ? Color.primary : Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: value == nil ? 56 : 92, alignment: .topLeading)
-        .background(AppTheme.cardBackground, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-    }
-}
-
-struct SleepRecordPanelView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            LazyVGrid(
-                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
-                spacing: 10
-            ) {
-                PlanInfoTile(title: "原则", value: nil)
-                PlanInfoTile(title: "进步", value: nil)
-            }
-        }
     }
 }
 
