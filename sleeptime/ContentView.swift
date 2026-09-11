@@ -53,6 +53,26 @@ private struct HomeWeekView: View {
 
     var body: some View {
         VStack(spacing: 14) {
+            HStack {
+                Text("工作日")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(Color.black)
+
+                Spacer()
+
+                Button(action: {}) {
+                    Image(systemName: "gift")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.78))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("礼物")
+            }
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+
             HStack(spacing: 6) {
                 ForEach(weekdays.indices, id: \.self) { index in
                     VStack(spacing: 8) {
@@ -74,14 +94,24 @@ private struct HomeWeekView: View {
                 }
             }
             .padding(.horizontal, 18)
-            .padding(.top, 14)
+            .padding(.top, 2)
 
             HomeQuoteView()
                 .padding(.horizontal, 18)
                 .padding(.top, 18)
 
-            SleepOverviewCard {
-                selectedDayIndex = todayWeekdayIndex
+            VStack(alignment: .leading, spacing: 0) {
+                Image("sleeping_cat")
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 296)
+                    .padding(.leading, 10)
+                    .padding(.bottom, -1)
+
+                SleepOverviewCard {
+                    selectedDayIndex = todayWeekdayIndex
+                }
             }
             .padding(.horizontal, 18)
             .padding(.top, 4)
@@ -104,7 +134,7 @@ private struct HomeWeekView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .background(AppTheme.homeBackground.ignoresSafeArea())
         .confirmationDialog(
             selectedDayTitle,
             isPresented: Binding(
@@ -185,24 +215,28 @@ private struct SleepOverviewCard: View {
     let onCheckIn: () -> Void
 
     var body: some View {
-        VStack(spacing: 28) {
+        VStack(spacing: 16) {
             SleepDurationDisplay(hours: 8, minutes: 35)
 
             Button(action: onCheckIn) {
-                Text("晚安打卡")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.black)
-                    .frame(width: 230, height: 48)
-                    .overlay {
-                        Capsule()
-                            .stroke(Color.black.opacity(0.18), lineWidth: 1.5)
-                    }
+                HStack(spacing: 8) {
+                    Image(systemName: "moon.fill")
+                        .font(.system(size: 14, weight: .semibold))
+
+                    Text("晚安打卡")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                    .foregroundStyle(Color.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.black.opacity(0.9), in: Capsule())
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 26)
-        .padding(.vertical, 26)
-        .frame(maxWidth: .infinity, minHeight: 310, alignment: .top)
+        .padding(.top, 18)
+        .padding(.bottom, 28)
+        .frame(maxWidth: .infinity, minHeight: 302, alignment: .top)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
@@ -218,13 +252,17 @@ private struct SleepDurationDisplay: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(Color.black)
 
+                Text("熬夜喵")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color.black)
+
                 Spacer()
 
                 Button(action: {}) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.black.opacity(0.72))
-                        .frame(width: 36, height: 36)
+                        .frame(width: 32, height: 32)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -234,8 +272,8 @@ private struct SleepDurationDisplay: View {
             Text("23:30")
                 .font(.system(size: 50, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(Color(red: 1.0, green: 0.31, blue: 0.33))
-                .padding(.top, 22)
+                .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
+                .padding(.top, 12)
 
             Text("入睡时间")
                 .font(.system(size: 13, weight: .regular))
@@ -246,13 +284,8 @@ private struct SleepDurationDisplay: View {
                 durationMetric
                 wakeMetric
             }
-            .padding(.top, 26)
+            .padding(.top, 16)
 
-            Text("睡得安稳，醒来才有力气好好生活。")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.black.opacity(0.76))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 24)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
@@ -2988,6 +3021,11 @@ private struct EarlySleepPlanCard: View {
 }
 
 private enum AppTheme {
+    static let homeBackground = Color(
+        red: 243.0 / 255.0,
+        green: 244.0 / 255.0,
+        blue: 246.0 / 255.0
+    )
     static let pageBackground = Color(uiColor: .systemGroupedBackground)
     static let cardBackground = Color(uiColor: .secondarySystemGroupedBackground)
     static let accent = Color(red: 0.16, green: 0.16, blue: 0.18)
