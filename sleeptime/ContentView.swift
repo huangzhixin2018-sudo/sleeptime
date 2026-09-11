@@ -14,14 +14,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            VStack {
-                Image(systemName: "moon.stars.fill")
-                    .imageScale(.large)
-                    .foregroundColor(.accentColor)
-                Text("首页")
-                    .font(.title)
-                    .padding()
-            }
+            HomeWeekView()
             .tabItem {
                 Label("首页", systemImage: "moon.stars.fill")
             }
@@ -33,7 +26,9 @@ struct ContentView: View {
             }
             .tag(AppTab.plan)
 
-            ProfileView()
+            ProfileView {
+                selectedTab = .plan
+            }
             .tabItem {
                 Label("我的", systemImage: "person.fill")
             }
@@ -46,6 +41,316 @@ struct ContentView: View {
         )
         .onChange(of: selectedTab) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.8)
+        }
+    }
+}
+
+private struct HomeWeekView: View {
+    @State private var selectedDayIndex: Int?
+    @State private var sleepStates: [Int: HomeSleepState] = [:]
+
+    private let weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 6) {
+                ForEach(weekdays.indices, id: \.self) { index in
+                    VStack(spacing: 8) {
+                        Text(weekdays[index])
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.68))
+                            .lineLimit(1)
+
+                        Circle()
+                            .fill(sleepStates[index]?.color ?? Color.black.opacity(0.08))
+                            .frame(width: 30, height: 30)
+                            .overlay {
+                                Image(systemName: sleepStates[index]?.icon ?? "minus")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(sleepStates[index] == nil ? Color.black.opacity(0.38) : Color.white)
+                            }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+
+            HomeQuoteView()
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+
+            SleepOverviewCard {
+                selectedDayIndex = todayWeekdayIndex
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 4)
+
+            HStack(spacing: 12) {
+                HomeSleepInsightCard(
+                    title: "午休",
+                    value: "35分钟",
+                    icon: "sun.max"
+                )
+
+                HomeSleepInsightCard(
+                    title: "入睡情况",
+                    value: "无失眠",
+                    icon: "moon.stars"
+                )
+            }
+            .padding(.horizontal, 18)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .confirmationDialog(
+            selectedDayTitle,
+            isPresented: Binding(
+                get: { selectedDayIndex != nil },
+                set: { if !$0 { selectedDayIndex = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            ForEach(HomeSleepState.allCases) { state in
+                Button(state.title) {
+                    if let selectedDayIndex {
+                        sleepStates[selectedDayIndex] = state
+                    }
+                    selectedDayIndex = nil
+                }
+            }
+
+            if let selectedDayIndex, sleepStates[selectedDayIndex] != nil {
+                Button("清除记录", role: .destructive) {
+                    sleepStates[selectedDayIndex] = nil
+                    self.selectedDayIndex = nil
+                }
+            }
+
+            Button("取消", role: .cancel) {
+                selectedDayIndex = nil
+            }
+        } message: {
+            Text("选择这一天的睡眠状态")
+        }
+    }
+
+    private var selectedDayTitle: String {
+        guard let selectedDayIndex else { return "睡眠状态" }
+        return weekdays[selectedDayIndex]
+    }
+
+    private var todayWeekdayIndex: Int {
+        let systemWeekday = Calendar.current.component(.weekday, from: Date())
+        return (systemWeekday + 5) % 7
+    }
+}
+
+private struct HomeSleepInsightCard: View {
+    let title: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.48))
+
+                Spacer()
+
+                Image(systemName: icon)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.42))
+            }
+
+            Text(value)
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(Color.black)
+                .monospacedDigit()
+                .padding(.top, 9)
+
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .frame(height: 78, alignment: .topLeading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+private struct SleepOverviewCard: View {
+    let onCheckIn: () -> Void
+
+    var body: some View {
+        VStack(spacing: 28) {
+            SleepDurationDisplay(hours: 8, minutes: 35)
+
+            Button(action: onCheckIn) {
+                Text("晚安打卡")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.black)
+                    .frame(width: 230, height: 48)
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.black.opacity(0.18), lineWidth: 1.5)
+                    }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 26)
+        .padding(.vertical, 26)
+        .frame(maxWidth: .infinity, minHeight: 310, alignment: .top)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+private struct SleepDurationDisplay: View {
+    let hours: Int
+    let minutes: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(currentDateTitle)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color.black)
+
+                Spacer()
+
+                Button(action: {}) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.72))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("分享睡眠记录")
+            }
+
+            Text("23:30")
+                .font(.system(size: 50, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(Color(red: 1.0, green: 0.31, blue: 0.33))
+                .padding(.top, 22)
+
+            Text("入睡时间")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.42))
+                .padding(.top, 2)
+
+            HStack(alignment: .top, spacing: 30) {
+                durationMetric
+                wakeMetric
+            }
+            .padding(.top, 26)
+
+            Text("睡得安稳，醒来才有力气好好生活。")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.black.opacity(0.76))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 24)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("23点30分入睡，睡眠时长8小时35分钟，7点30分起床，午休35分钟")
+    }
+
+    private var currentDateTitle: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        return formatter.string(from: Date())
+    }
+
+    private var durationMetric: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .lastTextBaseline, spacing: 3) {
+                Text("\(hours)")
+                    .font(.system(size: 27, weight: .semibold))
+                Text("时")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("\(minutes)")
+                    .font(.system(size: 27, weight: .semibold))
+                Text("分")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .monospacedDigit()
+
+            Text("时长")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.42))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var wakeMetric: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("07:30")
+                .font(.system(size: 27, weight: .semibold))
+                .monospacedDigit()
+
+            Text("起床")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.42))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct HomeQuoteView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("觉醒的人只有一项义务，找到自我，固守自我，沿着自己的路向前走，不管它通向哪里。")
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(Color.black)
+                .lineSpacing(6)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("——赫尔曼·黑塞")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.52))
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private enum HomeSleepState: String, CaseIterable, Identifiable {
+    case early
+    case normal
+    case late
+    case allNight
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .early: return "早睡"
+        case .normal: return "正常入睡"
+        case .late: return "熬夜"
+        case .allNight: return "通宵"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .early: return "checkmark"
+        case .normal: return "moon.fill"
+        case .late: return "exclamationmark"
+        case .allNight: return "sunrise.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .early: return Color(red: 0.20, green: 0.67, blue: 0.48)
+        case .normal: return Color(red: 0.28, green: 0.50, blue: 0.90)
+        case .late: return Color(red: 0.94, green: 0.58, blue: 0.18)
+        case .allNight: return Color(red: 0.86, green: 0.27, blue: 0.25)
         }
     }
 }
@@ -294,92 +599,262 @@ struct ContentView_Previews: PreviewProvider {
     }
 }
 
+private enum PlanTypography {
+    static let pageTitle = Font.system(size: 30, weight: .bold)
+    static let pageSubtitle = Font.system(size: 17, weight: .regular)
+    static let cardTitle = Font.system(size: 16, weight: .semibold)
+    static let cardSubtitle = Font.system(size: 13, weight: .regular)
+    static let metricValue = Font.system(size: 24, weight: .bold, design: .rounded)
+    static let supportingValue = Font.system(size: 20, weight: .semibold, design: .rounded)
+}
+
 struct BlankPlanView: View {
+    @AppStorage("shorterPlan.isActive") private var isShorterPlanActive = false
+    @AppStorage("shorterPlan.durationDays") private var planDurationDays = 7
+    @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
+    @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
+    @AppStorage("shorterPlan.startedAt") private var planStartedAt = 0.0
+
+    private var currentDay: Int {
+        guard isShorterPlanActive, planStartedAt > 0 else { return 1 }
+        let startDate = Date(timeIntervalSince1970: planStartedAt)
+        let elapsedDays = Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: startDate),
+            to: Calendar.current.startOfDay(for: Date())
+        ).day ?? 0
+        return min(max(elapsedDays + 1, 1), planDurationDays)
+    }
+
+    private var hasPlanEnded: Bool {
+        guard isShorterPlanActive, planStartedAt > 0 else { return false }
+        let endDate = Calendar.current.date(
+            byAdding: .day,
+            value: planDurationDays,
+            to: Date(timeIntervalSince1970: planStartedAt)
+        ) ?? .distantFuture
+        return Date() >= endDate
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        NavigationStack {
+            VStack(spacing: 0) {
             // 自定义顶部：大标题与管理图标在同一高度
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .center) {
-                    Text("Day 1")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                    Text("Day \(currentDay)")
+                        .font(PlanTypography.pageTitle)
+                        .monospacedDigit()
                         .foregroundColor(.primary)
 
                     Spacer()
 
-                    // “山寨版”带白色包裹卡片的管理图标
-                    Button {
-                        // 预留管理入口
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
+                    HStack(spacing: 8) {
+                        Image(systemName: "medal.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.95, green: 0.67, blue: 0.16))
                             .frame(width: 36, height: 36)
                             .background(Color(.systemBackground))
                             .clipShape(Circle())
+
+                        NavigationLink {
+                            EarlySleepStreakDetailView()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("🔥")
+                                Text("0")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal, 14)
+                            .frame(height: 36)
+                            .background(Color(.systemBackground))
+                            .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
                 Text("让行动听从自己的选择")
-                    .font(.system(size: 20, weight: .medium))
+                    .font(PlanTypography.pageSubtitle)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
             .padding(.top, 16)
             .padding(.bottom, 8)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    // 数据统计卡片（移至顶部）
-                    HStack(spacing: 9) {
-                        // Card 1
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("完成天数")
-                                .font(.system(size: 14, weight: .medium))
-                            Spacer()
-                            Text("1天")
-                                .font(.custom("Courier", size: 25))
-                                .tracking(-1)
-                        }
-                        .foregroundColor(.white)
-                        .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: 75)
-                        .background(Color(red: 100.0/255.0, green: 160.0/255.0, blue: 255.0/255.0))
-                        .cornerRadius(7)
+                VStack(spacing: 12) {
+                    LateNightLimitProgressCard(
+                        currentValue: currentMaxLateStreak,
+                        limit: maxLateStreak,
+                        hasEnded: hasPlanEnded
+                    )
 
-                        // Card 2
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("最晚入睡时间")
-                                .font(.system(size: 14, weight: .medium))
-                            Spacer()
-                            Text("03:15")
-                                .font(.custom("Courier", size: 25))
-                                .tracking(-1)
-                        }
-                        .foregroundColor(Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0))
-                        .padding(EdgeInsets(top: 11, leading: 13, bottom: 9, trailing: 13))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: 75)
-                        .background(Color(red: 255.0/255.0, green: 220.0/255.0, blue: 89.0/255.0))
-                        .cornerRadius(7)
+                    HStack(spacing: 10) {
+                        PlanInfoTile(title: "早睡天数", value: "1天", usesMonospacedDigits: true)
+                        PlanInfoTile(title: "最晚入睡时间", value: "03:15", usesMonospacedDigits: true)
                     }
 
-                    TodayWorkCardView()
+                    TodayWorkCardView(
+                        planDurationDays: planDurationDays,
+                        maxLateStreak: maxLateStreak,
+                        currentDay: currentDay,
+                        planStartedAt: planStartedAt,
+                        isShorterPlanActive: isShorterPlanActive
+                    )
 
-                    SleepRecordPanelView()
+                    SleepRecordPanelView(
+                        planDurationDays: planDurationDays,
+                        currentDay: currentDay,
+                        planStartedAt: planStartedAt
+                    )
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 40)
             }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppTheme.pageBackground.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct LateNightLimitProgressCard: View {
+    let currentValue: Int
+    let limit: Int
+    let hasEnded: Bool
+
+    private var progressColor: Color {
+        if hasEnded { return currentValue <= limit ? .green : .red }
+        if currentValue > limit { return .red }
+        if currentValue == limit { return .orange }
+        return .blue
+    }
+
+    private var statusText: String {
+        if hasEnded { return currentValue <= limit ? "已达标" : "未达标" }
+        if currentValue > limit { return "已超出" }
+        if currentValue == limit { return "已到上限" }
+        return "守护中"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("最长连续熬夜")
+                    .font(PlanTypography.cardTitle)
+
+                Spacer()
+
+                Text(statusText)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(progressColor)
+            }
+
+            Text("\(currentValue) / \(limit) 天")
+                .font(PlanTypography.metricValue)
+                .monospacedDigit()
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 19)
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct EarlySleepStreakDetailView: View {
+    private let recentDays = ["一", "二", "三", "四", "五", "六", "日"]
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 18) {
+                VStack(spacing: 10) {
+                    Text("🔥")
+                        .font(.system(size: 58))
+
+                    Text("0")
+                        .font(.system(size: 52, weight: .bold, design: .rounded))
+
+                    Text("当前连续早睡天数")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+
+                HStack(spacing: 12) {
+                    streakMetric(title: "历史最长", value: "0 天")
+                    streakMetric(title: "本月早睡", value: "0 天")
+                }
+
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("最近 7 天")
+                        .font(.system(size: 17, weight: .semibold))
+
+                    HStack(spacing: 8) {
+                        ForEach(recentDays, id: \.self) { day in
+                            VStack(spacing: 9) {
+                                Circle()
+                                    .fill(Color(uiColor: .tertiarySystemFill))
+                                    .frame(width: 32, height: 32)
+                                    .overlay {
+                                        Image(systemName: "minus")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundStyle(.tertiary)
+                                    }
+
+                                Text(day)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    Text("完成一次早睡后，连续记录会从这里开始累积。")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(18)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
         .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("连续早睡")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+    }
+
+    private func streakMetric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 25, weight: .bold, design: .rounded))
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
 struct TodayWorkCardView: View {
+    @State private var isShowingControlInfo = false
+
+    let planDurationDays: Int
+    let maxLateStreak: Int
+    let currentDay: Int
+    let planStartedAt: Double
+    let isShorterPlanActive: Bool
+
     let textDark = Color(red: 50/255, green: 50/255, blue: 70/255)
     let textGrey = Color(red: 100/255, green: 110/255, blue: 130/255)
     let cardBg = Color.white
@@ -392,24 +867,43 @@ struct TodayWorkCardView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("7天早睡计划")
-                    .font(.system(size: 16, weight: .semibold))
+            HStack(spacing: 10) {
+                Text("掌控力1次")
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundColor(textDark)
 
-                HStack(spacing: 8) {
-                    let weekdays = ["一", "二", "三", "四", "五", "六", "日"]
-                    ForEach(0..<7, id: \.self) { index in
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(index < 2 ? trackFill : trackBg.opacity(0.3)) // 前2天设为已打卡颜色
+                Spacer()
 
-                            Text(weekdays[index])
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(index < 2 ? .white : textGrey)
+                Button {
+                    isShowingControlInfo = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 19, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("了解掌控力")
+            }
+
+            HStack(spacing: 7) {
+                ForEach(0..<7, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(index < 1 ? trackFill : trackBg.opacity(0.3))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .overlay {
+                            if index < 1 {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(.white)
+                            } else {
+                                Text("\(dateDayNumber(for: index))")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(textGrey)
+                            }
                         }
-                        .frame(height: 36)
-                    }
                 }
             }
 
@@ -421,7 +915,7 @@ struct TodayWorkCardView: View {
                         .frame(width: 80, height: 80)
 
                     Text("熬夜魔")
-                        .font(.system(size: 22, weight: .heavy))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(textDark)
                 }
                 .frame(width: 96)
@@ -438,7 +932,7 @@ struct TodayWorkCardView: View {
                     }
 
                     Button(action: {}) {
-                        Text("弱点")
+                        Text("复盘")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -450,12 +944,170 @@ struct TodayWorkCardView: View {
             }
         }
         .padding(20)
-        .background(cardBg)
-        .cornerRadius(20)
+        .background(cardBg, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .alert("什么是掌控力？", isPresented: $isShowingControlInfo) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text("当你想熬夜时，主动结束一次熬夜倾向或打断连续熬夜，就会获得1次掌控力。")
+        }
+    }
+
+    private func dateDayNumber(for index: Int) -> Int {
+        let startDate = planStartedAt > 0 ? Date(timeIntervalSince1970: planStartedAt) : Date()
+        let date = Calendar.current.date(byAdding: .day, value: index, to: startDate) ?? startDate
+        return Calendar.current.component(.day, from: date)
+    }
+}
+
+private struct BedtimeWeekPlanView: View {
+    @State private var expandedDay: Int?
+
+    let planDurationDays: Int
+    let currentDay: Int
+    let planStartedAt: Double
+
+    private var startDate: Date {
+        planStartedAt > 0 ? Date(timeIntervalSince1970: planStartedAt) : Date()
+    }
+
+    private var visibleDayNumbers: [Int] {
+        let weekStart = ((max(currentDay, 1) - 1) / 7) * 7 + 1
+        let weekEnd = min(weekStart + 6, max(planDurationDays, 1))
+        return Array(weekStart...weekEnd)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("睡前时间规划")
+                .font(.system(size: 20, weight: .bold))
+                .padding(.bottom, 2)
+
+            ForEach(visibleDayNumbers, id: \.self) { day in
+                let isExpanded = expandedDay == day
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        expandedDay = isExpanded ? nil : day
+                    }
+                } label: {
+                    VStack(spacing: 0) {
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(dayTitle(for: day))
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(.primary)
+
+                                Text("22:30 准备 · 23:30 上床")
+                                    .font(.system(size: 13))
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            HStack(spacing: 5) {
+                                Text(isExpanded ? "收起" : "展开")
+                                    .font(.system(size: 14, weight: .medium))
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                            }
+                            .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 13)
+
+                        if isExpanded {
+                            bedtimeSteps
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 14)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+        }
+    }
+
+    private var bedtimeSteps: some View {
+        VStack(spacing: 9) {
+            bedtimeStep(time: "22:30", title: "洗漱")
+            bedtimeStep(time: "23:00", title: "放下手机")
+            bedtimeStep(time: "23:30", title: "上床休息")
+        }
+    }
+
+    private func bedtimeStep(time: String, title: String) -> some View {
+        HStack(spacing: 12) {
+            Text(time)
+                .font(.system(size: 14, weight: .semibold))
+                .monospacedDigit()
+                .frame(width: 46, alignment: .leading)
+
+            Circle()
+                .fill(Color.blue)
+                .frame(width: 6, height: 6)
+
+            Text(title)
+                .font(.system(size: 14))
+
+            Spacer()
+        }
+        .foregroundStyle(.primary)
+    }
+
+    private func date(for day: Int) -> Date {
+        Calendar.current.date(byAdding: .day, value: day - 1, to: startDate) ?? startDate
+    }
+
+    private func dateText(for day: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        return formatter.string(from: date(for: day))
+    }
+
+    private func dayTitle(for day: Int) -> String {
+        let targetDate = date(for: day)
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "EEEE"
+        let weekday = formatter.string(from: targetDate)
+        return "\(dateText(for: day)) · \(weekday)"
+    }
+}
+
+private struct PlanInfoTile: View {
+    let title: String
+    let value: String?
+    var usesMonospacedDigits = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(PlanTypography.cardTitle)
+                .foregroundStyle(.primary)
+
+            if let value {
+                Text(value)
+                    .font(.system(size: usesMonospacedDigits ? 20 : 13, weight: usesMonospacedDigits ? .semibold : .regular))
+                    .monospacedDigit()
+                    .foregroundStyle(usesMonospacedDigits ? Color.primary : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: value == nil ? 56 : 92, alignment: .topLeading)
+        .background(AppTheme.cardBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
 struct SleepRecordPanelView: View {
+    let planDurationDays: Int
+    let currentDay: Int
+    let planStartedAt: Double
+
     let textDark = Color(red: 7.0/255.0, green: 27.0/255.0, blue: 36.0/255.0)
     let borderLight = Color(red: 220.0/255.0, green: 236.0/255.0, blue: 239.0/255.0)
     let tealColor = Color(red: 100.0/255.0, green: 160.0/255.0, blue: 255.0/255.0)
@@ -466,107 +1118,22 @@ struct SleepRecordPanelView: View {
     let dateColor = Color(red: 143.0/255.0, green: 183.0/255.0, blue: 193.0/255.0)
     let trackBgColor = Color(red: 237.0/255.0, green: 247.0/255.0, blue: 249.0/255.0)
 
-    struct DayItem: Identifiable {
-        let id = UUID()
-        let weekday: String
-        let dateStr: String
-        let hours: String
-        let showAdjust: Bool
-        let trackBg: Color
-        let fillColor: Color?
-        let fillOffset: CGFloat?
-        let fillWidth: CGFloat?
-    }
-
     var body: some View {
-        let days: [DayItem] = [
-            DayItem(weekday: "一", dateStr: "9/7", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
-            DayItem(weekday: "二", dateStr: "9/8", hours: "12.6h", showAdjust: false, trackBg: tealColor, fillColor: yellowColor, fillOffset: 0.5, fillWidth: 0.5),
-            DayItem(weekday: "三", dateStr: "9/9", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
-            DayItem(weekday: "四", dateStr: "9/10", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
-            DayItem(weekday: "五", dateStr: "9/11", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
-            DayItem(weekday: "六", dateStr: "9/12", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil),
-            DayItem(weekday: "日", dateStr: "9/13", hours: "－", showAdjust: true, trackBg: trackBgColor, fillColor: nil, fillOffset: nil, fillWidth: nil)
-        ]
-
         VStack(alignment: .leading, spacing: 0) {
-            // Summary Cards
-            // 原则与回顾卡片（移至下部）
-            HStack(spacing: 16) {
-                // 原则卡片
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("原则")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.primary)
-                    Text("看看什么正在指引你")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineSpacing(2)
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(16)
-                .background(AppTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                // 回顾卡片
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("回顾")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.primary)
-                    Text("看见自己是怎么做到的")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineSpacing(2)
-                }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(16)
-                .background(AppTheme.cardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                spacing: 10
+            ) {
+                PlanInfoTile(title: "原则", value: nil)
+                PlanInfoTile(title: "进步", value: nil)
             }
-            .padding(.bottom, 18)
+            .padding(.bottom, 12)
 
-            // Days
-            VStack(spacing: 22) {
-                ForEach(days) { day in
-                    VStack(spacing: 0) {
-                        HStack(spacing: 8) {
-                            Text(day.weekday)
-                                .font(.system(size: 18, weight: .bold, design: .serif))
-                                .foregroundColor(textDark)
-                                .frame(width: 36, alignment: .center)
-                            Text(day.dateStr)
-                                .font(.system(size: 13))
-                                .foregroundColor(dateColor)
-                                .frame(width: 44, alignment: .leading)
-                            Text(day.hours)
-                                .font(.custom("Courier", size: 14))
-                                .foregroundColor(textDark)
-                            Spacer()
-                        }
-                        .frame(height: 24)
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                Rectangle().fill(day.trackBg)
-
-                                if let fillCol = day.fillColor, let fillW = day.fillWidth, let fillOff = day.fillOffset {
-                                    Rectangle()
-                                        .fill(fillCol)
-                                        .frame(width: geo.size.width * fillW)
-                                        .offset(x: geo.size.width * fillOff)
-                                }
-
-                                Rectangle()
-                                    .fill(textDark)
-                                    .frame(width: 1.5)
-                                    .padding(.vertical, -3)
-                                    .offset(x: geo.size.width * 0.5 - 0.75)
-                            }
-                        }
-                        .frame(height: 17)
-                    }
-                }
-            }
+            BedtimeWeekPlanView(
+                planDurationDays: planDurationDays,
+                currentDay: currentDay,
+                planStartedAt: planStartedAt
+            )
         }
     }
 }
@@ -874,6 +1441,7 @@ struct BadgeProgressCard: View {
 struct ProfileView: View {
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
     @AppStorage("appLock.isEnabled") private var isAppLockEnabled = false
+    let onPlanStarted: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -889,7 +1457,7 @@ struct ProfileView: View {
 
                     ProfileSection {
                         NavigationLink {
-                            EarlySleepPlanDetailView()
+                            EarlySleepPlanDetailView(onPlanStarted: onPlanStarted)
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "moon.stars", title: "早睡计划", showDivider: true)
@@ -1960,7 +2528,413 @@ private struct WidgetTimeProgress {
 }
 
 private struct EarlySleepPlanDetailView: View {
-    private let plans = [
+    @AppStorage("shorterPlan.isActive") private var isActive = false
+    @AppStorage("shorterPlan.durationDays") private var durationDays = 7
+    @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
+    @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
+    @AppStorage("earlySleepPlan.history") private var historyData = "[]"
+
+    @State private var isShowingPlanPicker = false
+    @State private var isShowingShorterSetup = false
+
+    let onPlanStarted: () -> Void
+
+    private var currentPlanHasEnded: Bool {
+        guard isActive, startedAt > 0 else { return false }
+        let endDate = Calendar.current.date(
+            byAdding: .day,
+            value: durationDays,
+            to: Date(timeIntervalSince1970: startedAt)
+        ) ?? .distantFuture
+        return Date() >= endDate
+    }
+
+    private var history: [EarlySleepPlanRecord] {
+        guard let data = historyData.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([EarlySleepPlanRecord].self, from: data)) ?? []
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(alignment: .leading, spacing: 14) {
+                Button {
+                    isShowingPlanPicker = true
+                } label: {
+                    Label("创建早睡计划", systemImage: "plus")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                if isActive && !currentPlanHasEnded {
+                    planSectionTitle("进行中")
+                    EarlySleepPlanRecordCard(
+                        record: currentRecord,
+                        status: "进行中",
+                        currentDay: currentPlanDay
+                    )
+                }
+
+                let endedPlans = displayedHistory
+                if !endedPlans.isEmpty {
+                    planSectionTitle("历史计划")
+                    ForEach(endedPlans) { record in
+                        EarlySleepPlanRecordCard(record: record, status: "已结束", currentDay: nil)
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("早睡计划")
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(isPresented: $isShowingShorterSetup) {
+            ShorterLateNightPlanSetupView(onPlanStarted: onPlanStarted)
+        }
+        .sheet(isPresented: $isShowingPlanPicker) {
+            EarlySleepPlanPicker { plan in
+                isShowingPlanPicker = false
+                guard plan.title == "越来越短" else { return }
+                DispatchQueue.main.async {
+                    isShowingShorterSetup = true
+                }
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var currentRecord: EarlySleepPlanRecord {
+        EarlySleepPlanRecord(
+            id: "current-\(startedAt)",
+            durationDays: durationDays,
+            maxLateStreak: maxLateStreak,
+            startedAt: startedAt
+        )
+    }
+
+    private var currentPlanDay: Int {
+        let elapsed = Calendar.current.dateComponents(
+            [.day],
+            from: Calendar.current.startOfDay(for: Date(timeIntervalSince1970: startedAt)),
+            to: Calendar.current.startOfDay(for: Date())
+        ).day ?? 0
+        return min(max(elapsed + 1, 1), durationDays)
+    }
+
+    private var displayedHistory: [EarlySleepPlanRecord] {
+        var records = history
+        if isActive && currentPlanHasEnded {
+            records.insert(currentRecord, at: 0)
+        }
+        return records
+    }
+
+    private func planSectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .padding(.top, 8)
+            .padding(.horizontal, 2)
+    }
+}
+
+private struct EarlySleepPlanPicker: View {
+    @Environment(\.dismiss) private var dismiss
+    let onSelect: (EarlySleepPlan) -> Void
+
+    private let plans = EarlySleepPlan.availablePlans
+
+    var body: some View {
+        NavigationStack {
+            List(plans) { plan in
+                Button {
+                    onSelect(plan)
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: plan.title == "越来越短" ? "arrow.down.right" : "moon.stars")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(plan.color)
+                            .frame(width: 28)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(plan.title)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.primary)
+                            Text(plan.subtitle)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        if plan.title != "越来越短" {
+                            Text("稍后开放")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(plan.title != "越来越短")
+            }
+            .listStyle(.plain)
+            .navigationTitle("选择早睡计划")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("取消") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct ShorterLateNightPlanSetupView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("shorterPlan.isActive") private var isActive = false
+    @AppStorage("shorterPlan.durationDays") private var savedDurationDays = 7
+    @AppStorage("shorterPlan.maxLateStreak") private var savedMaxLateStreak = 2
+    @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
+    @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
+    @AppStorage("earlySleepPlan.history") private var historyData = "[]"
+
+    @State private var durationDays = 7
+    @State private var maxLateStreak = 2
+
+    let onPlanStarted: () -> Void
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("连续熬夜越来越短")
+                        .font(.system(size: 30, weight: .bold))
+
+                    Text("先定一个容易完成的阶段。到期后，再决定是否缩短一次。")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(3)
+                }
+                .padding(.horizontal, 2)
+                .padding(.bottom, 6)
+
+                planSettingCard(
+                    title: "计划天数",
+                    explanation: "这个阶段持续多久",
+                    value: durationDays,
+                    range: 3...30,
+                    onChange: { newValue in
+                        durationDays = newValue
+                        maxLateStreak = min(maxLateStreak, newValue - 1)
+                    }
+                )
+
+                planSettingCard(
+                    title: "最长连续熬夜",
+                    explanation: "允许连续熬夜的上限，不是要求熬夜",
+                    value: maxLateStreak,
+                    range: 0...max(durationDays - 1, 0),
+                    onChange: { maxLateStreak = $0 }
+                )
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("本阶段目标")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Text("接下来 \(durationDays) 天，连续熬夜不超过 \(maxLateStreak) 天")
+                        .font(.system(size: 18, weight: .semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    Color(red: 0.95, green: 0.48, blue: 0.22).opacity(0.10),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color(red: 0.95, green: 0.48, blue: 0.22))
+                        .frame(width: 4)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 20)
+            .padding(.bottom, 110)
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("创建计划")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            Button(action: startPlan) {
+                Text("开始计划")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color(uiColor: .systemBackground))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+        }
+        .onAppear {
+            durationDays = savedDurationDays
+            maxLateStreak = min(savedMaxLateStreak, savedDurationDays - 1)
+        }
+    }
+
+    private func planSettingCard(
+        title: String,
+        explanation: String,
+        value: Int,
+        range: ClosedRange<Int>,
+        onChange: @escaping (Int) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(explanation)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("\(value) 天")
+                    .font(.system(size: 25, weight: .bold, design: .rounded))
+            }
+
+            Stepper(
+                value: Binding(get: { value }, set: onChange),
+                in: range
+            ) {
+                Text("调整\(title)")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+            }
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(18)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func startPlan() {
+        archiveCurrentPlanIfNeeded()
+        savedDurationDays = durationDays
+        savedMaxLateStreak = maxLateStreak
+        currentMaxLateStreak = 0
+        startedAt = Date().timeIntervalSince1970
+        isActive = true
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
+        dismiss()
+        DispatchQueue.main.async {
+            onPlanStarted()
+        }
+    }
+
+    private func archiveCurrentPlanIfNeeded() {
+        guard isActive, startedAt > 0 else { return }
+        var history: [EarlySleepPlanRecord] = []
+        if let data = historyData.data(using: .utf8) {
+            history = (try? JSONDecoder().decode([EarlySleepPlanRecord].self, from: data)) ?? []
+        }
+
+        let record = EarlySleepPlanRecord(
+            id: "archived-\(startedAt)",
+            durationDays: savedDurationDays,
+            maxLateStreak: savedMaxLateStreak,
+            startedAt: startedAt
+        )
+        history.removeAll { $0.startedAt == startedAt }
+        history.insert(record, at: 0)
+
+        if let encoded = try? JSONEncoder().encode(history),
+           let value = String(data: encoded, encoding: .utf8) {
+            historyData = value
+        }
+    }
+}
+
+private struct EarlySleepPlanRecord: Identifiable, Codable {
+    let id: String
+    let durationDays: Int
+    let maxLateStreak: Int
+    let startedAt: Double
+
+    var startDate: Date { Date(timeIntervalSince1970: startedAt) }
+
+    var endDate: Date {
+        Calendar.current.date(byAdding: .day, value: durationDays - 1, to: startDate) ?? startDate
+    }
+}
+
+private struct EarlySleepPlanRecordCard: View {
+    let record: EarlySleepPlanRecord
+    let status: String
+    let currentDay: Int?
+
+    private var dateText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        return "\(formatter.string(from: record.startDate)) - \(formatter.string(from: record.endDate))"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("连续熬夜越来越短")
+                    .font(.system(size: 17, weight: .semibold))
+
+                Spacer()
+
+                Text(status)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(status == "进行中" ? Color.orange : Color.secondary)
+            }
+
+            Text("连续熬夜不超过 \(record.maxLateStreak) 天")
+                .font(.system(size: 15))
+                .foregroundStyle(.primary)
+
+            HStack {
+                if let currentDay {
+                    Text("Day \(currentDay) / \(record.durationDays)")
+                } else {
+                    Text("共 \(record.durationDays) 天")
+                }
+
+                Spacer()
+                Text(dateText)
+            }
+            .font(.system(size: 13))
+            .foregroundStyle(.secondary)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct EarlySleepPlan: Identifiable {
+    let title: String
+    let subtitle: String
+    let color: Color
+
+    var id: String { title }
+
+    static let availablePlans = [
         EarlySleepPlan(
             title: "越来越早",
             subtitle: "最晚入睡时间",
@@ -1982,35 +2956,6 @@ private struct EarlySleepPlanDetailView: View {
             color: Color(red: 0.95, green: 0.48, blue: 0.22)
         )
     ]
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 14) {
-                ForEach(plans) { plan in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
-                    } label: {
-                        EarlySleepPlanCard(plan: plan)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 12)
-            .padding(.bottom, 32)
-        }
-        .background(AppTheme.pageBackground.ignoresSafeArea())
-        .navigationTitle("早睡计划")
-        .navigationBarTitleDisplayMode(.large)
-    }
-}
-
-private struct EarlySleepPlan: Identifiable {
-    let title: String
-    let subtitle: String
-    let color: Color
-
-    var id: String { title }
 }
 
 private struct EarlySleepPlanCard: View {
