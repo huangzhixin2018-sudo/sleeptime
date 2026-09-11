@@ -633,12 +633,12 @@ struct ContentView_Previews: PreviewProvider {
 }
 
 private enum PlanTypography {
-    static let pageTitle = Font.system(size: 30, weight: .bold)
+    static let pageTitle = Font.system(size: 32, weight: .bold)
     static let pageSubtitle = Font.system(size: 17, weight: .regular)
     static let cardTitle = Font.system(size: 16, weight: .semibold)
     static let cardSubtitle = Font.system(size: 13, weight: .regular)
-    static let metricValue = Font.system(size: 24, weight: .bold, design: .rounded)
-    static let supportingValue = Font.system(size: 20, weight: .semibold, design: .rounded)
+    static let metricValue = Font.system(size: 26, weight: .semibold)
+    static let supportingValue = Font.system(size: 20, weight: .semibold)
 }
 
 struct BlankPlanView: View {
@@ -712,7 +712,7 @@ struct BlankPlanView: View {
                     .font(PlanTypography.pageSubtitle)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 14)
             .padding(.top, 16)
             .padding(.bottom, 8)
 
@@ -743,13 +743,13 @@ struct BlankPlanView: View {
                         planStartedAt: planStartedAt
                     )
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
                 .padding(.bottom, 40)
             }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppTheme.pageBackground.ignoresSafeArea())
+            .background(AppTheme.homeBackground.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
         }
     }
@@ -787,7 +787,7 @@ private struct LateNightLimitProgressCard: View {
                     .foregroundStyle(progressColor)
             }
 
-            Text("\(currentValue) / \(limit) 天")
+            Text("\(currentValue)/\(limit)天")
                 .font(PlanTypography.metricValue)
                 .monospacedDigit()
                 .foregroundStyle(.primary)
@@ -795,7 +795,7 @@ private struct LateNightLimitProgressCard: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 19)
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
     }
 }
 
@@ -888,15 +888,15 @@ struct TodayWorkCardView: View {
     let planStartedAt: Double
     let isShorterPlanActive: Bool
 
-    let textDark = Color(red: 50/255, green: 50/255, blue: 70/255)
-    let textGrey = Color(red: 100/255, green: 110/255, blue: 130/255)
+    let textDark = Color.black.opacity(0.88)
+    let textGrey = Color.black.opacity(0.48)
     let cardBg = Color.white
 
-    let trackBg = Color(red: 190/255, green: 185/255, blue: 180/255)
-    let trackFill = Color(red: 80/255, green: 210/255, blue: 180/255)
+    let trackBg = Color.black.opacity(0.12)
+    let trackFill = Color.black.opacity(0.82)
 
-    let btnAttackBg = Color(red: 185/255, green: 140/255, blue: 255/255)
-    let btnDeleteBg = Color(red: 250/255, green: 100/255, blue: 100/255)
+    let btnAttackBg = Color.black.opacity(0.88)
+    let btnReviewBg = Color.black.opacity(0.08)
 
     var body: some View {
         VStack(spacing: 16) {
@@ -967,17 +967,17 @@ struct TodayWorkCardView: View {
                     Button(action: {}) {
                         Text("复盘")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(textDark)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
-                            .background(btnDeleteBg)
+                            .background(btnReviewBg)
                             .clipShape(Capsule())
                     }
                 }
             }
         }
         .padding(20)
-        .background(cardBg, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(cardBg, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
         .alert("什么是掌控力？", isPresented: $isShowingControlInfo) {
             Button("知道了", role: .cancel) {}
         } message: {
@@ -1058,7 +1058,7 @@ private struct BedtimeWeekPlanView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
             }
         }
     }
@@ -1079,7 +1079,7 @@ private struct BedtimeWeekPlanView: View {
                 .frame(width: 46, alignment: .leading)
 
             Circle()
-                .fill(Color.blue)
+                .fill(AppTheme.accent)
                 .frame(width: 6, height: 6)
 
             Text(title)
@@ -1132,7 +1132,7 @@ private struct PlanInfoTile: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: value == nil ? 56 : 92, alignment: .topLeading)
-        .background(AppTheme.cardBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(AppTheme.cardBackground, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
     }
 }
 
@@ -3021,6 +3021,7 @@ private struct EarlySleepPlanCard: View {
 }
 
 private enum AppTheme {
+    static let planCardRadius: CGFloat = 10
     static let homeBackground = Color(
         red: 243.0 / 255.0,
         green: 244.0 / 255.0,
