@@ -643,6 +643,7 @@ private enum PlanTypography {
 
 struct BlankPlanView: View {
     @State private var exportedPlan: ExportedPlanImage?
+    @State private var meditationCheckInTime: String?
     @AppStorage("shorterPlan.isActive") private var isShorterPlanActive = false
     @AppStorage("shorterPlan.durationDays") private var planDurationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
@@ -736,14 +737,16 @@ struct BlankPlanView: View {
                             tint: Color(red: 0.42, green: 0.56, blue: 0.16),
                             shapeStyle: .left
                         )
+                        .frame(width: 100)
 
                         PlanPatternCard(
-                            title: "方法",
+                            title: "早睡方法",
                             subtitle: nil,
                             icon: "lightbulb.fill",
                             tint: Color(red: 0.30, green: 0.52, blue: 0.78),
                             shapeStyle: .plain
                         )
+                        .frame(maxWidth: .infinity)
 
                         PlanPatternCard(
                             title: "进步",
@@ -753,9 +756,10 @@ struct BlankPlanView: View {
                             usesFlowerIcon: true,
                             shapeStyle: .right
                         )
+                        .frame(width: 100)
                     }
 
-                    PlanHabitSection()
+                    PlanHabitSection(meditationCheckInTime: $meditationCheckInTime)
 
                     Button {
                         exportCurrentPlan()
@@ -791,7 +795,8 @@ struct BlankPlanView: View {
                 planDurationDays: planDurationDays,
                 maxLateStreak: maxLateStreak,
                 planStartedAt: planStartedAt,
-                isShorterPlanActive: isShorterPlanActive
+                isShorterPlanActive: isShorterPlanActive,
+                meditationCheckInTime: meditationCheckInTime
             )
                 .frame(width: 390)
                 .fixedSize(horizontal: false, vertical: true)
@@ -810,6 +815,7 @@ private struct CurrentPlanExportView: View {
     let maxLateStreak: Int
     let planStartedAt: Double
     let isShorterPlanActive: Bool
+    let meditationCheckInTime: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -836,14 +842,16 @@ private struct CurrentPlanExportView: View {
                     tint: Color(red: 0.42, green: 0.56, blue: 0.16),
                     shapeStyle: .left
                 )
+                .frame(width: 100)
 
                 PlanPatternCard(
-                    title: "方法",
+                    title: "早睡方法",
                     subtitle: nil,
                     icon: "lightbulb.fill",
                     tint: Color(red: 0.30, green: 0.52, blue: 0.78),
                     shapeStyle: .plain
                 )
+                .frame(maxWidth: .infinity)
 
                 PlanPatternCard(
                     title: "进步",
@@ -853,9 +861,13 @@ private struct CurrentPlanExportView: View {
                     usesFlowerIcon: true,
                     shapeStyle: .right
                 )
+                .frame(width: 100)
             }
 
-            PlanHabitSection()
+            PlanHabitSection(
+                meditationCheckInTime: .constant(meditationCheckInTime),
+                showsAddButton: false
+            )
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 18)
@@ -864,48 +876,73 @@ private struct CurrentPlanExportView: View {
 }
 
 private struct PlanHabitSection: View {
-    @State private var meditationCheckInTime: String?
+    @Binding var meditationCheckInTime: String?
+    var showsAddButton = true
 
     private var isMeditationCompleted: Bool {
         meditationCheckInTime != nil
     }
 
     var body: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                meditationCheckInTime = isMeditationCompleted ? nil : currentTimeText
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("睡前习惯")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(Color.black)
+
+                Spacer()
+
+                if showsAddButton {
+                    Button(action: {}) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.black)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("添加睡前习惯")
+                }
             }
-        } label: {
+
             VStack(spacing: 12) {
                 HStack(alignment: .lastTextBaseline, spacing: 8) {
                     Text("冥想")
                         .font(.system(size: 23, weight: .bold))
                         .foregroundStyle(Color.black)
 
-                    Text("12:00")
-                        .font(.system(size: 23, weight: .regular))
+                    Text("（12:00 提醒）")
+                        .font(.system(size: 15, weight: .regular))
                         .monospacedDigit()
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(Color.black.opacity(0.62))
 
                     Spacer()
 
-                    Circle()
-                        .fill(isMeditationCompleted ? AppTheme.accent : Color.clear)
-                        .frame(width: 28, height: 28)
-                        .overlay {
-                            Circle()
-                                .stroke(
-                                    isMeditationCompleted ? Color.clear : Color.black.opacity(0.18),
-                                    lineWidth: 1.5
-                                )
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            meditationCheckInTime = isMeditationCompleted ? nil : currentTimeText
                         }
-                        .overlay {
-                            if isMeditationCompleted {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundStyle(.white)
+                    } label: {
+                        Circle()
+                            .fill(isMeditationCompleted ? AppTheme.accent : Color.clear)
+                            .frame(width: 28, height: 28)
+                            .overlay {
+                                Circle()
+                                    .stroke(
+                                        isMeditationCompleted ? Color.clear : Color.black.opacity(0.18),
+                                        lineWidth: 1.5
+                                    )
                             }
-                        }
+                            .overlay {
+                                if isMeditationCompleted {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isMeditationCompleted ? "取消冥想打卡" : "完成冥想打卡")
                 }
 
                 HStack(spacing: 6) {
@@ -949,11 +986,8 @@ private struct PlanHabitSection: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 148, alignment: .top)
             .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("冥想")
-        .accessibilityValue(isMeditationCompleted ? "已完成" : "未完成")
+        .padding(.vertical, 4)
     }
 
     private var currentTimeText: String {
@@ -1362,7 +1396,7 @@ struct TodayWorkCardView: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 2) {
-                Text("掌控力")
+                Text("早睡掌控力")
                     .font(.system(size: 19, weight: .bold))
                     .foregroundColor(textDark)
 
@@ -1379,17 +1413,12 @@ struct TodayWorkCardView: View {
 
                 Spacer()
 
-                HStack(alignment: .lastTextBaseline, spacing: 7) {
-                    Text("2")
-                    Text("/")
-                        .foregroundStyle(Color.black.opacity(0.42))
-                    Text("4")
-                }
+                Text("2次")
                 .font(.system(size: 19, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(textDark)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("掌控力2次，共4次")
+                .accessibilityLabel("早睡掌控力2次")
             }
 
             HStack(spacing: 7) {
@@ -1438,7 +1467,7 @@ struct TodayWorkCardView: View {
                     }
 
                     Button(action: {}) {
-                        Text("复盘")
+                        Text("熬夜后复盘")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(textDark)
                             .frame(maxWidth: .infinity)
@@ -1451,7 +1480,7 @@ struct TodayWorkCardView: View {
         }
         .padding(20)
         .background(cardBg, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-        .alert("什么是掌控力？", isPresented: $isShowingControlInfo) {
+        .alert("什么是早睡掌控力？", isPresented: $isShowingControlInfo) {
             Button("知道了", role: .cancel) {}
         } message: {
             Text("当你想熬夜时，主动结束一次熬夜倾向或打断连续熬夜，就会获得1次掌控力。")
