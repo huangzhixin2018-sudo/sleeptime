@@ -52,6 +52,7 @@ private struct SleepCheckInRecord: Codable, Identifiable {
     let wakeMinutes: Int
     let durationMinutes: Int
     let isEarlySleep: Bool
+    let isDemo: Bool?
 }
 
 private struct SleepTrajectorySegment: Identifiable {
@@ -78,7 +79,7 @@ private enum SleepCheckInStore {
         let calendar = Calendar.current
         let planStart = startedAt > 0 ? calendar.startOfDay(for: Date(timeIntervalSince1970: startedAt)) : .distantPast
         let sortedRecords = records
-            .filter { calendar.startOfDay(for: $0.sleepDate) >= planStart }
+            .filter { $0.isDemo == true || calendar.startOfDay(for: $0.sleepDate) >= planStart }
             .sorted { $0.sleepDate < $1.sleepDate }
 
         return sortedRecords.reduce(into: []) { segments, record in
@@ -260,15 +261,37 @@ private struct HomeWeekView: View {
             bedtimeMinutes: bedtime,
             wakeMinutes: fixedWakeMinutes,
             durationMinutes: minutesUntilWake(from: bedtime, wake: fixedWakeMinutes),
-            isEarlySleep: normalizedBedtime <= normalizedBoundary
+            isEarlySleep: normalizedBedtime <= normalizedBoundary,
+            isDemo: false
         )
         var records = sleepCheckIns
-        records.removeAll { calendar.isDate($0.sleepDate, inSameDayAs: now) }
-        records.append(record)
+        let demoStart = calendar.date(byAdding: .day, value: -5, to: calendar.startOfDay(for: now)) ?? now
+        records.removeAll {
+            $0.isDemo == true || calendar.startOfDay(for: $0.sleepDate) >= demoStart
+        }
+        records.append(contentsOf: demoTrajectoryRecords(endingWith: record))
         if let encoded = SleepCheckInStore.encode(records) {
             encodedSleepCheckIns = encoded
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
+    }
+
+    private func demoTrajectoryRecords(endingWith current: SleepCheckInRecord) -> [SleepCheckInRecord] {
+        let calendar = Calendar.current
+        let pattern = [true, true, false, false, false, true]
+        return pattern.enumerated().map { index, isEarlySleep in
+            let dayOffset = index - (pattern.count - 1)
+            let date = calendar.date(byAdding: .day, value: dayOffset, to: current.sleepDate) ?? current.sleepDate
+            return SleepCheckInRecord(
+                id: index == pattern.count - 1 ? current.id : UUID(),
+                sleepDate: date,
+                bedtimeMinutes: index == pattern.count - 1 ? current.bedtimeMinutes : (isEarlySleep ? 22 * 60 + 50 : 24 * 60 + 20) % (24 * 60),
+                wakeMinutes: current.wakeMinutes,
+                durationMinutes: index == pattern.count - 1 ? current.durationMinutes : (isEarlySleep ? 8 * 60 + 10 : 6 * 60 + 40),
+                isEarlySleep: isEarlySleep,
+                isDemo: true
+            )
+        }
     }
 
     private func weekdayIndex(for date: Date) -> Int {
@@ -1046,6 +1069,7 @@ struct BlankPlanView: View {
                 activePlanType: activePlanType,
                 targetEarlySleepStreak: targetEarlySleepStreak,
                 currentEarlySleepStreak: currentEarlySleepStreak,
+                trajectorySegments: trajectorySegments,
                 meditationCheckInTime: meditationCheckInTime,
                 habits: habits
             )
@@ -1069,6 +1093,7 @@ private struct CurrentPlanExportView: View {
     let activePlanType: String
     let targetEarlySleepStreak: Int
     let currentEarlySleepStreak: Int
+    let trajectorySegments: [SleepTrajectorySegment]
     let meditationCheckInTime: String?
     let habits: [BedtimeHabit]
 
@@ -1088,7 +1113,7 @@ private struct CurrentPlanExportView: View {
                 currentValue: activePlanType == "streak" ? currentEarlySleepStreak : 1,
                 targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
             )
-            EmptyPlanFrameworkCard(isEmpty: currentEarlySleepStreak == 0)
+            EmptyPlanFrameworkCard(segments: trajectorySegments)
 
             PlanControlFlowCard()
 
@@ -2167,7 +2192,7 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                         NavigationLink {
-                            CelebrityRoutineLegacyView()
+                            CelebrityRoutineListView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "person.crop.circle", title: "名人作息", showDivider: false)
@@ -3242,9 +3267,9 @@ private struct EarlySleepPlanDetailView: View {
             EarlySleepPlanPicker { plan in
                 isShowingPlanPicker = false
                 DispatchQueue.main.async {
-                    if plan.title == "连续早睡越来越长" {
+                    if plan.title == "最长连续早睡" {
                         isShowingStreakSetup = true
-                    } else if plan.title == "越来越短" {
+                    } else if plan.title == "最晚入睡时间" {
                         isShowingShorterSetup = true
                     }
                 }
@@ -3317,7 +3342,7 @@ private struct EarlySleepPlanPicker: View {
                     onSelect(plan)
                 } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: plan.title == "越来越短" ? "arrow.down.right" : "moon.stars")
+                        Image(systemName: "chart.bar.fill")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(plan.color)
                             .frame(width: 28)
@@ -3326,9 +3351,6 @@ private struct EarlySleepPlanPicker: View {
                             Text(plan.title)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(.primary)
-                            Text(plan.subtitle)
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
                         }
 
                         Spacer()
@@ -3344,7 +3366,7 @@ private struct EarlySleepPlanPicker: View {
                 .disabled(!plan.isAvailable)
             }
             .listStyle(.plain)
-            .navigationTitle("选择早睡计划")
+            .navigationTitle("选择数据指标")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -3721,30 +3743,15 @@ private struct EarlySleepPlan: Identifiable {
 
     static let availablePlans = [
         EarlySleepPlan(
-            title: "连续早睡越来越长",
-            subtitle: "最长连续早睡天数",
+            title: "最长连续早睡",
+            subtitle: "",
             color: Color(red: 0.18, green: 0.48, blue: 0.36),
             isAvailable: true
         ),
         EarlySleepPlan(
-            title: "越来越早",
-            subtitle: "最晚入睡时间",
-            color: Color(red: 0.23, green: 0.48, blue: 0.95)
-        ),
-        EarlySleepPlan(
-            title: "越来越稳定",
-            subtitle: "入睡时间波动",
-            color: Color(red: 0.43, green: 0.35, blue: 0.88)
-        ),
-        EarlySleepPlan(
-            title: "越来越少",
-            subtitle: "熬夜天数",
-            color: Color(red: 0.13, green: 0.66, blue: 0.55)
-        ),
-        EarlySleepPlan(
-            title: "越来越短",
-            subtitle: "最长连续熬夜天数",
-            color: Color(red: 0.95, green: 0.48, blue: 0.22),
+            title: "最晚入睡时间",
+            subtitle: "",
+            color: Color(red: 0.23, green: 0.48, blue: 0.95),
             isAvailable: true
         )
     ]

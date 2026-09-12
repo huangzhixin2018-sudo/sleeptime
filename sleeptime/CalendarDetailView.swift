@@ -1141,38 +1141,147 @@ private enum DemoFestival: String, CaseIterable {
 
 
 
-struct CelebrityCard: Identifiable {
-    let id = UUID()
-    let name: String
-    let tag: String
+enum CelebrityRoutineKind: String, CaseIterable, Identifiable {
+    case murakami
+    case kobe
+    case daVinci
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .murakami: return "村上春树"
+        case .kobe: return "科比·布莱恩特"
+        case .daVinci: return "列奥纳多·达·芬奇"
+        }
+    }
+
+    var tag: String {
+        switch self {
+        case .murakami: return "极致自律的马拉松小说家"
+        case .kobe: return "凌晨四点的洛杉矶"
+        case .daVinci: return "多相睡眠法先驱"
+        }
+    }
+
+    var role: String {
+        switch self {
+        case .murakami: return "作家 · 机械式清晨创作者"
+        case .kobe: return "运动员 · 黎明前的训练者"
+        case .daVinci: return "艺术家 · 多相睡眠探索者"
+        }
+    }
+
+    var sleepSummary: String {
+        switch self {
+        case .murakami: return "7.0小时"
+        case .kobe: return "6.0小时"
+        case .daVinci: return "5.5小时"
+        }
+    }
+
+    var focusSummary: String {
+        switch self {
+        case .murakami: return "5.0小时"
+        case .kobe: return "4.0小时"
+        case .daVinci: return "4.5小时"
+        }
+    }
+
+    var wakeSummary: String {
+        switch self {
+        case .murakami, .kobe: return "04:00 起床"
+        case .daVinci: return "06:00 起床"
+        }
+    }
+
+    var quote: String {
+        switch self {
+        case .murakami: return "“写长篇小说就像进行体力劳动。早晨四点起床，伏案写上四五个小时，跑上十公里，然后早早沉睡。”"
+        case .kobe: return "“重要的不是凌晨四点本身，而是你愿意为目标持续投入多少清醒而专注的时间。”"
+        case .daVinci: return "“安排休息并不是停止创造，而是让观察、思考与灵感保持流动。”"
+        }
+    }
+}
+
+struct CelebrityRoutineListView: View {
+    @AppStorage("celebrityRoutine.enabled") private var enabledIDs = CelebrityRoutineKind.allCases.map(\.rawValue).joined(separator: ",")
+
+    private var enabledCelebrities: [CelebrityRoutineKind] {
+        let enabled = Set(enabledIDs.split(separator: ",").map(String.init))
+        return CelebrityRoutineKind.allCases.filter { enabled.contains($0.rawValue) }
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 12) {
+                if enabledCelebrities.isEmpty {
+                    Text("前往名人库开启想关注的名人作息")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(Color.black.opacity(0.58))
+                        .frame(maxWidth: .infinity, minHeight: 180)
+                } else {
+                    ForEach(enabledCelebrities) { celebrity in
+                        NavigationLink {
+                            CelebrityRoutineLegacyView(celebrity: celebrity)
+                        } label: {
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 9) {
+                                    Text(celebrity.name)
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundStyle(Color.black)
+                                    Text(celebrity.tag)
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundStyle(Color.black.opacity(0.5))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Color.black.opacity(0.26))
+                            }
+                            .padding(.horizontal, 22)
+                            .frame(minHeight: 100)
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(20)
+        }
+        .background(Color(red: 0.96, green: 0.96, blue: 0.97).ignoresSafeArea())
+        .navigationTitle("名人作息")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink("名人库") { CelebrityRoutineView() }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color.primary)
+            }
+        }
+    }
 }
 
 struct CelebrityRoutineView: View {
-    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
-    
-    let cards: [CelebrityCard] = [
-        CelebrityCard(name: "村上春树", tag: "极致自律的马拉松小说家"),
-        CelebrityCard(name: "科比·布莱恩特", tag: "凌晨四点的洛杉矶"),
-        CelebrityCard(name: "列奥纳多·达·芬奇", tag: "多相睡眠法先驱")
-    ]
+    @AppStorage("celebrityRoutine.enabled") private var enabledIDs = CelebrityRoutineKind.allCases.map(\.rawValue).joined(separator: ",")
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                ForEach(cards) { card in
+                ForEach(CelebrityRoutineKind.allCases) { celebrity in
                     HStack {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(card.name)
+                            Text(celebrity.name)
                                 .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(.primary)
                             
-                            Text(card.tag)
+                            Text(celebrity.tag)
                                 .font(.system(size: 14))
                                 .foregroundColor(.secondary)
                         }
                         Spacer()
                         
-                        Toggle("", isOn: .constant(card.name == "村上春树"))
+                        Toggle("", isOn: enabledBinding(for: celebrity))
                             .labelsHidden()
                             .tint(Color.primary)
                     }
@@ -1189,10 +1298,31 @@ struct CelebrityRoutineView: View {
         .navigationTitle("名人库")
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    private func enabledBinding(for celebrity: CelebrityRoutineKind) -> Binding<Bool> {
+        Binding(
+            get: {
+                Set(enabledIDs.split(separator: ",").map(String.init)).contains(celebrity.rawValue)
+            },
+            set: { isEnabled in
+                var enabled = Set(enabledIDs.split(separator: ",").map(String.init))
+                if isEnabled {
+                    enabled.insert(celebrity.rawValue)
+                } else {
+                    enabled.remove(celebrity.rawValue)
+                }
+                enabledIDs = CelebrityRoutineKind.allCases
+                    .filter { enabled.contains($0.rawValue) }
+                    .map(\.rawValue)
+                    .joined(separator: ",")
+            }
+        )
+    }
 }
 
 // MARK: - Celebrity Routine View (名人时相 · 村上春树作息)
 struct CelebrityRoutineLegacyView: View {
+    let celebrity: CelebrityRoutineKind
     @State private var isSynced: Bool = false
     @State private var currentTimeString: String = ""
     
@@ -1210,15 +1340,41 @@ struct CelebrityRoutineLegacyView: View {
         }
     }
     
-    private let blocks: [RoutineBlock] = [
-        .init(start: 21, end: 24, type: .sleep, title: "深度睡眠", desc: "养精蓄锐，准备清晨爆发"),
-        .init(start: 0, end: 4, type: .sleep, title: "深度睡眠", desc: "维持高质量深睡周期"),
-        .init(start: 4, end: 9, type: .focus, title: "黄金写作", desc: "绝对专注，绝不让外界讯息侵入"),
-        .init(start: 9, end: 12, type: .routine, title: "十公里跑步", desc: "体能锚定，重构肌肉与耐力"),
-        .init(start: 12, end: 14, type: .routine, title: "午餐与阅读", desc: "黑胶唱片与书籍养分输入"),
-        .init(start: 14, end: 20, type: .routine, title: "生活杂务", desc: "完全不从事繁重文字工作"),
-        .init(start: 20, end: 21, type: .routine, title: "晚间静息", desc: "调暗光线，准备就寝")
-    ]
+    init(celebrity: CelebrityRoutineKind = .murakami) {
+        self.celebrity = celebrity
+    }
+
+    private var blocks: [RoutineBlock] {
+        switch celebrity {
+        case .murakami:
+            return [
+                .init(start: 21, end: 24, type: .sleep, title: "深度睡眠", desc: "养精蓄锐，准备清晨爆发"),
+                .init(start: 0, end: 4, type: .sleep, title: "深度睡眠", desc: "维持高质量深睡周期"),
+                .init(start: 4, end: 9, type: .focus, title: "黄金写作", desc: "绝对专注，绝不让外界讯息侵入"),
+                .init(start: 9, end: 12, type: .routine, title: "十公里跑步", desc: "体能锚定，重构肌肉与耐力"),
+                .init(start: 12, end: 14, type: .routine, title: "午餐与阅读", desc: "黑胶唱片与书籍养分输入"),
+                .init(start: 14, end: 20, type: .routine, title: "生活杂务", desc: "完全不从事繁重文字工作"),
+                .init(start: 20, end: 21, type: .routine, title: "晚间静息", desc: "调暗光线，准备就寝")
+            ]
+        case .kobe:
+            return [
+                .init(start: 22, end: 24, type: .sleep, title: "夜间睡眠", desc: "为清晨训练恢复体能"),
+                .init(start: 0, end: 4, type: .sleep, title: "夜间睡眠", desc: "保持稳定恢复周期"),
+                .init(start: 4, end: 8, type: .focus, title: "清晨训练", desc: "在城市醒来前完成第一轮训练"),
+                .init(start: 8, end: 12, type: .routine, title: "早餐与恢复", desc: "补充能量并进行身体护理"),
+                .init(start: 12, end: 18, type: .routine, title: "球队训练", desc: "技术、战术与对抗训练"),
+                .init(start: 18, end: 22, type: .routine, title: "家庭与放松", desc: "结束训练，逐步进入休息")
+            ]
+        case .daVinci:
+            return [
+                .init(start: 0, end: 6, type: .sleep, title: "核心睡眠", desc: "为观察与创作恢复精力"),
+                .init(start: 6, end: 10, type: .focus, title: "绘画研究", desc: "在清晨光线中观察与创作"),
+                .init(start: 10, end: 14, type: .routine, title: "实验与记录", desc: "研究机械、人体与自然现象"),
+                .init(start: 14, end: 18, type: .focus, title: "设计创作", desc: "将观察转化为草图与方案"),
+                .init(start: 18, end: 24, type: .routine, title: "阅读与短休", desc: "交替阅读、记录与恢复精力")
+            ]
+        }
+    }
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -1244,16 +1400,7 @@ struct CelebrityRoutineLegacyView: View {
             formatter.dateFormat = "HH:mm"
             currentTimeString = formatter.string(from: Date())
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink("名人库") {
-                    CelebrityRoutineView()
-                }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.primary)
-            }
-        }
-        .navigationTitle("")
+        .navigationTitle(celebrity.name)
         .navigationBarTitleDisplayMode(.inline)
     }
     
@@ -1301,12 +1448,12 @@ struct CelebrityRoutineLegacyView: View {
                         .background(Color(red: 1.0, green: 0.9, blue: 0.0))
                         .cornerRadius(4)
                     
-                    Text("村上春树")
+                    Text(celebrity.name)
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.primary)
                 }
                 
-                Text("作家 · 机械式清晨创作者")
+                Text(celebrity.role)
                     .font(.system(size: 12, weight: .regular))
                     .foregroundColor(Color.primary.opacity(0.6))
             }
@@ -1317,7 +1464,7 @@ struct CelebrityRoutineLegacyView: View {
                 Text("每日睡眠总长")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundColor(Color.primary.opacity(0.4))
-                Text("7.0小时")
+                Text(celebrity.sleepSummary)
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
                     .foregroundColor(.primary)
             }
@@ -1338,11 +1485,11 @@ struct CelebrityRoutineLegacyView: View {
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
                         .foregroundColor(Color.primary.opacity(0.4))
                     
-                    Text("5.0小时")
+                    Text(celebrity.focusSummary)
                         .font(.system(size: 28, weight: .black, design: .monospaced))
                         .foregroundColor(.primary)
                     
-                    Text("04:00 起床")
+                    Text(celebrity.wakeSummary)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(Color.primary.opacity(0.6))
                 }
@@ -1390,7 +1537,7 @@ struct CelebrityRoutineLegacyView: View {
                 .fill(Color.primary)
                 .frame(width: 3)
             
-            Text("“写长篇小说就像进行体力劳动。早晨四点起床，伏案写上四五个小时，跑上十公里，然后早早沉睡。”")
+            Text(celebrity.quote)
                 .font(.system(size: 13, weight: .regular))
                 .foregroundColor(Color.primary.opacity(0.8))
                 .lineSpacing(5)
