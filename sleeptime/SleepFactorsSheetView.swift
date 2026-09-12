@@ -16,7 +16,7 @@ struct SleepFactorCategory: Identifiable {
 struct SleepFactorsSheetView: View {
     @Environment(\.dismiss) private var dismiss
     
-    @State private var selectedItems: Set<UUID> = []
+    @Binding var selectedItems: Set<String>
     
     let categories: [SleepFactorCategory] = [
         SleepFactorCategory(title: "饮食", isPro: false, items: [
@@ -34,7 +34,7 @@ struct SleepFactorsSheetView: View {
         ]),
         SleepFactorCategory(title: "生活", isPro: true, items: [
             SleepFactorItem(icon: "🧑‍💻", name: "加班"),
-            SleepFactorItem(icon: "🎾", name: "运动日"),
+            SleepFactorItem(icon: "🩸", name: "月经期"),
             SleepFactorItem(icon: "🎮", name: "打游戏"),
             SleepFactorItem(icon: "🧘‍♀️", name: "冥想"),
             SleepFactorItem(icon: "💭", name: "做梦"),
@@ -58,65 +58,62 @@ struct SleepFactorsSheetView: View {
             Circle()
                 .fill(Color.yellow.opacity(0.15))
                 .frame(width: 200, height: 200)
-                .blur(radius: 40)
-                .offset(x: 150, y: -250)
-            
-            Circle()
-                .fill(Color.blue.opacity(0.1))
-                .frame(width: 300, height: 300)
-                .blur(radius: 60)
-                .offset(x: 50, y: 150)
+                .blur(radius: 50)
+                .offset(x: 150, y: 100)
                 
             VStack(spacing: 0) {
-                Text("什么事情影响了睡眠")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(Color.black.opacity(0.88))
-                    .padding(.top, 30)
-                    .padding(.bottom, 20)
+                // Header
+                HStack {
+                    Text("记录熬夜原因")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 30) {
                         ForEach(categories) { category in
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 HStack(spacing: 8) {
                                     Text(category.title)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color.black.opacity(0.6))
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(Color.black.opacity(0.8))
                                     
                                     if category.isPro {
                                         Text("PRO")
                                             .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Color.pink.opacity(0.8))
+                                            .background(Color.black)
+                                            .foregroundColor(.white)
                                             .clipShape(Capsule())
                                     }
                                 }
                                 
-                                FlowLayout(spacing: 10) {
+                                FlowLayout(spacing: 12, lineSpacing: 12) {
                                     ForEach(category.items) { item in
-                                        let isSelected = selectedItems.contains(item.id)
+                                        let isSelected = selectedItems.contains(item.name)
                                         
                                         Button(action: {
                                             if isSelected {
-                                                selectedItems.remove(item.id)
+                                                selectedItems.remove(item.name)
                                             } else {
-                                                selectedItems.insert(item.id)
+                                                selectedItems.insert(item.name)
                                             }
                                         }) {
                                             HStack(spacing: 6) {
                                                 Text(item.icon)
                                                     .font(.system(size: 16))
                                                 Text(item.name)
-                                                    .font(.system(size: 14, weight: .medium))
+                                                    .font(.system(size: 15, weight: .medium))
                                             }
-                                            .foregroundColor(isSelected ? .white : Color.black.opacity(0.7))
+                                            .foregroundColor(isSelected ? .white : .black.opacity(0.7))
                                             .padding(.horizontal, 16)
                                             .padding(.vertical, 10)
-                                            .background(
-                                                isSelected ? Color(red: 0, green: 180/255.0, blue: 255/255.0) : Color.white.opacity(0.6)
-                                            )
+                                            .background(isSelected ? Color.black : Color.white)
                                             .clipShape(Capsule())
                                             .shadow(color: Color.black.opacity(isSelected ? 0.2 : 0.05), radius: 5, x: 0, y: 2)
                                         }
@@ -140,7 +137,7 @@ struct SleepFactorsSheetView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(Color(red: 0, green: 180/255.0, blue: 255/255.0))
+                        .background(Color.black)
                         .clipShape(Capsule())
                 }
                 .padding(.horizontal, 20)
@@ -157,6 +154,6 @@ struct SleepFactorsSheetView: View {
 
 struct SleepFactorsSheetView_Previews: PreviewProvider {
     static var previews: some View {
-        SleepFactorsSheetView()
+        SleepFactorsSheetView(selectedItems: .constant([]))
     }
 }

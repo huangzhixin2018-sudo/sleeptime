@@ -51,19 +51,19 @@ struct FlowLayout: Layout {
 
 struct TimeTravelDetailView: View {
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
-    let tags = ["吾日三省吾身", "真诚", "不拖延", "不要被同一块石头绊倒两次", "提前计划"]
+    let tags = ["保持固定起床时间", "10点后不玩手机", "睡前不碰宵夜", "不拖延", "提前计划", "吾日三省吾身"]
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
                 // 卡片说明
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("「原则库」收集了常见的原则，为您提供灵感，帮助您快速创建新的原则。")
+                    Text("早睡原则")
                         .font(.system(size: 17, weight: .bold, design: .serif))
                         .foregroundColor(.primary)
                         .lineSpacing(6)
                     
-                    Text("点击图标，即可创建新的原则；原则会出现在我的原则列表中。")
+                    Text("① 识别你的晚睡诱因\n        ↓\n② 建立你的早睡原则\n        ↓\n③ 每日强化原则理念\n        ↓\n④ 查看睡眠反馈并调整原则")
                         .font(.system(size: 15))
                         .foregroundColor(Color.secondary)
                         .lineSpacing(4)
@@ -99,7 +99,7 @@ struct TimeTravelDetailView: View {
             .padding(20)
         }
         .background(Color(red: 0.96, green: 0.96, blue: 0.97).ignoresSafeArea())
-        .navigationTitle("原则库")
+        .navigationTitle("原则")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

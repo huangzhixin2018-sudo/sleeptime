@@ -803,7 +803,7 @@ struct BlankPlanView: View {
 
                     HStack(spacing: 8) {
                         NavigationLink {
-                            BlankDetailView(title: "原则")
+                            TimeTravelDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             PlanPatternCard(
@@ -818,7 +818,7 @@ struct BlankPlanView: View {
                         .buttonStyle(.plain)
 
                         NavigationLink {
-                            BlankDetailView(title: "早睡方法")
+                            EarlySleepMethodsView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             PlanPatternCard(
@@ -1584,6 +1584,7 @@ private struct EarlySleepStreakDetailView: View {
 struct TodayWorkCardView: View {
     @State private var isShowingControlInfo = false
     @State private var isShowingFactors = false
+    @State private var selectedFactors: Set<String> = []
 
     let planDurationDays: Int
     let maxLateStreak: Int
@@ -1679,16 +1680,47 @@ struct TodayWorkCardView: View {
                             .clipShape(Capsule())
                     }
 
-                    Button(action: { isShowingFactors = true }) {
-                        Text("记录熬夜原因")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(textDark)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(btnReviewBg)
-                            .clipShape(Capsule())
+                    if selectedFactors.isEmpty {
+                        Button(action: { isShowingFactors = true }) {
+                            Text("记录熬夜原因")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(textDark)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(btnReviewBg)
+                                .clipShape(Capsule())
+                        }
+                    } else {
+                        HStack(spacing: 8) {
+                            let tagsToShow = Array(selectedFactors.prefix(2))
+                            
+                            ForEach(tagsToShow, id: \.self) { factor in
+                                Button(action: { isShowingFactors = true }) {
+                                    Text(factor)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(textDark)
+                                        .padding(.horizontal, 16)
+                                        .frame(height: 44)
+                                        .background(btnReviewBg)
+                                        .cornerRadius(12)
+                                }
+                            }
+                            
+                            if selectedFactors.count < 2 {
+                                Button(action: { isShowingFactors = true }) {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(textDark)
+                                        .frame(width: 44, height: 44)
+                                        .background(btnReviewBg)
+                                        .cornerRadius(12)
+                                }
+                            }
+                            
+                            Spacer(minLength: 0)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -1700,7 +1732,7 @@ struct TodayWorkCardView: View {
             Text("当你想熬夜时，主动结束一次熬夜倾向或打断连续熬夜，就会获得1次掌控力。")
         }
         .sheet(isPresented: $isShowingFactors) {
-            SleepFactorsSheetView()
+            SleepFactorsSheetView(selectedItems: $selectedFactors)
                 .presentationDetents([.fraction(0.85), .large])
                 .presentationDragIndicator(.visible)
         }
