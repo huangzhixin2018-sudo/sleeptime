@@ -833,7 +833,7 @@ struct BlankPlanView: View {
                         .buttonStyle(.plain)
 
                         NavigationLink {
-                            BlankDetailView(title: "进步")
+                            ProgressDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             PlanPatternCard(
@@ -2018,14 +2018,6 @@ struct ProfileView: View {
                     }
 
                     ProfileSection {
-                        NavigationLink {
-                            TimeTravelDetailView()
-                                .sleepDetailChrome(tabBarVisibility)
-                        } label: {
-                            ProfileRowView(icon: "clock.arrow.circlepath", title: "原则库", showDivider: true)
-                        }
-                        .buttonStyle(.plain)
-
                         NavigationLink {
                             EmotionDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
