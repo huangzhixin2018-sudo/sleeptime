@@ -1175,14 +1175,14 @@ private struct EmptyPlanFrameworkCard: View {
 
                 Group {
                     if isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("看见早睡与熬夜的连续性")
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("看见每段作息的变化")
                                 .font(.system(size: 17, weight: .semibold))
 
-                            Text("完成睡眠记录后，早睡与熬夜自动分段，呈现作息的连续规律与变化")
+                            Text("完成睡眠记录后，将自动划分早睡与熬夜，呈现作息的连续性规律变化")
                                 .font(.system(size: 16, weight: .regular))
                                 .lineSpacing(6)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.leading)
                         }
                         .foregroundStyle(Color.black)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1244,7 +1244,7 @@ private struct EmptyPlanFrameworkCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             isEmpty
-                ? "作息轨迹，完成睡眠记录后，早睡与熬夜自动分段，呈现作息的连续规律与变化"
+                ? "作息轨迹，完成睡眠记录后，将自动划分早睡与熬夜，呈现作息的连续性规律变化"
                 : "作息轨迹，连续早睡2天，连续熬夜3天，连续早睡1天"
         )
     }
