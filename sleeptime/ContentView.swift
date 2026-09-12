@@ -737,6 +737,8 @@ struct BlankPlanView: View {
 
                     EmptyPlanFrameworkCard(isEmpty: currentEarlySleepStreak == 0)
 
+                    PlanControlFlowCard()
+
                     TodayWorkCardView(
                         planDurationDays: planDurationDays,
                         maxLateStreak: maxLateStreak,
@@ -856,6 +858,8 @@ private struct CurrentPlanExportView: View {
                 targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
             )
             EmptyPlanFrameworkCard(isEmpty: currentEarlySleepStreak == 0)
+
+            PlanControlFlowCard()
 
             TodayWorkCardView(
                 planDurationDays: planDurationDays,
@@ -1179,7 +1183,7 @@ private struct EmptyPlanFrameworkCard: View {
                             Text("看见每段作息的变化")
                                 .font(.system(size: 17, weight: .semibold))
 
-                            Text("完成睡眠记录后，将自动划分早睡与熬夜，呈现作息的连续性规律变化")
+                            Text("完成睡眠记录后，早睡与熬夜将会分段呈现，让作息变化清晰可见")
                                 .font(.system(size: 16, weight: .regular))
                                 .lineSpacing(6)
                                 .multilineTextAlignment(.leading)
@@ -1244,7 +1248,7 @@ private struct EmptyPlanFrameworkCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             isEmpty
-                ? "作息轨迹，完成睡眠记录后，将自动划分早睡与熬夜，呈现作息的连续性规律变化"
+                ? "作息轨迹，完成睡眠记录后，早睡与熬夜将会分段呈现，让作息变化清晰可见"
                 : "作息轨迹，连续早睡2天，连续熬夜3天，连续早睡1天"
         )
     }
@@ -1278,6 +1282,51 @@ private struct EmptyPlanFrameworkCard: View {
     }
 }
 
+private struct PlanControlFlowCard: View {
+    private let accentColor = Color(red: 0.18, green: 0.48, blue: 0.36)
+
+    var body: some View {
+        HStack(spacing: 0) {
+            flowText("熬夜魔", weight: .semibold, color: .black)
+            Spacer(minLength: 7)
+            arrow
+            Spacer(minLength: 7)
+            flowText("选择早睡", weight: .medium, color: .black)
+            Spacer(minLength: 7)
+            arrow
+            Spacer(minLength: 7)
+            flowText("获得掌控力", weight: .medium, color: .black)
+            Spacer(minLength: 7)
+            arrow
+            Spacer(minLength: 7)
+            flowText("早睡喵", weight: .semibold, color: accentColor)
+        }
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity)
+        .frame(height: 46)
+        .background(
+            Color.white,
+            in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous)
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("熬夜魔，选择早睡，获得掌控力，成为早睡喵")
+    }
+
+    private func flowText(_ text: String, weight: Font.Weight, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 14, weight: weight))
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.9)
+    }
+
+    private var arrow: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(Color.black.opacity(0.28))
+    }
+}
+
 private struct LongestEarlySleepCard: View {
     let currentValue: Int
     let targetValue: Int
@@ -1305,11 +1354,15 @@ private struct LongestEarlySleepCard: View {
 
                     Spacer(minLength: 8)
 
-                    Text("让行动听从自己的选择")
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(Color.black)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
+                    Text("目标 \(targetValue)天")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(accentColor)
+                        .padding(.horizontal, 8)
+                        .frame(height: 30)
+                        .background(
+                            accentColor.opacity(0.10),
+                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        )
                 }
 
                 HStack(alignment: .lastTextBaseline, spacing: 5) {
