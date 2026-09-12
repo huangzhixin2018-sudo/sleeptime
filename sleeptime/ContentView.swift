@@ -649,6 +649,9 @@ struct BlankPlanView: View {
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
     @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
     @AppStorage("shorterPlan.startedAt") private var planStartedAt = 0.0
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
+    @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
+    @AppStorage("earlySleepPlan.currentStreak") private var currentEarlySleepStreak = 0
 
     private var currentDay: Int {
         guard isShorterPlanActive, planStartedAt > 0 else { return 1 }
@@ -677,10 +680,20 @@ struct BlankPlanView: View {
             // 自定义顶部：大标题与管理图标在同一高度
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .center) {
-                    Text("Day \(currentDay)")
-                        .font(PlanTypography.pageTitle)
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(alignment: .firstTextBaseline, spacing: 7) {
+                            Text("Day \(currentDay)")
+                                .font(PlanTypography.pageTitle)
+                                .foregroundColor(.primary)
+
+                            Text("of \(planDurationDays)")
+                                .font(PlanTypography.pageTitle)
+                                .foregroundStyle(Color.black.opacity(0.34))
+                        }
                         .monospacedDigit()
-                        .foregroundColor(.primary)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("计划第 \(currentDay) 天，共 \(planDurationDays) 天")
+                    }
 
                     Spacer()
 
@@ -717,9 +730,12 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    LongestEarlySleepCard(currentValue: 1)
+                    LongestEarlySleepCard(
+                        currentValue: activePlanType == "streak" ? currentEarlySleepStreak : 1,
+                        targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
+                    )
 
-                    EmptyPlanFrameworkCard()
+                    EmptyPlanFrameworkCard(isEmpty: currentEarlySleepStreak == 0)
 
                     TodayWorkCardView(
                         planDurationDays: planDurationDays,
@@ -796,6 +812,9 @@ struct BlankPlanView: View {
                 maxLateStreak: maxLateStreak,
                 planStartedAt: planStartedAt,
                 isShorterPlanActive: isShorterPlanActive,
+                activePlanType: activePlanType,
+                targetEarlySleepStreak: targetEarlySleepStreak,
+                currentEarlySleepStreak: currentEarlySleepStreak,
                 meditationCheckInTime: meditationCheckInTime
             )
                 .frame(width: 390)
@@ -815,16 +834,28 @@ private struct CurrentPlanExportView: View {
     let maxLateStreak: Int
     let planStartedAt: Double
     let isShorterPlanActive: Bool
+    let activePlanType: String
+    let targetEarlySleepStreak: Int
+    let currentEarlySleepStreak: Int
     let meditationCheckInTime: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Day \(currentDay)")
-                .font(.system(size: 30, weight: .bold))
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text("Day \(currentDay)")
+                    .font(.system(size: 30, weight: .bold))
+
+                Text("of \(planDurationDays)")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundStyle(Color.black.opacity(0.34))
+            }
                 .monospacedDigit()
 
-            LongestEarlySleepCard(currentValue: 1)
-            EmptyPlanFrameworkCard()
+            LongestEarlySleepCard(
+                currentValue: activePlanType == "streak" ? currentEarlySleepStreak : 1,
+                targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
+            )
+            EmptyPlanFrameworkCard(isEmpty: currentEarlySleepStreak == 0)
 
             TodayWorkCardView(
                 planDurationDays: planDurationDays,
@@ -1123,6 +1154,8 @@ private struct PatternFolderShape: Shape {
 }
 
 private struct EmptyPlanFrameworkCard: View {
+    let isEmpty: Bool
+
     var body: some View {
         GeometryReader { proxy in
             let dividerX = proxy.size.width * 0.15
@@ -1140,25 +1173,42 @@ private struct EmptyPlanFrameworkCard: View {
                 .foregroundStyle(Color.black)
                 .position(x: dividerX / 2, y: proxy.size.height / 2)
 
-                HStack(spacing: 5) {
-                    trackingMetric(
-                        title: "连续早睡",
-                        value: 2,
-                        dateRange: "9.06–9.07"
-                    )
-                    trackingMetric(
-                        title: "连续熬夜",
-                        value: 3,
-                        dateRange: "9.08–9.10"
-                    )
-                    trackingMetric(
-                        title: "连续早睡",
-                        value: 1,
-                        dateRange: "9.11"
-                    )
+                Group {
+                    if isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("看见早睡与熬夜的连续性")
+                                .font(.system(size: 17, weight: .semibold))
+
+                            Text("完成睡眠记录后，早睡与熬夜自动分段，呈现作息的连续规律与变化")
+                                .font(.system(size: 16, weight: .regular))
+                                .lineSpacing(6)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .foregroundStyle(Color.black)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                    } else {
+                        HStack(spacing: 5) {
+                            trackingMetric(
+                                title: "连续早睡",
+                                value: 2,
+                                dateRange: "9.06–9.07"
+                            )
+                            trackingMetric(
+                                title: "连续熬夜",
+                                value: 3,
+                                dateRange: "9.08–9.10"
+                            )
+                            trackingMetric(
+                                title: "连续早睡",
+                                value: 1,
+                                dateRange: "9.11"
+                            )
+                        }
+                        .padding(8)
+                        .padding(.horizontal, 8)
+                    }
                 }
-                .padding(8)
-                .padding(.horizontal, 8)
                 .frame(width: proxy.size.width - dividerX, height: proxy.size.height)
                 .position(
                     x: dividerX + (proxy.size.width - dividerX) / 2,
@@ -1192,7 +1242,11 @@ private struct EmptyPlanFrameworkCard: View {
         }
         .frame(height: 124)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("作息轨迹，连续早睡2天，连续熬夜3天，连续早睡1天")
+        .accessibilityLabel(
+            isEmpty
+                ? "作息轨迹，完成睡眠记录后，早睡与熬夜自动分段，呈现作息的连续规律与变化"
+                : "作息轨迹，连续早睡2天，连续熬夜3天，连续早睡1天"
+        )
     }
 
     private func trackingMetric(title: String, value: Int, dateRange: String) -> some View {
@@ -1226,9 +1280,20 @@ private struct EmptyPlanFrameworkCard: View {
 
 private struct LongestEarlySleepCard: View {
     let currentValue: Int
+    let targetValue: Int
 
-    private let milestones = [1, 2, 3, 4, 5]
     private let accentColor = Color(red: 0.18, green: 0.48, blue: 0.36)
+
+    private var milestones: [Int] {
+        let target = max(targetValue, 1)
+        if target <= 7 {
+            return Array(1...target)
+        }
+
+        return Array(Set([1, target / 4, target / 2, target * 3 / 4, target]))
+            .filter { $0 > 0 }
+            .sorted()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -2899,9 +2964,17 @@ private struct EarlySleepPlanDetailView: View {
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
     @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
     @AppStorage("earlySleepPlan.history") private var historyData = "[]"
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
+    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "连续熬夜越来越短"
+    @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
+    @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
+    @AppStorage("sleepGoal.workdayBedtime") private var workdayBedtime = 23 * 60
+    @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
+    @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
 
     @State private var isShowingPlanPicker = false
     @State private var isShowingShorterSetup = false
+    @State private var isShowingStreakSetup = false
 
     let onPlanStarted: () -> Void
 
@@ -2940,7 +3013,9 @@ private struct EarlySleepPlanDetailView: View {
                     EarlySleepPlanRecordCard(
                         record: currentRecord,
                         status: "进行中",
-                        currentDay: currentPlanDay
+                        currentDay: currentPlanDay,
+                        title: activePlanName,
+                        objective: currentObjective
                     )
                 }
 
@@ -2962,12 +3037,18 @@ private struct EarlySleepPlanDetailView: View {
         .navigationDestination(isPresented: $isShowingShorterSetup) {
             ShorterLateNightPlanSetupView(onPlanStarted: onPlanStarted)
         }
+        .navigationDestination(isPresented: $isShowingStreakSetup) {
+            EarlySleepStreakPlanSetupView(onPlanStarted: onPlanStarted)
+        }
         .sheet(isPresented: $isShowingPlanPicker) {
             EarlySleepPlanPicker { plan in
                 isShowingPlanPicker = false
-                guard plan.title == "越来越短" else { return }
                 DispatchQueue.main.async {
-                    isShowingShorterSetup = true
+                    if plan.title == "连续早睡越来越长" {
+                        isShowingStreakSetup = true
+                    } else if plan.title == "越来越短" {
+                        isShowingShorterSetup = true
+                    }
                 }
             }
             .presentationDetents([.medium])
@@ -2982,6 +3063,21 @@ private struct EarlySleepPlanDetailView: View {
             maxLateStreak: maxLateStreak,
             startedAt: startedAt
         )
+    }
+
+    private var currentObjective: String {
+        if activePlanType == "streak" {
+            return "在 \(durationDays) 天内，最长连续早睡达到 \(targetEarlySleepStreak) 天 · \(bedtimeText) 前入睡"
+        }
+        return "连续熬夜不超过 \(maxLateStreak) 天"
+    }
+
+    private var bedtimeText: String {
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        let workdays = Set(workdaySelection.split(separator: ",").compactMap { Int($0) })
+        let target = workdays.contains(weekday) ? workdayBedtime : weekendBedtime
+        let boundary = (target + allowedDeviation) % (24 * 60)
+        return String(format: "%02d:%02d", boundary / 60, boundary % 60)
     }
 
     private var currentPlanDay: Int {
@@ -3039,7 +3135,7 @@ private struct EarlySleepPlanPicker: View {
 
                         Spacer()
 
-                        if plan.title != "越来越短" {
+                        if !plan.isAvailable {
                             Text("稍后开放")
                                 .font(.system(size: 12))
                                 .foregroundStyle(.tertiary)
@@ -3047,7 +3143,7 @@ private struct EarlySleepPlanPicker: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .disabled(plan.title != "越来越短")
+                .disabled(!plan.isAvailable)
             }
             .listStyle(.plain)
             .navigationTitle("选择早睡计划")
@@ -3061,6 +3157,193 @@ private struct EarlySleepPlanPicker: View {
     }
 }
 
+private struct EarlySleepStreakPlanSetupView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("shorterPlan.isActive") private var isActive = false
+    @AppStorage("shorterPlan.durationDays") private var savedDurationDays = 14
+    @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
+    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "连续熬夜越来越短"
+    @AppStorage("earlySleepPlan.targetStreak") private var savedTargetStreak = 5
+    @AppStorage("earlySleepPlan.currentStreak") private var currentStreak = 0
+    @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
+    @AppStorage("sleepGoal.workdayBedtime") private var workdayBedtime = 23 * 60
+    @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
+    @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
+
+    @State private var durationDays = 14
+    @State private var targetStreak = 5
+
+    let onPlanStarted: () -> Void
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("连续早睡越来越长")
+                        .font(.system(size: 30, weight: .bold))
+
+                    Text("先完成一个阶段，把最长连续早睡慢慢拉长。")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 2)
+                .padding(.bottom, 6)
+
+                numberSettingCard(
+                    title: "计划天数",
+                    explanation: "这个阶段持续多久",
+                    value: durationDays,
+                    range: 3...30
+                ) { newValue in
+                    durationDays = newValue
+                    targetStreak = min(targetStreak, newValue)
+                }
+
+                numberSettingCard(
+                    title: "目标连续早睡",
+                    explanation: "本阶段想达到的最长连续天数",
+                    value: targetStreak,
+                    range: 2...max(durationDays, 2)
+                ) { targetStreak = $0 }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("早睡判定")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("自动使用当天的目标入睡时间与允许偏差")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(alignment: .lastTextBaseline) {
+                        Text("\(targetBedtimeText) + \(allowedDeviation) 分钟")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Text("\(bedtimeText) 前")
+                            .font(.system(size: 22, weight: .bold))
+                            .monospacedDigit()
+                    }
+                }
+                .padding(18)
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("本阶段目标")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Text("接下来 \(durationDays) 天，按睡眠目标判断，最长连续早睡达到 \(targetStreak) 天")
+                        .font(.system(size: 18, weight: .semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    Color(red: 0.18, green: 0.48, blue: 0.36).opacity(0.10),
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color(red: 0.18, green: 0.48, blue: 0.36))
+                        .frame(width: 4)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 20)
+            .padding(.bottom, 110)
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("创建计划")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            Button(action: startPlan) {
+                Text("开始计划")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color(uiColor: .systemBackground))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+        }
+        .onAppear {
+            durationDays = savedDurationDays
+            targetStreak = min(max(savedTargetStreak, 2), savedDurationDays)
+        }
+    }
+
+    private func numberSettingCard(
+        title: String,
+        explanation: String,
+        value: Int,
+        range: ClosedRange<Int>,
+        onChange: @escaping (Int) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(explanation)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("\(value) 天")
+                    .font(.system(size: 25, weight: .bold))
+                    .monospacedDigit()
+            }
+
+            Stepper(value: Binding(get: { value }, set: onChange), in: range) {
+                EmptyView()
+            }
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(18)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var targetBedtimeMinutes: Int {
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        let workdays = Set(workdaySelection.split(separator: ",").compactMap { Int($0) })
+        return workdays.contains(weekday) ? workdayBedtime : weekendBedtime
+    }
+
+    private var targetBedtimeText: String {
+        String(format: "%02d:%02d", targetBedtimeMinutes / 60, targetBedtimeMinutes % 60)
+    }
+
+    private var bedtimeText: String {
+        let boundary = (targetBedtimeMinutes + allowedDeviation) % (24 * 60)
+        return String(format: "%02d:%02d", boundary / 60, boundary % 60)
+    }
+
+    private func startPlan() {
+        savedDurationDays = durationDays
+        savedTargetStreak = targetStreak
+        currentStreak = 0
+        activePlanType = "streak"
+        activePlanName = "连续早睡越来越长"
+        startedAt = Date().timeIntervalSince1970
+        isActive = true
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
+        dismiss()
+        DispatchQueue.main.async {
+            onPlanStarted()
+        }
+    }
+}
+
 private struct ShorterLateNightPlanSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("shorterPlan.isActive") private var isActive = false
@@ -3069,6 +3352,8 @@ private struct ShorterLateNightPlanSetupView: View {
     @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
     @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
     @AppStorage("earlySleepPlan.history") private var historyData = "[]"
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
+    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "连续熬夜越来越短"
 
     @State private var durationDays = 7
     @State private var maxLateStreak = 2
@@ -3200,6 +3485,8 @@ private struct ShorterLateNightPlanSetupView: View {
         savedDurationDays = durationDays
         savedMaxLateStreak = maxLateStreak
         currentMaxLateStreak = 0
+        activePlanType = "shorter"
+        activePlanName = "连续熬夜越来越短"
         startedAt = Date().timeIntervalSince1970
         isActive = true
         UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
@@ -3249,6 +3536,8 @@ private struct EarlySleepPlanRecordCard: View {
     let record: EarlySleepPlanRecord
     let status: String
     let currentDay: Int?
+    var title = "连续熬夜越来越短"
+    var objective: String? = nil
 
     private var dateText: String {
         let formatter = DateFormatter()
@@ -3260,7 +3549,7 @@ private struct EarlySleepPlanRecordCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(alignment: .firstTextBaseline) {
-                Text("连续熬夜越来越短")
+                Text(title)
                     .font(.system(size: 17, weight: .semibold))
 
                 Spacer()
@@ -3270,7 +3559,7 @@ private struct EarlySleepPlanRecordCard: View {
                     .foregroundStyle(status == "进行中" ? Color.orange : Color.secondary)
             }
 
-            Text("连续熬夜不超过 \(record.maxLateStreak) 天")
+            Text(objective ?? "连续熬夜不超过 \(record.maxLateStreak) 天")
                 .font(.system(size: 15))
                 .foregroundStyle(.primary)
 
@@ -3297,10 +3586,17 @@ private struct EarlySleepPlan: Identifiable {
     let title: String
     let subtitle: String
     let color: Color
+    var isAvailable = false
 
     var id: String { title }
 
     static let availablePlans = [
+        EarlySleepPlan(
+            title: "连续早睡越来越长",
+            subtitle: "最长连续早睡天数",
+            color: Color(red: 0.18, green: 0.48, blue: 0.36),
+            isAvailable: true
+        ),
         EarlySleepPlan(
             title: "越来越早",
             subtitle: "最晚入睡时间",
@@ -3319,38 +3615,10 @@ private struct EarlySleepPlan: Identifiable {
         EarlySleepPlan(
             title: "越来越短",
             subtitle: "最长连续熬夜天数",
-            color: Color(red: 0.95, green: 0.48, blue: 0.22)
+            color: Color(red: 0.95, green: 0.48, blue: 0.22),
+            isAvailable: true
         )
     ]
-}
-
-private struct EarlySleepPlanCard: View {
-    let plan: EarlySleepPlan
-
-    var body: some View {
-        HStack(spacing: 15) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(plan.title)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.primary)
-
-                Text(plan.subtitle)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 8)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color(uiColor: .tertiaryLabel))
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 20)
-        .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
 }
 
 private enum AppTheme {
@@ -3502,123 +3770,6 @@ struct TargetCardView: View {
         .rotationEffect(.degrees(rotationAngle))
     }
 }
-
-// MARK: - 单日打卡记录卡片
-
-struct DayRecordCardView: View {
-    var body: some View {
-        VStack(spacing: 0) { // 取消全局间距，改用精准控制
-            // 头部标题和操作按钮
-            HStack {
-                Text("第 1 天")
-                    .font(.system(size: 17, weight: .bold)) // 字号微调
-                    .foregroundColor(.primary)
-
-                Spacer()
-
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundColor(.blue)
-            }
-            .padding(.bottom, 24)
-
-            // 四个核心数据指标 (均匀分布)
-            HStack {
-                MetricColumn(value: "23:30", label: "入睡时间", dotColor: .blue)
-                Spacer()
-                MetricColumn(value: "07:15", label: "起床时间", dotColor: .purple)
-                Spacer()
-                MetricColumn(value: "良好", label: "状态", dotColor: .yellow)
-                Spacer()
-                MetricColumn(value: "看书", label: "11点行为", dotColor: .orange)
-            }
-            .padding(.bottom, 24)
-
-            // 分割线与子标题
-            HStack(spacing: 12) {
-                DashedLine()
-                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                    .frame(height: 1)
-                    .foregroundColor(Color(UIColor.separator).opacity(0.5))
-
-                Text("行为列表")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(UIColor.tertiaryLabel))
-
-                DashedLine()
-                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                    .frame(height: 1)
-                    .foregroundColor(Color(UIColor.separator).opacity(0.5))
-            }
-            .padding(.bottom, 20)
-
-            // 底部列表项：一比一还原“食物列表”那样的结构
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("睡前冥想")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                    Text("15 分钟")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(UIColor.secondaryLabel))
-                }
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Text("已完成")
-                        .font(.system(size: 15))
-                        .foregroundColor(.primary)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(UIColor.tertiaryLabel))
-                }
-            }
-        }
-        .padding(.vertical, 24)
-        .padding(.horizontal, 20)
-        .background(Color(.systemBackground))
-        .cornerRadius(20)
-        .padding(.horizontal, 16)
-    }
-}
-
-// 独立的指标列组件，方便复用和对齐
-struct MetricColumn: View {
-    let value: String
-    let label: String
-    let dotColor: Color
-
-    var body: some View {
-        VStack(spacing: 6) { // 收紧上下间距
-            Text(value)
-                .font(.system(size: 20, weight: .semibold)) // 调整为半粗体，显得更干净
-                .foregroundColor(.primary)
-
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(dotColor)
-                    .frame(width: 5, height: 5) // 极小号的纯色圆点
-
-                Text(label)
-                    .font(.system(size: 11, weight: .medium)) // 辅助文字做得非常小且淡
-                    .foregroundColor(Color(UIColor.secondaryLabel))
-            }
-        }
-    }
-}
-
-// 用于绘制横向虚线的 Shape
-struct DashedLine: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: rect.midY))
-        path.addLine(to: CGPoint(x: rect.width, y: rect.midY))
-        return path
-    }
-}
-
-// MARK: - 连续规律记录组件 (横向滚动卡片)
 
 // MARK: - 连续规律记录组件 (横向滚动卡片)
 struct HabitStreakView: View {
