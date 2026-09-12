@@ -98,7 +98,7 @@ struct CalendarDetailView: View {
             ViewModePicker(selectedMode: $viewMode)
         }
         .background(Color(.systemBackground).ignoresSafeArea())
-        .navigationTitle("")
+        .navigationTitle("年度目标")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -1137,8 +1137,66 @@ private enum DemoFestival: String, CaseIterable {
     }
 }
 
-// MARK: - Celebrity Routine View (名人时相 · 村上春树作息)
+
+
+
+
+struct CelebrityCard: Identifiable {
+    let id = UUID()
+    let name: String
+    let tag: String
+}
+
 struct CelebrityRoutineView: View {
+    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
+    
+    let cards: [CelebrityCard] = [
+        CelebrityCard(name: "村上春树", tag: "极致自律的马拉松小说家"),
+        CelebrityCard(name: "科比·布莱恩特", tag: "凌晨四点的洛杉矶"),
+        CelebrityCard(name: "列奥纳多·达·芬奇", tag: "多相睡眠法先驱")
+    ]
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                ForEach(cards) { card in
+                    NavigationLink {
+                        CelebrityRoutineLegacyView()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(card.name)
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.primary)
+                                
+                                Text(card.tag)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.secondary.opacity(0.4))
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 32)
+                        .frame(minHeight: 110)
+                        .background(Color(uiColor: .systemBackground))
+                        .cornerRadius(12)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(20)
+        }
+        .background(Color(red: 0.96, green: 0.96, blue: 0.97).ignoresSafeArea())
+        .navigationTitle("名人档案")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Celebrity Routine View (名人时相 · 村上春树作息)
+struct CelebrityRoutineLegacyView: View {
     @State private var isSynced: Bool = false
     @State private var currentTimeString: String = ""
     
@@ -1434,7 +1492,7 @@ struct CelebrityRoutineView: View {
 
 // MARK: - 24小时环形时钟 Shape/Canvas 绘制
 fileprivate struct CircadianClockCanvas: View {
-    let blocks: [CelebrityRoutineView.RoutineBlock]
+    let blocks: [CelebrityRoutineLegacyView.RoutineBlock]
     
     var body: some View {
         Canvas { ctx, size in
