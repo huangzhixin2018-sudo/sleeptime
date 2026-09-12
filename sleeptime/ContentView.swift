@@ -1125,42 +1125,39 @@ private struct PatternFolderShape: Shape {
 private struct EmptyPlanFrameworkCard: View {
     var body: some View {
         GeometryReader { proxy in
-            let dividerX = proxy.size.width * 0.24
+            let dividerX = proxy.size.width * 0.15
 
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.white)
 
-                VStack(spacing: 4) {
-                    Text("3")
-                        .font(.system(size: 26, weight: .regular))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.black)
-
-                    Text("连续段数")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.black)
-                        .lineLimit(1)
+                VStack(spacing: 2) {
+                    ForEach(["作", "息", "轨", "迹"], id: \.self) { character in
+                        Text(character)
+                            .font(.system(size: 15, weight: .bold))
+                    }
                 }
+                .foregroundStyle(Color.black)
                 .position(x: dividerX / 2, y: proxy.size.height / 2)
 
-                HStack(spacing: 0) {
+                HStack(spacing: 5) {
                     trackingMetric(
                         title: "连续早睡",
                         value: 2,
-                        color: Color.black
+                        dateRange: "9.06–9.07"
                     )
                     trackingMetric(
                         title: "连续熬夜",
                         value: 3,
-                        color: Color.black
+                        dateRange: "9.08–9.10"
                     )
                     trackingMetric(
-                        title: "早睡",
+                        title: "连续早睡",
                         value: 1,
-                        color: Color.black
+                        dateRange: "9.11"
                     )
                 }
+                .padding(8)
                 .padding(.horizontal, 8)
                 .frame(width: proxy.size.width - dividerX, height: proxy.size.height)
                 .position(
@@ -1173,8 +1170,8 @@ private struct EmptyPlanFrameworkCard: View {
                     path.addLine(to: CGPoint(x: dividerX, y: proxy.size.height - 10))
                 }
                 .stroke(
-                    Color.black.opacity(0.12),
-                    style: StrokeStyle(lineWidth: 1.5, dash: [7, 7])
+                    Color.black.opacity(0.14),
+                    style: StrokeStyle(lineWidth: 1.5, dash: [6, 6])
                 )
 
                 VStack {
@@ -1193,26 +1190,37 @@ private struct EmptyPlanFrameworkCard: View {
                 .position(x: dividerX, y: proxy.size.height / 2)
             }
         }
-        .frame(height: 86)
-        .accessibilityHidden(true)
+        .frame(height: 124)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("作息轨迹，连续早睡2天，连续熬夜3天，连续早睡1天")
     }
 
-    private func trackingMetric(title: String, value: Int, color: Color) -> some View {
-        VStack(spacing: 5) {
-            Text("\(value)")
-                .font(.system(size: 26, weight: .regular))
-                .monospacedDigit()
-                .foregroundStyle(color)
-
+    private func trackingMetric(title: String, value: Int, dateRange: String) -> some View {
+        VStack(alignment: .center, spacing: 10) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(Color.black)
                 .tracking(0)
                 .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .frame(height: 20)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Text("\(value)天")
+                .font(.system(size: 24, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(Color.black)
+                .frame(height: 32)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Text(dateRange)
+                .font(.system(size: 12, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(Color.black.opacity(0.56))
+                .lineLimit(1)
+                .frame(height: 18)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 68)
     }
 }
 
@@ -1288,7 +1296,9 @@ private struct LongestEarlySleepCard: View {
                 }
             }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.top, 20)
+        .padding(.bottom, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
     }
@@ -1457,7 +1467,7 @@ struct TodayWorkCardView: View {
 
                 VStack(spacing: 12) {
                     Button(action: {}) {
-                        Text("有点忍不住想熬夜")
+                        Text("可能会熬夜")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
