@@ -46,9 +46,9 @@ struct ContentView: View {
 }
 
 private struct HomeWeekView: View {
-    @State private var selectedDayIndex: Int?
     @State private var sleepStates: [Int: HomeSleepState] = [:]
-    @State private var showEditContext: SleepEditContext? = nil
+    @State private var sleepOnsetRoute: SleepOnsetRoute?
+    @AppStorage("home.sleepOnsetEntries") private var storedSleepOnsetEntries = "[]"
 
     private let weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -112,7 +112,6 @@ private struct HomeWeekView: View {
                     .padding(.bottom, -1)
 
                 SleepOverviewCard {
-                    selectedDayIndex = todayWeekdayIndex
                 }
             }
             .padding(.horizontal, 18)
@@ -126,11 +125,11 @@ private struct HomeWeekView: View {
                 )
 
                 Button {
-                    selectedDayIndex = todayWeekdayIndex
+                    sleepOnsetRoute = SleepOnsetRoute(date: lastNightDate)
                 } label: {
                     HomeSleepInsightCard(
                         title: "入睡情况",
-                        value: sleepStates[todayWeekdayIndex]?.title ?? "未记录",
+                        value: sleepOnsetEntry(for: lastNightDate)?.state.title ?? "未记录",
                         icon: "moon.stars"
                     )
                 }
@@ -142,49 +141,49 @@ private struct HomeWeekView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppTheme.homeBackground.ignoresSafeArea())
-        .sheet(isPresented: Binding(
-            get: { selectedDayIndex != nil },
-            set: { if !$0 { selectedDayIndex = nil } }
-        )) {
-            if let index = selectedDayIndex {
-                SleepStateSelectionView(
-                    selectedState: sleepStates[index],
-                    onSelect: { state in
-                        sleepStates[index] = state
-                        selectedDayIndex = nil
-                        
-                        if state == .late || state == .allNight {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                showEditContext = SleepEditContext(index: index, state: state)
-                            }
-                        } else {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        }
-                    }
-                )
-                .presentationDetents([.fraction(0.65)])
-            }
-        }
-        .navigationDestination(item: $showEditContext) { ctx in
-            SleepStateEditView(
-                context: ctx,
-                onSave: { notes, tags in
-                    // In a real app we'd save these details to the state/database
-                    showEditContext = nil
-                }
+        .onAppear(perform: refreshSleepStates)
+        .navigationDestination(item: $sleepOnsetRoute) { route in
+            SleepOnsetRecordView(
+                date: route.date,
+                entry: sleepOnsetEntry(for: route.date),
+                onSave: saveSleepOnsetEntry
             )
         }
         }
     }
 
-    private var selectedDayTitle: String {
-        guard let selectedDayIndex else { return "睡眠状态" }
-        return weekdays[selectedDayIndex]
+    private var lastNightDate: Date {
+        Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     }
 
-    private var todayWeekdayIndex: Int {
-        let systemWeekday = Calendar.current.component(.weekday, from: Date())
+    private func weekdayIndex(for date: Date) -> Int {
+        let systemWeekday = Calendar.current.component(.weekday, from: date)
         return (systemWeekday + 5) % 7
+    }
+
+    private func sleepOnsetEntry(for date: Date) -> SleepOnsetEntry? {
+        decodedSleepOnsetEntries.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+    }
+
+    private var decodedSleepOnsetEntries: [SleepOnsetEntry] {
+        guard let data = storedSleepOnsetEntries.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([SleepOnsetEntry].self, from: data)) ?? []
+    }
+
+    private func saveSleepOnsetEntry(_ entry: SleepOnsetEntry) {
+        var entries = decodedSleepOnsetEntries
+        entries.removeAll { Calendar.current.isDate($0.date, inSameDayAs: entry.date) }
+        entries.append(entry)
+        guard let data = try? JSONEncoder().encode(entries),
+              let encoded = String(data: data, encoding: .utf8) else { return }
+        storedSleepOnsetEntries = encoded
+        refreshSleepStates()
+    }
+
+    private func refreshSleepStates() {
+        sleepStates = decodedSleepOnsetEntries.reduce(into: [:]) { result, entry in
+            result[weekdayIndex(for: entry.date)] = entry.state
+        }
     }
 }
 
@@ -362,38 +361,57 @@ private struct HomeQuoteView: View {
     }
 }
 
-private enum HomeSleepState: String, CaseIterable, Identifiable {
-    case early
-    case normal
-    case late
+private enum HomeSleepState: String, CaseIterable, Identifiable, Codable {
+    case insomnia
     case allNight
+    case midnightWake
+    case difficulty
+    case poorSleep
+    case dream
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .early: return "正常"
-        case .normal: return "秒睡"
-        case .late: return "睡不着"
-        case .allNight: return "失眠"
+        case .insomnia: return "失眠"
+        case .allNight: return "通宵"
+        case .midnightWake: return "半夜醒"
+        case .difficulty: return "入睡困难"
+        case .poorSleep: return "睡不好"
+        case .dream: return "梦境"
         }
     }
 
     var icon: String {
         switch self {
-        case .early: return "checkmark"
-        case .normal: return "moon.fill"
-        case .late: return "exclamationmark"
+        case .insomnia: return "moon.zzz"
         case .allNight: return "sunrise.fill"
+        case .midnightWake: return "clock"
+        case .difficulty: return "ellipsis"
+        case .poorSleep: return "cloud"
+        case .dream: return "sparkles"
         }
     }
 
     var color: Color {
         switch self {
-        case .early: return Color(red: 0.20, green: 0.67, blue: 0.48)
-        case .normal: return Color(red: 0.28, green: 0.50, blue: 0.90)
-        case .late: return Color(red: 0.94, green: 0.58, blue: 0.18)
-        case .allNight: return Color(red: 0.86, green: 0.27, blue: 0.25)
+        case .insomnia: return Color(red: 0.68, green: 0.43, blue: 0.42)
+        case .allNight: return Color(red: 0.36, green: 0.38, blue: 0.43)
+        case .midnightWake: return Color(red: 0.48, green: 0.53, blue: 0.64)
+        case .difficulty: return Color(red: 0.72, green: 0.56, blue: 0.38)
+        case .poorSleep: return Color(red: 0.48, green: 0.57, blue: 0.48)
+        case .dream: return Color(red: 0.56, green: 0.47, blue: 0.62)
+        }
+    }
+
+    var selectionColor: Color {
+        switch self {
+        case .insomnia: return Color(red: 0.91, green: 0.72, blue: 0.69)
+        case .allNight: return Color(red: 0.75, green: 0.77, blue: 0.82)
+        case .midnightWake: return Color(red: 0.73, green: 0.80, blue: 0.88)
+        case .difficulty: return Color(red: 0.92, green: 0.82, blue: 0.65)
+        case .poorSleep: return Color(red: 0.75, green: 0.84, blue: 0.75)
+        case .dream: return Color(red: 0.83, green: 0.76, blue: 0.87)
         }
     }
 }
@@ -1959,7 +1977,7 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                         NavigationLink {
-                            CelebrityRoutineView()
+                            CelebrityRoutineLegacyView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "person.crop.circle", title: "名人作息", showDivider: false)
@@ -4023,198 +4041,274 @@ private struct SettingsManagementView: View {
 }
 
 
-private struct SleepEditContext: Identifiable, Hashable {
-    let id = UUID()
-    let index: Int
-    let state: HomeSleepState
+private struct SleepOnsetRoute: Identifiable, Hashable {
+    let date: Date
+    var id: Date { date }
 }
 
-private struct SleepStateSelectionView: View {
-    let selectedState: HomeSleepState?
-    let onSelect: (HomeSleepState) -> Void
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // 顶部横条提示这是个可以拖拽的 sheet
-            Capsule()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 40, height: 5)
-                .padding(.top, 10)
-                
-            Spacer().frame(height: 30)
-            
-            // 标题
-            Text("昨晚的入睡情况如何？")
-                .font(.system(size: 24, weight: .bold, design: .serif))
-                .foregroundColor(.black)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-            
-            Spacer()
-            
-            // 不重叠的布局
-            VStack(spacing: 16) {
-                HStack(spacing: 16) {
-                    // 左上：红色 (失眠)
-                    CircleStateButton(
-                        state: .allNight,
-                        color: Color(red: 1.0, green: 0.3, blue: 0.3),
-                        title: "失眠",
-                        action: { onSelect(.allNight) }
-                    )
-                    
-                    // 右上：黄色 (睡不着)
-                    CircleStateButton(
-                        state: .late,
-                        color: Color(red: 1.0, green: 0.8, blue: 0.2),
-                        title: "睡不着",
-                        action: { onSelect(.late) }
-                    )
-                }
-                
-                HStack(spacing: 16) {
-                    // 左下：蓝色 (秒睡)
-                    CircleStateButton(
-                        state: .normal,
-                        color: Color(red: 0.4, green: 0.6, blue: 1.0),
-                        title: "秒睡",
-                        action: { onSelect(.normal) }
-                    )
-                    
-                    // 右下：绿色 (正常)
-                    CircleStateButton(
-                        state: .early,
-                        color: Color(red: 0.3, green: 0.8, blue: 0.5),
-                        title: "正常",
-                        action: { onSelect(.early) }
-                    )
-                }
-            }
-            
-            Spacer().frame(height: 30)
-        }
-        .background(Color.white.ignoresSafeArea())
+private struct SleepOnsetEntry: Codable, Identifiable {
+    let id: UUID
+    let date: Date
+    var state: HomeSleepState
+    var bedtime: String
+    var note: String
+}
+
+private struct SleepOnsetRecordView: View {
+    private enum EditStage {
+        case type
+        case note
     }
-}
 
-private struct CircleStateButton: View {
-    let state: HomeSleepState
-    let color: Color
-    let title: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.85))
-                    .frame(width: 140, height: 140)
-                
-                Text(title)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.black.opacity(0.8))
-            }
-        }
-        .buttonStyle(.plain)
-    }
-}
+    let date: Date
+    let entry: SleepOnsetEntry?
+    let onSave: (SleepOnsetEntry) -> Void
 
-private struct SleepStateEditView: View {
-    let context: SleepEditContext
-    let onSave: (String, Set<String>) -> Void
-    
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
-    
-    @State private var notes: String = ""
-    @State private var selectedTags: Set<String> = []
-    
-    let availableTags = ["喝了咖啡/茶", "压力焦虑", "睡前玩手机", "环境太吵", "吃得太饱", "作息不规律"]
-    
+    @State private var selectedState: HomeSleepState?
+    @State private var note = ""
+    @State private var isEditing: Bool
+    @State private var editStage: EditStage
+    @FocusState private var noteIsFocused: Bool
+
+    init(date: Date, entry: SleepOnsetEntry?, onSave: @escaping (SleepOnsetEntry) -> Void) {
+        self.date = date
+        self.entry = entry
+        self.onSave = onSave
+        _selectedState = State(initialValue: entry?.state)
+        _note = State(initialValue: entry?.note ?? "")
+        _isEditing = State(initialValue: entry == nil)
+        _editStage = State(initialValue: .type)
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Header Display
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(context.state.color.opacity(0.85))
-                        .frame(width: 50, height: 50)
-                        .overlay {
-                            Image(systemName: context.state.icon)
-                                .foregroundColor(.white)
-                                .font(.system(size: 20, weight: .bold))
-                        }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(context.state.title)
-                            .font(.system(size: 20, weight: .bold))
-                        Text("看来昨晚睡得不太好，记下原因吧")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.top, 10)
-                
-                // Tags Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("可能的原因")
-                        .font(.system(size: 16, weight: .semibold))
-                    
-                    FlowLayout(spacing: 10, lineSpacing: 10) {
-                        ForEach(availableTags, id: \.self) { tag in
-                            let isSelected = selectedTags.contains(tag)
-                            Button {
-                                if isSelected {
-                                    selectedTags.remove(tag)
-                                } else {
-                                    selectedTags.insert(tag)
-                                }
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            } label: {
-                                Text(tag)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(isSelected ? .white : .primary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(isSelected ? Color.black : Color(white: 0.95))
-                                    .clipShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                
-                // Notes Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("想碎碎念点什么？")
-                        .font(.system(size: 16, weight: .semibold))
-                    
-                    TextEditor(text: $notes)
-                        .frame(height: 120)
-                        .padding(8)
-                        .background(Color(white: 0.95))
-                        .cornerRadius(12)
-                        .scrollContentBackground(.hidden)
-                }
-                
-                Spacer(minLength: 40)
+        Group {
+            if isEditing {
+                editor
+            } else if let entry {
+                detail(entry)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
         }
-        .background(Color.white.ignoresSafeArea())
-        .navigationTitle("记录睡眠细节")
+        .background(AppTheme.homeBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("保存") {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onSave(notes, selectedTags)
+            if !isEditing {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("编辑") {
+                        editStage = .type
+                        isEditing = true
+                    }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.black)
                 }
-                .font(.system(size: 16, weight: .semibold))
             }
         }
         .sleepDetailChrome(tabBarVisibility)
+    }
+
+    private var editor: some View {
+        Group {
+            switch editStage {
+            case .type:
+                typePicker
+            case .note:
+                noteEditor
+            }
+        }
+    }
+
+    private var typePicker: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("昨晚的入睡情况怎么样？")
+                .font(.system(size: 31, weight: .bold))
+                .foregroundStyle(Color.black)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 28)
+
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                spacing: 16
+            ) {
+                ForEach(HomeSleepState.allCases) { state in
+                    Button {
+                        selectedState = state
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            editStage = .note
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            noteIsFocused = true
+                        }
+                    } label: {
+                        Text(state.title)
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.78))
+                            .frame(width: 126, height: 126)
+                            .background(state.selectionColor)
+                            .clipShape(Circle())
+                            .overlay {
+                                Circle()
+                                    .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                                    .padding(5)
+                            }
+                            .shadow(color: state.color.opacity(0.12), radius: 10, y: 5)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 30)
+
+            Spacer(minLength: 24)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var noteEditor: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(notePrompt)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.72))
+                .lineSpacing(5)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 30)
+
+            ZStack(alignment: .topLeading) {
+                if note.isEmpty {
+                    Text("开始记录...")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(Color.black.opacity(0.32))
+                        .padding(.top, 8)
+                        .allowsHitTesting(false)
+                }
+
+                TextEditor(text: $note)
+                    .font(.system(size: 20, weight: .regular))
+                    .lineSpacing(6)
+                    .scrollContentBackground(.hidden)
+                    .focused($noteIsFocused)
+                    .padding(.horizontal, -5)
+                    .background(Color.clear)
+            }
+            .padding(.top, 18)
+
+            Button(action: save) {
+                Text("保存")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(selectedState == nil ? Color.black.opacity(0.22) : Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedState == nil)
+            .padding(.bottom, 18)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private func detail(_ entry: SleepOnsetEntry) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(entry.state.title)
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundStyle(Color.black)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Text(dateTitle)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.black)
+
+                        Text("入睡时间")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.black.opacity(0.48))
+
+                        Spacer()
+
+                        Text(entry.bedtime)
+                            .font(.system(size: 20, weight: .semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(Color.black)
+                    }
+                    .padding(.top, 20)
+
+                    if !entry.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Divider()
+                            .padding(.vertical, 24)
+
+                        Text(entry.note)
+                            .font(.system(size: 19, weight: .regular))
+                            .foregroundStyle(Color.black.opacity(0.84))
+                            .lineSpacing(7)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(22)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .padding(.top, 18)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 30)
+        }
+    }
+
+    private var recordHeader: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(dateTitle)
+                .font(.system(size: 18, weight: .semibold))
+            Text("昨晚")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(Color.black.opacity(0.48))
+            Spacer()
+            Text("入睡情况")
+                .font(.system(size: 16, weight: .semibold))
+        }
+        .foregroundStyle(Color.black)
+    }
+
+    private var dateTitle: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        return formatter.string(from: date)
+    }
+
+    private var notePrompt: String {
+        guard let selectedState else {
+            return "记录下昨晚入睡时的想法和感受。"
+        }
+        switch selectedState {
+        case .insomnia:
+            return "记录下昨晚让你失眠的事情，以及当时的想法和感受。"
+        case .allNight:
+            return "记录下昨晚通宵时在做什么，以及为什么没有停下来休息。"
+        case .midnightWake:
+            return "记录下昨晚醒来的时间和身体感受，以及后来有没有再次入睡。"
+        case .difficulty:
+            return "记录下昨晚睡前的情绪、环境，或者让你迟迟没有睡着的事情。"
+        case .poorSleep:
+            return "记录下昨晚睡眠中的感受，以及醒来后身体和精神的状态。"
+        case .dream:
+            return "记录下昨晚梦里的人、事情和情绪，以及醒来后的感受。"
+        }
+    }
+
+    private func save() {
+        guard let selectedState else { return }
+        let savedEntry = SleepOnsetEntry(
+            id: entry?.id ?? UUID(),
+            date: date,
+            state: selectedState,
+            bedtime: entry?.bedtime ?? "23:30",
+            note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+        onSave(savedEntry)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        dismiss()
     }
 }
 
@@ -4553,28 +4647,18 @@ struct AddHabitSheet: View {
 
 struct BlankDetailView: View {
     let title: String
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack {
-            Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea()
-            VStack {
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
-                    }
-                    .padding()
-                    Spacer()
-                }
-                Spacer()
-                Text(title)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color.black.opacity(0.3))
-                Spacer()
-            }
+        VStack {
+            Spacer()
+            Text(title)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(Color.black.opacity(0.3))
+            Spacer()
         }
-        .navigationBarHidden(true)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white.ignoresSafeArea())
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

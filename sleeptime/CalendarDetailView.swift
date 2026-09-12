@@ -1160,37 +1160,33 @@ struct CelebrityRoutineView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 ForEach(cards) { card in
-                    NavigationLink {
-                        CelebrityRoutineLegacyView()
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text(card.name)
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.primary)
-                                
-                                Text(card.tag)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color.secondary.opacity(0.4))
+                    HStack {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(card.name)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.primary)
+                            
+                            Text(card.tag)
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 32)
-                        .frame(minHeight: 110)
-                        .background(Color(uiColor: .systemBackground))
-                        .cornerRadius(12)
+                        Spacer()
+                        
+                        Toggle("", isOn: .constant(card.name == "村上春树"))
+                            .labelsHidden()
+                            .tint(Color.primary)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 32)
+                    .frame(minHeight: 110)
+                    .background(Color(uiColor: .systemBackground))
+                    .cornerRadius(12)
                 }
             }
             .padding(20)
         }
         .background(Color(red: 0.96, green: 0.96, blue: 0.97).ignoresSafeArea())
-        .navigationTitle("名人档案")
+        .navigationTitle("名人库")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -1227,8 +1223,7 @@ struct CelebrityRoutineLegacyView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
-                headerView
-                
+                // headerView
                 Divider().padding(.horizontal, 24).opacity(0.4)
                 
                 personaHeaderCard
@@ -1249,6 +1244,17 @@ struct CelebrityRoutineLegacyView: View {
             formatter.dateFormat = "HH:mm"
             currentTimeString = formatter.string(from: Date())
         }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink("名人库") {
+                    CelebrityRoutineView()
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
     }
     
     // 1. 顶部标题栏
