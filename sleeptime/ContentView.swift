@@ -651,9 +651,33 @@ private enum PlanTypography {
     static let supportingValue = Font.system(size: 20, weight: .semibold)
 }
 
+
+struct BedtimeHabit: Identifiable, Equatable {
+    let id = UUID()
+    var name: String
+    var hasAlarm: Bool
+    var alarmTime: Date
+    var repeatDays: Set<Int>
+    var checkInTime: String?
+    
+    var isCompleted: Bool {
+        checkInTime != nil
+    }
+    
+    var timeString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: alarmTime)
+    }
+}
+
 struct BlankPlanView: View {
     @State private var exportedPlan: ExportedPlanImage?
     @State private var meditationCheckInTime: String?
+    @State private var habits: [BedtimeHabit] = [
+        BedtimeHabit(name: "冥想", hasAlarm: true, alarmTime: Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date(), repeatDays: [0,1,2,3,4,5,6], checkInTime: nil)
+    ]
+    @State private var isShowingAddHabitSheet = false
     @AppStorage("shorterPlan.isActive") private var isShorterPlanActive = false
     @AppStorage("shorterPlan.durationDays") private var planDurationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
@@ -787,7 +811,7 @@ struct BlankPlanView: View {
                         .frame(width: 100)
                     }
 
-                    PlanHabitSection(meditationCheckInTime: $meditationCheckInTime)
+                    PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
 
                     Button {
                         exportCurrentPlan()
@@ -812,6 +836,9 @@ struct BlankPlanView: View {
             .sheet(item: $exportedPlan) { plan in
                 ActivityShareSheet(items: [plan.image])
             }
+            .sheet(isPresented: $isShowingAddHabitSheet) {
+                AddHabitSheet(habits: $habits)
+            }
         }
     }
 
@@ -827,7 +854,8 @@ struct BlankPlanView: View {
                 activePlanType: activePlanType,
                 targetEarlySleepStreak: targetEarlySleepStreak,
                 currentEarlySleepStreak: currentEarlySleepStreak,
-                meditationCheckInTime: meditationCheckInTime
+                meditationCheckInTime: meditationCheckInTime,
+                habits: habits
             )
                 .frame(width: 390)
                 .fixedSize(horizontal: false, vertical: true)
@@ -850,6 +878,7 @@ private struct CurrentPlanExportView: View {
     let targetEarlySleepStreak: Int
     let currentEarlySleepStreak: Int
     let meditationCheckInTime: String?
+    let habits: [BedtimeHabit]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -910,7 +939,8 @@ private struct CurrentPlanExportView: View {
             }
 
             PlanHabitSection(
-                meditationCheckInTime: .constant(meditationCheckInTime),
+                habits: .constant(habits),
+                isShowingAddHabitSheet: .constant(false),
                 showsAddButton: false
             )
         }
@@ -921,12 +951,9 @@ private struct CurrentPlanExportView: View {
 }
 
 private struct PlanHabitSection: View {
-    @Binding var meditationCheckInTime: String?
+    @Binding var habits: [BedtimeHabit]
+    @Binding var isShowingAddHabitSheet: Bool
     var showsAddButton = true
-
-    private var isMeditationCompleted: Bool {
-        meditationCheckInTime != nil
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -938,7 +965,7 @@ private struct PlanHabitSection: View {
                 Spacer()
 
                 if showsAddButton {
-                    Button(action: {}) {
+                    Button(action: { isShowingAddHabitSheet = true }) {
                         Image(systemName: "plus")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(Color.black)
@@ -950,95 +977,99 @@ private struct PlanHabitSection: View {
                 }
             }
 
-            VStack(spacing: 12) {
-                HStack(alignment: .lastTextBaseline, spacing: 8) {
-                    Text("冥想")
-                        .font(.system(size: 23, weight: .bold))
-                        .foregroundStyle(Color.black)
+            VStack(spacing: 16) {
+                ForEach($habits) { $habit in
+                    VStack(spacing: 12) {
+                        HStack(alignment: .lastTextBaseline, spacing: 8) {
+                            Text(habit.name)
+                                .font(.system(size: 23, weight: .bold))
+                                .foregroundStyle(Color.black)
 
-                    Text("（12:00 提醒）")
-                        .font(.system(size: 15, weight: .regular))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.black.opacity(0.62))
-
-                    Spacer()
-
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            meditationCheckInTime = isMeditationCompleted ? nil : currentTimeText
-                        }
-                    } label: {
-                        Circle()
-                            .fill(isMeditationCompleted ? AppTheme.accent : Color.clear)
-                            .frame(width: 28, height: 28)
-                            .overlay {
-                                Circle()
-                                    .stroke(
-                                        isMeditationCompleted ? Color.clear : Color.black.opacity(0.18),
-                                        lineWidth: 1.5
-                                    )
-                            }
-                            .overlay {
-                                if isMeditationCompleted {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundStyle(.white)
-                                }
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(isMeditationCompleted ? "取消冥想打卡" : "完成冥想打卡")
-                }
-
-                HStack(spacing: 6) {
-                    ForEach(1...7, id: \.self) { day in
-                        Group {
-                            if day == 1 && isMeditationCompleted {
-                                Text(meditationCheckInTime ?? "")
-                                    .font(.system(size: 13, weight: .semibold))
+                            if habit.hasAlarm {
+                                Text("（\(habit.timeString) 提醒）")
+                                    .font(.system(size: 15, weight: .regular))
                                     .monospacedDigit()
-                                    .foregroundStyle(Color.black.opacity(0.72))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.85)
-                            } else {
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .fill(Color.black.opacity(0.06))
+                                    .foregroundStyle(Color.black.opacity(0.62))
+                            }
+
+                            Spacer()
+
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    let currentTime = {
+                                        let formatter = DateFormatter()
+                                        formatter.dateFormat = "HH:mm"
+                                        return formatter.string(from: Date())
+                                    }()
+                                    habit.checkInTime = habit.isCompleted ? nil : currentTime
+                                }
+                            } label: {
+                                Circle()
+                                    .fill(habit.isCompleted ? AppTheme.accent : Color.clear)
+                                    .frame(width: 28, height: 28)
                                     .overlay {
-                                        Text(day == 1 ? "--:--" : "\(day)")
-                                            .font(.system(size: day == 1 ? 10 : 12, weight: .semibold))
-                                            .monospacedDigit()
-                                            .foregroundStyle(Color.black.opacity(0.52))
+                                        Circle()
+                                            .stroke(
+                                                habit.isCompleted ? Color.clear : Color.black.opacity(0.18),
+                                                lineWidth: 1.5
+                                            )
+                                    }
+                                    .overlay {
+                                        if habit.isCompleted {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundStyle(.white)
+                                        }
                                     }
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(habit.isCompleted ? "取消\(habit.name)打卡" : "完成\(habit.name)打卡")
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 30)
+                        
+                        // Track week history for THIS habit
+                        HStack(spacing: 6) {
+                            ForEach(1...7, id: \.self) { day in
+                                Group {
+                                    if day == 1 && habit.isCompleted {
+                                        Text(habit.checkInTime ?? "")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .monospacedDigit()
+                                            .foregroundStyle(Color.black.opacity(0.72))
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.85)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .fill(Color.black.opacity(0.06))
+                                            .overlay {
+                                                Text(day == 1 ? "--:--" : "\(day)")
+                                                    .font(.system(size: day == 1 ? 10 : 12, weight: .semibold))
+                                                    .monospacedDigit()
+                                                    .foregroundStyle(Color.black.opacity(0.52))
+                                            }
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 30)
+                            }
+                        }
+                        
+                        HStack(spacing: 6) {
+                            ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { weekday in
+                                Text(weekday)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(Color.black.opacity(0.52))
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
                     }
-                }
-
-                HStack(spacing: 6) {
-                    ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { weekday in
-                        Text(weekday)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.black.opacity(0.46))
-                            .frame(maxWidth: .infinity)
-                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 18)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 18)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 148, alignment: .top)
-            .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
         }
-        .padding(.vertical, 4)
-    }
-
-    private var currentTimeText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: Date())
     }
 }
 
@@ -1531,6 +1562,9 @@ struct TodayWorkCardView: View {
     let btnAttackBg = Color.black.opacity(0.88)
     let btnReviewBg = Color.black.opacity(0.08)
 
+        @State private var isShowingWorthIt = false
+    @State private var isShowingReason = false
+    
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 2) {
@@ -1594,7 +1628,7 @@ struct TodayWorkCardView: View {
                 .frame(width: 96)
 
                 VStack(spacing: 12) {
-                    Button(action: {}) {
+                    Button(action: { isShowingWorthIt = true }) {
                         Text("熬夜觉察")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -1604,7 +1638,7 @@ struct TodayWorkCardView: View {
                             .clipShape(Capsule())
                     }
 
-                    Button(action: {}) {
+                    Button(action: { isShowingReason = true }) {
                         Text("记录熬夜原因")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(textDark)
@@ -4152,5 +4186,338 @@ private struct SleepStateEditView: View {
             }
         }
         .sleepDetailChrome(tabBarVisibility)
+    }
+}
+
+
+struct StayUpLateReasonView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var step = 0
+    
+    // Step 1 Multi-selection
+    @State private var selectedTags: Set<String> = []
+    let tags = [
+        "📺 剧太上头了",
+        "🎮 连败不甘心/连胜停不下来",
+        "📱 漫无目的刷短视频",
+        "💻 报复性工作/学习",
+        "🤯 心事重重睡不着",
+        "🍻 聚会/应酬/夜生活"
+    ]
+    
+    var body: some View {
+        ZStack {
+            Color.white.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Top Bar with Close Button
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.black)
+                            .padding()
+                    }
+                }
+                
+                Spacer()
+                
+                // Content Area
+                VStack(spacing: 40) {
+                    if step == 0 {
+                        Text("昨晚是怎么被“熬夜魔”绊住的？")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        
+                        // Tag Grid
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
+                            ForEach(tags, id: \.self) { tag in
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        if selectedTags.contains(tag) {
+                                            selectedTags.remove(tag)
+                                        } else {
+                                            selectedTags.insert(tag)
+                                        }
+                                    }
+                                } label: {
+                                    Text(tag)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(selectedTags.contains(tag) ? .white : .black)
+                                        .padding(.vertical, 12)
+                                        .padding(.horizontal, 16)
+                                        .frame(maxWidth: .infinity)
+                                        .background(selectedTags.contains(tag) ? Color.black : Color.clear)
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedTags.contains(tag) ? Color.clear : Color.black.opacity(0.8), lineWidth: 1.5)
+                                        )
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 30)
+                        .transition(.opacity)
+                        
+                    } else if step == 1 {
+                        Text("剖析一下，当时最真实的心理状态是什么？")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        
+                        VStack(spacing: 16) {
+                            stepButton(title: "白天太忙，想找回一点属于自己的时间") { advanceStep() }
+                            stepButton(title: "当时完全沉浸进去了，没意识到时间流逝") { advanceStep() }
+                            stepButton(title: "情绪不太好，就是不想结束这一天") { advanceStep() }
+                            stepButton(title: "客观原因，硬着头皮也得熬") { advanceStep() }
+                        }
+                        .padding(.horizontal, 40)
+                        .transition(.opacity)
+                        
+                    } else if step == 2 {
+                        Text("发现原因就是最大的进步！今晚如果它再来，我们怎么反击？")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                            .lineSpacing(6)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        
+                        VStack(spacing: 16) {
+                            stepButton(title: "提前定个“断电”闹钟，响了绝不碰手机") { advanceStep() }
+                            stepButton(title: "睡前把最大的诱惑源（手机/平板）放远点") { advanceStep() }
+                            stepButton(title: "换个放松方式，今晚睡前改听播客/白噪音") { advanceStep() }
+                        }
+                        .padding(.horizontal, 30)
+                        .transition(.opacity)
+                        
+                    } else if step == 3 {
+                        VStack(spacing: 24) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 64))
+                                .foregroundColor(.black)
+                                .transition(.scale.combined(with: .opacity))
+                            
+                            Text("很好！\n熬夜魔的弱点已记录在案。")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundColor(.black)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(8)
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        }
+                        .padding(.horizontal, 30)
+                    }
+                }
+                
+                Spacer()
+                
+                // Bottom Button Action
+                if step == 0 {
+                    Button {
+                        if !selectedTags.isEmpty {
+                            advanceStep()
+                        }
+                    } label: {
+                        Text("下一步")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(selectedTags.isEmpty ? Color.gray : Color.black)
+                            .cornerRadius(28)
+                            .padding(.horizontal, 30)
+                    }
+                    .disabled(selectedTags.isEmpty)
+                    .padding(.bottom, 40)
+                    .transition(.opacity)
+                } else if step == 3 {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("收起档案，今天好好过")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.black)
+                            .cornerRadius(28)
+                            .padding(.horizontal, 30)
+                    }
+                    .padding(.bottom, 40)
+                    .transition(.opacity)
+                } else {
+                    // Empty space filler to keep the layout consistent for step 1 & 2
+                    Color.clear.frame(height: 96)
+                }
+            }
+        }
+        .navigationBarHidden(true)
+    }
+    
+    private func stepButton(title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+        } label: {
+            Text(title)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 54)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.black.opacity(0.8), lineWidth: 1.5)
+                )
+        }
+    }
+    
+    private func advanceStep() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            step += 1
+        }
+    }
+}
+
+struct AddHabitSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var habits: [BedtimeHabit]
+    
+    @State private var name: String = ""
+    @State private var hasAlarm: Bool = true
+    @State private var alarmTime: Date = Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date()
+    @State private var repeatDays: Set<Int> = [0, 1, 2, 3, 4, 5, 6] // Default all
+    
+    let daysOfWeek = ["日", "一", "二", "三", "四", "五", "六"]
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.white.ignoresSafeArea()
+                
+                VStack(spacing: 24) {
+                    // Header
+                    HStack {
+                        Button("取消") {
+                            dismiss()
+                        }
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.gray)
+                        
+                        Spacer()
+                        
+                        Text("新建睡前习惯")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.black)
+                        
+                        Spacer()
+                        
+                        Button("保存") {
+                            let newHabit = BedtimeHabit(
+                                name: name.isEmpty ? "新习惯" : name,
+                                hasAlarm: hasAlarm,
+                                alarmTime: alarmTime,
+                                repeatDays: repeatDays,
+                                checkInTime: nil
+                            )
+                            withAnimation {
+                                habits.append(newHabit)
+                            }
+                            dismiss()
+                        }
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.black)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 32) {
+                            
+                            // Name Input
+                            VStack(alignment: .leading, spacing: 8) {
+                                TextField("习惯名称，如：冥想、拉伸、看书...", text: $name)
+                                    .font(.system(size: 20, weight: .medium))
+                                    .padding(.vertical, 8)
+                                
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(height: 1)
+                            }
+                            .padding(.horizontal, 20)
+                            
+                            // Alarm Section
+                            VStack(alignment: .leading, spacing: 16) {
+                                Toggle(isOn: $hasAlarm) {
+                                    Text("开启提醒")
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(.black)
+                                }
+                                .tint(.black)
+                                
+                                if hasAlarm {
+                                    HStack {
+                                        Text("时间")
+                                            .font(.system(size: 16, weight: .regular))
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        DatePicker("", selection: $alarmTime, displayedComponents: .hourAndMinute)
+                                            .labelsHidden()
+                                    }
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            
+                            // Repeat Days Section
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("重复日期")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 20)
+                                
+                                HStack {
+                                    ForEach(0..<7, id: \.self) { index in
+                                        Button {
+                                            if repeatDays.contains(index) {
+                                                if repeatDays.count > 1 { // Prevent unselecting all
+                                                    repeatDays.remove(index)
+                                                }
+                                            } else {
+                                                repeatDays.insert(index)
+                                            }
+                                        } label: {
+                                            Text(daysOfWeek[index])
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundColor(repeatDays.contains(index) ? .white : .black)
+                                                .frame(width: 36, height: 36)
+                                                .background(repeatDays.contains(index) ? Color.black : Color.white)
+                                                .clipShape(Circle())
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(repeatDays.contains(index) ? Color.clear : Color.black.opacity(0.3), lineWidth: 1)
+                                                )
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                            }
+                            
+                        }
+                        .padding(.top, 10)
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+        }
     }
 }
