@@ -682,6 +682,8 @@ struct BlankPlanView: View {
     @AppStorage("shorterPlan.durationDays") private var planDurationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
     @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
+    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
+
     @AppStorage("shorterPlan.startedAt") private var planStartedAt = 0.0
     @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
     @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
@@ -782,33 +784,51 @@ struct BlankPlanView: View {
                     )
 
                     HStack(spacing: 8) {
-                        PlanPatternCard(
-                            title: "原则",
-                            subtitle: nil,
-                            icon: "checkmark.shield.fill",
-                            tint: Color(red: 0.42, green: 0.56, blue: 0.16),
-                            shapeStyle: .left
-                        )
+                        NavigationLink {
+                            BlankDetailView(title: "原则")
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            PlanPatternCard(
+                                title: "原则",
+                                subtitle: nil,
+                                icon: "checkmark.shield.fill",
+                                tint: Color(red: 0.42, green: 0.56, blue: 0.16),
+                                shapeStyle: .left
+                            )
+                        }
                         .frame(width: 100)
+                        .buttonStyle(.plain)
 
-                        PlanPatternCard(
-                            title: "早睡方法",
-                            subtitle: nil,
-                            icon: "lightbulb.fill",
-                            tint: Color(red: 0.30, green: 0.52, blue: 0.78),
-                            shapeStyle: .plain
-                        )
+                        NavigationLink {
+                            BlankDetailView(title: "早睡方法")
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            PlanPatternCard(
+                                title: "早睡方法",
+                                subtitle: nil,
+                                icon: "lightbulb.fill",
+                                tint: Color(red: 0.30, green: 0.52, blue: 0.78),
+                                shapeStyle: .plain
+                            )
+                        }
                         .frame(maxWidth: .infinity)
+                        .buttonStyle(.plain)
 
-                        PlanPatternCard(
-                            title: "进步",
-                            subtitle: nil,
-                            icon: "moon.fill",
-                            tint: Color(red: 0.95, green: 0.40, blue: 0.38),
-                            usesFlowerIcon: true,
-                            shapeStyle: .right
-                        )
+                        NavigationLink {
+                            BlankDetailView(title: "进步")
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            PlanPatternCard(
+                                title: "进步",
+                                subtitle: nil,
+                                icon: "moon.fill",
+                                tint: Color(red: 0.95, green: 0.40, blue: 0.38),
+                                usesFlowerIcon: true,
+                                shapeStyle: .right
+                            )
+                        }
                         .frame(width: 100)
+                        .buttonStyle(.plain)
                     }
 
                     PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
@@ -1545,6 +1565,7 @@ private struct EarlySleepStreakDetailView: View {
 
 struct TodayWorkCardView: View {
     @State private var isShowingControlInfo = false
+    @State private var isShowingFactors = false
 
     let planDurationDays: Int
     let maxLateStreak: Int
@@ -1562,8 +1583,7 @@ struct TodayWorkCardView: View {
     let btnAttackBg = Color.black.opacity(0.88)
     let btnReviewBg = Color.black.opacity(0.08)
 
-        @State private var isShowingWorthIt = false
-    @State private var isShowingReason = false
+    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
     
     var body: some View {
         VStack(spacing: 16) {
@@ -1628,8 +1648,11 @@ struct TodayWorkCardView: View {
                 .frame(width: 96)
 
                 VStack(spacing: 12) {
-                    Button(action: { isShowingWorthIt = true }) {
-                        Text("熬夜觉察")
+                    NavigationLink {
+                        BlankDetailView(title: "熬夜值不值")
+                            .sleepDetailChrome(tabBarVisibility)
+                    } label: {
+                        Text("熬夜值不值")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1638,7 +1661,7 @@ struct TodayWorkCardView: View {
                             .clipShape(Capsule())
                     }
 
-                    Button(action: { isShowingReason = true }) {
+                    Button(action: { isShowingFactors = true }) {
                         Text("记录熬夜原因")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(textDark)
@@ -1647,6 +1670,7 @@ struct TodayWorkCardView: View {
                             .background(btnReviewBg)
                             .clipShape(Capsule())
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -1656,6 +1680,11 @@ struct TodayWorkCardView: View {
             Button("知道了", role: .cancel) {}
         } message: {
             Text("当你想熬夜时，主动结束一次熬夜倾向或打断连续熬夜，就会获得1次掌控力。")
+        }
+        .sheet(isPresented: $isShowingFactors) {
+            SleepFactorsSheetView()
+                .presentationDetents([.fraction(0.85), .large])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -4519,5 +4548,33 @@ struct AddHabitSheet: View {
             }
             .navigationBarHidden(true)
         }
+    }
+}
+
+struct BlankDetailView: View {
+    let title: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.98, green: 0.97, blue: 0.95).ignoresSafeArea()
+            VStack {
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                    }
+                    .padding()
+                    Spacer()
+                }
+                Spacer()
+                Text(title)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(Color.black.opacity(0.3))
+                Spacer()
+            }
+        }
+        .navigationBarHidden(true)
     }
 }
