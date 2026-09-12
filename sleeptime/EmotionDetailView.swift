@@ -17,7 +17,7 @@ struct EmotionDetailView: View {
             }
         }
         .background(Color(.systemBackground).ignoresSafeArea())
-        .navigationTitle("情绪")
+        .navigationTitle("睡眠札记")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

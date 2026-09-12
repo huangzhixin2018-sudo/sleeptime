@@ -45,10 +45,64 @@ struct ContentView: View {
     }
 }
 
+private struct SleepCheckInRecord: Codable, Identifiable {
+    let id: UUID
+    let sleepDate: Date
+    let bedtimeMinutes: Int
+    let wakeMinutes: Int
+    let durationMinutes: Int
+    let isEarlySleep: Bool
+}
+
+private struct SleepTrajectorySegment: Identifiable {
+    let id = UUID()
+    let isEarlySleep: Bool
+    var dates: [Date]
+
+    var title: String { isEarlySleep ? "连续早睡" : "连续熬夜" }
+    var days: Int { dates.count }
+}
+
+private enum SleepCheckInStore {
+    static func decode(_ encoded: String) -> [SleepCheckInRecord] {
+        guard let data = encoded.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([SleepCheckInRecord].self, from: data)) ?? []
+    }
+
+    static func encode(_ records: [SleepCheckInRecord]) -> String? {
+        guard let data = try? JSONEncoder().encode(records) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func segments(from records: [SleepCheckInRecord], startedAt: Double) -> [SleepTrajectorySegment] {
+        let calendar = Calendar.current
+        let planStart = startedAt > 0 ? calendar.startOfDay(for: Date(timeIntervalSince1970: startedAt)) : .distantPast
+        let sortedRecords = records
+            .filter { calendar.startOfDay(for: $0.sleepDate) >= planStart }
+            .sorted { $0.sleepDate < $1.sleepDate }
+
+        return sortedRecords.reduce(into: []) { segments, record in
+            if let lastIndex = segments.indices.last,
+               segments[lastIndex].isEarlySleep == record.isEarlySleep {
+                segments[lastIndex].dates.append(record.sleepDate)
+            } else {
+                segments.append(SleepTrajectorySegment(isEarlySleep: record.isEarlySleep, dates: [record.sleepDate]))
+            }
+        }
+    }
+}
+
 private struct HomeWeekView: View {
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
     @AppStorage("home.sleepOnsetEntries") private var storedSleepOnsetEntries = "[]"
+    @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
+    @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
+    @AppStorage("sleepGoal.workdayBedtime") private var workdayBedtime = 23 * 60
+    @AppStorage("sleepGoal.workdayWakeTime") private var workdayWakeTime = 7 * 60
+    @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
+    @AppStorage("sleepGoal.weekendWakeTime") private var weekendWakeTime = 7 * 60
+    @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
 
     private let weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -111,8 +165,13 @@ private struct HomeWeekView: View {
                     .padding(.leading, 10)
                     .padding(.bottom, -1)
 
-                SleepOverviewCard {
-                }
+                SleepOverviewCard(
+                    bedtimeMinutes: currentCheckIn?.bedtimeMinutes ?? targetBedtimeMinutes,
+                    durationMinutes: currentCheckIn?.durationMinutes ?? plannedDurationMinutes,
+                    wakeMinutes: currentCheckIn?.wakeMinutes ?? fixedWakeMinutes,
+                    isCheckedIn: currentCheckIn != nil,
+                    onCheckIn: saveSleepCheckIn
+                )
             }
             .padding(.horizontal, 18)
             .padding(.top, 4)
@@ -154,6 +213,62 @@ private struct HomeWeekView: View {
 
     private var lastNightDate: Date {
         Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+    }
+
+    private var sleepCheckIns: [SleepCheckInRecord] {
+        SleepCheckInStore.decode(encodedSleepCheckIns)
+    }
+
+    private var currentCheckIn: SleepCheckInRecord? {
+        sleepCheckIns.first { Calendar.current.isDate($0.sleepDate, inSameDayAs: Date()) }
+    }
+
+    private var usesWorkdaySchedule: Bool {
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        let workdays = Set(workdaySelection.split(separator: ",").compactMap { Int($0) })
+        return workdays.contains(weekday)
+    }
+
+    private var targetBedtimeMinutes: Int {
+        usesWorkdaySchedule ? workdayBedtime : weekendBedtime
+    }
+
+    private var fixedWakeMinutes: Int {
+        usesWorkdaySchedule ? workdayWakeTime : weekendWakeTime
+    }
+
+    private var plannedDurationMinutes: Int {
+        minutesUntilWake(from: targetBedtimeMinutes, wake: fixedWakeMinutes)
+    }
+
+    private func minutesUntilWake(from bedtime: Int, wake: Int) -> Int {
+        let difference = wake - bedtime
+        return difference > 0 ? difference : difference + 24 * 60
+    }
+
+    private func saveSleepCheckIn() {
+        guard currentCheckIn == nil else { return }
+        let now = Date()
+        let calendar = Calendar.current
+        let bedtime = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
+        let boundary = targetBedtimeMinutes + allowedDeviation
+        let normalizedBedtime = bedtime < 12 * 60 ? bedtime + 24 * 60 : bedtime
+        let normalizedBoundary = boundary < 12 * 60 ? boundary + 24 * 60 : boundary
+        let record = SleepCheckInRecord(
+            id: UUID(),
+            sleepDate: now,
+            bedtimeMinutes: bedtime,
+            wakeMinutes: fixedWakeMinutes,
+            durationMinutes: minutesUntilWake(from: bedtime, wake: fixedWakeMinutes),
+            isEarlySleep: normalizedBedtime <= normalizedBoundary
+        )
+        var records = sleepCheckIns
+        records.removeAll { calendar.isDate($0.sleepDate, inSameDayAs: now) }
+        records.append(record)
+        if let encoded = SleepCheckInStore.encode(records) {
+            encodedSleepCheckIns = encoded
+        }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
     }
 
     private func weekdayIndex(for date: Date) -> Int {
@@ -221,18 +336,26 @@ private struct HomeSleepInsightCard: View {
 }
 
 private struct SleepOverviewCard: View {
+    let bedtimeMinutes: Int
+    let durationMinutes: Int
+    let wakeMinutes: Int
+    let isCheckedIn: Bool
     let onCheckIn: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
-            SleepDurationDisplay(hours: 8, minutes: 35)
+            SleepDurationDisplay(
+                bedtimeMinutes: bedtimeMinutes,
+                durationMinutes: durationMinutes,
+                wakeMinutes: wakeMinutes
+            )
 
             Button(action: onCheckIn) {
                 HStack(spacing: 8) {
                     Image(systemName: "moon.fill")
                         .font(.system(size: 14, weight: .semibold))
 
-                    Text("晚安打卡")
+                    Text(isCheckedIn ? "今晚已打卡" : "晚安打卡")
                         .font(.system(size: 16, weight: .semibold))
                 }
                     .foregroundStyle(Color.white)
@@ -241,6 +364,7 @@ private struct SleepOverviewCard: View {
                     .background(Color.black.opacity(0.9), in: Capsule())
             }
             .buttonStyle(.plain)
+            .disabled(isCheckedIn)
         }
         .padding(.horizontal, 26)
         .padding(.top, 18)
@@ -251,8 +375,9 @@ private struct SleepOverviewCard: View {
 }
 
 private struct SleepDurationDisplay: View {
-    let hours: Int
-    let minutes: Int
+    let bedtimeMinutes: Int
+    let durationMinutes: Int
+    let wakeMinutes: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -278,7 +403,7 @@ private struct SleepDurationDisplay: View {
                 .accessibilityLabel("分享睡眠记录")
             }
 
-            Text("23:30")
+            Text(timeText(bedtimeMinutes))
                 .font(.system(size: 50, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
@@ -298,7 +423,7 @@ private struct SleepDurationDisplay: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("23点30分入睡，睡眠时长8小时35分钟，7点30分起床，午休35分钟")
+        .accessibilityLabel("\(timeText(bedtimeMinutes))入睡，睡眠时长\(durationMinutes / 60)小时\(durationMinutes % 60)分钟，\(timeText(wakeMinutes))起床")
     }
 
     private var currentDateTitle: String {
@@ -311,11 +436,11 @@ private struct SleepDurationDisplay: View {
     private var durationMetric: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .lastTextBaseline, spacing: 3) {
-                Text("\(hours)")
+                Text("\(durationMinutes / 60)")
                     .font(.system(size: 27, weight: .semibold))
                 Text("时")
                     .font(.system(size: 13, weight: .semibold))
-                Text("\(minutes)")
+                Text("\(durationMinutes % 60)")
                     .font(.system(size: 27, weight: .semibold))
                 Text("分")
                     .font(.system(size: 13, weight: .semibold))
@@ -331,7 +456,7 @@ private struct SleepDurationDisplay: View {
 
     private var wakeMetric: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("07:30")
+            Text(timeText(wakeMinutes))
                 .font(.system(size: 27, weight: .semibold))
                 .monospacedDigit()
 
@@ -340,6 +465,10 @@ private struct SleepDurationDisplay: View {
                 .foregroundStyle(Color.black.opacity(0.42))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func timeText(_ minutes: Int) -> String {
+        String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
     }
 }
 
@@ -706,6 +835,19 @@ struct BlankPlanView: View {
     @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
     @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
     @AppStorage("earlySleepPlan.currentStreak") private var currentEarlySleepStreak = 0
+    @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
+
+    private var trajectorySegments: [SleepTrajectorySegment] {
+        Array(SleepCheckInStore.segments(
+            from: SleepCheckInStore.decode(encodedSleepCheckIns),
+            startedAt: planStartedAt
+        ).suffix(3))
+    }
+
+    private var derivedEarlySleepStreak: Int {
+        guard let last = trajectorySegments.last, last.isEarlySleep else { return 0 }
+        return last.days
+    }
 
     private var currentDay: Int {
         guard isShorterPlanActive, planStartedAt > 0 else { return 1 }
@@ -785,11 +927,11 @@ struct BlankPlanView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
                     LongestEarlySleepCard(
-                        currentValue: activePlanType == "streak" ? currentEarlySleepStreak : 1,
+                        currentValue: activePlanType == "streak" ? derivedEarlySleepStreak : 1,
                         targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
                     )
 
-                    EmptyPlanFrameworkCard(isEmpty: currentEarlySleepStreak == 0)
+                    EmptyPlanFrameworkCard(segments: trajectorySegments)
 
                     PlanControlFlowCard()
 
@@ -877,7 +1019,19 @@ struct BlankPlanView: View {
             .sheet(isPresented: $isShowingAddHabitSheet) {
                 AddHabitSheet(habits: $habits)
             }
+            .onAppear(perform: synchronizePlanStreaks)
+            .onChange(of: encodedSleepCheckIns) {
+                synchronizePlanStreaks()
+            }
         }
+    }
+
+    private func synchronizePlanStreaks() {
+        currentEarlySleepStreak = derivedEarlySleepStreak
+        currentMaxLateStreak = trajectorySegments
+            .filter { !$0.isEarlySleep }
+            .map(\.days)
+            .max() ?? 0
     }
 
     @MainActor
@@ -1237,7 +1391,9 @@ private struct PatternFolderShape: Shape {
 }
 
 private struct EmptyPlanFrameworkCard: View {
-    let isEmpty: Bool
+    let segments: [SleepTrajectorySegment]
+
+    private var isEmpty: Bool { segments.isEmpty }
 
     var body: some View {
         GeometryReader { proxy in
@@ -1272,21 +1428,13 @@ private struct EmptyPlanFrameworkCard: View {
                         .padding(.horizontal, 20)
                     } else {
                         HStack(spacing: 5) {
-                            trackingMetric(
-                                title: "连续早睡",
-                                value: 2,
-                                dateRange: "9.06–9.07"
-                            )
-                            trackingMetric(
-                                title: "连续熬夜",
-                                value: 3,
-                                dateRange: "9.08–9.10"
-                            )
-                            trackingMetric(
-                                title: "连续早睡",
-                                value: 1,
-                                dateRange: "9.11"
-                            )
+                            ForEach(segments) { segment in
+                                trackingMetric(
+                                    title: segment.title,
+                                    value: segment.days,
+                                    dateRange: dateRange(for: segment.dates)
+                                )
+                            }
                         }
                         .padding(8)
                         .padding(.horizontal, 8)
@@ -1328,8 +1476,18 @@ private struct EmptyPlanFrameworkCard: View {
         .accessibilityLabel(
             isEmpty
                 ? "作息轨迹，完成睡眠记录后，早睡与熬夜将会分段呈现，让作息变化清晰可见"
-                : "作息轨迹，连续早睡2天，连续熬夜3天，连续早睡1天"
+                : "作息轨迹，" + segments.map { "\($0.title)\($0.days)天" }.joined(separator: "，")
         )
+    }
+
+    private func dateRange(for dates: [Date]) -> String {
+        guard let first = dates.first, let last = dates.last else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M.d"
+        let firstText = formatter.string(from: first)
+        let lastText = formatter.string(from: last)
+        return Calendar.current.isDate(first, inSameDayAs: last) ? firstText : "\(firstText)–\(lastText)"
     }
 
     private func trackingMetric(title: String, value: Int, dateRange: String) -> some View {
@@ -2022,15 +2180,7 @@ struct ProfileView: View {
                             EmotionDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
-                            ProfileRowView(icon: "face.smiling", title: "情绪", showDivider: true)
-                        }
-                        .buttonStyle(.plain)
-
-                        NavigationLink {
-                            SleepTrackingDetailView()
-                                .sleepDetailChrome(tabBarVisibility)
-                        } label: {
-                            ProfileRowView(icon: "chart.xyaxis.line", title: "睡眠追踪", showDivider: true)
+                            ProfileRowView(icon: "book.pages", title: "睡眠札记", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
@@ -2038,17 +2188,13 @@ struct ProfileView: View {
                             CalendarDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
-                            ProfileRowView(icon: "target", title: "年度目标", showDivider: false)
+                            ProfileRowView(icon: "calendar", title: "年度日历", showDivider: false)
                         }
                         .buttonStyle(.plain)
                     }
 
 
 
-                    ProfileSection {
-                        emptyProfileNavigationRow(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
-                        emptyProfileNavigationRow(icon: "circle.lefthalf.filled", title: "主题外观", trailingText: "浅色模式", showDivider: false)
-                    }
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 8)
@@ -4051,6 +4197,31 @@ private struct SettingsManagementView: View {
                         EmptyProfileDetailView()
                     } label: {
                         ProfileRowView(icon: "icloud", title: "iCloud 备份", trailingText: "未备份", showDivider: false)
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                ProfileSection {
+                    NavigationLink {
+                        SleepTrackingDetailView()
+                    } label: {
+                        ProfileRowView(icon: "chart.xyaxis.line", title: "睡眠追踪", showDivider: false)
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                ProfileSection {
+                    NavigationLink {
+                        EmptyProfileDetailView()
+                    } label: {
+                        ProfileRowView(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    NavigationLink {
+                        EmptyProfileDetailView()
+                    } label: {
+                        ProfileRowView(icon: "circle.lefthalf.filled", title: "主题外观", trailingText: "浅色模式", showDivider: false)
                     }
                     .buttonStyle(.plain)
                 }

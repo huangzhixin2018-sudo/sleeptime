@@ -98,7 +98,7 @@ struct CalendarDetailView: View {
             ViewModePicker(selectedMode: $viewMode)
         }
         .background(Color(.systemBackground).ignoresSafeArea())
-        .navigationTitle("年度目标")
+        .navigationTitle("年度日历")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
