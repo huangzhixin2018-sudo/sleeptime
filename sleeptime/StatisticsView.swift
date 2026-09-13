@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct MockSleepData: Identifiable {
-    let id = UUID()
     let day: String
     let weekday: String
     let bedtime: String
@@ -12,6 +11,8 @@ struct MockSleepData: Identifiable {
     let feeling: String
     let reason: String
     let note: String?
+
+    var id: String { day }
 }
 
 enum StatsTab: String, CaseIterable {
@@ -19,6 +20,7 @@ enum StatsTab: String, CaseIterable {
     case week = "周"
     case month = "月"
     case year = "年"
+    case total = "总"
 }
 
 struct StatisticsView: View {
@@ -27,7 +29,7 @@ struct StatisticsView: View {
     
     @State private var selectedTab: StatsTab = .day
     
-    let mockData = [
+    private static let mockData = [
         MockSleepData(day: "09日", weekday: "星期三", bedtime: "23:15", sleepStatus: "早睡", isLate: false, wakeTime: "07:00", duration: "7h45m", feeling: "精神很好", reason: "看书", note: nil),
         MockSleepData(day: "08日", weekday: "星期二", bedtime: "01:30", sleepStatus: "熬夜", isLate: true, wakeTime: "09:00", duration: "7h30m", feeling: "有点困", reason: "玩游戏", note: "昨晚一直失眠没睡好，脑子里全在想白天的工作。"),
         MockSleepData(day: "07日", weekday: "星期一", bedtime: "00:15", sleepStatus: "熬夜", isLate: true, wakeTime: "08:00", duration: "7h45m", feeling: "一般", reason: "加班", note: nil),
@@ -42,7 +44,7 @@ struct StatisticsView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
+                LazyVStack(alignment: .leading, spacing: 20) {
                     
                     Text("统计")
                         .font(.system(size: 34, weight: .bold))
@@ -52,11 +54,9 @@ struct StatisticsView: View {
                     // 自定义分段控制器
                     HStack(spacing: 0) {
                         let tabs = StatsTab.allCases
-                        ForEach(Array(tabs.enumerated()), id: \.element) { index, tab in
+                        ForEach(tabs, id: \.self) { tab in
                             Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedTab = tab
-                                }
+                                selectedTab = tab
                             }) {
                                 Text(tab.rawValue)
                                     .font(.system(size: 15, weight: selectedTab == tab ? .bold : .medium))
@@ -74,7 +74,7 @@ struct StatisticsView: View {
                     
                     // 数据列表内容
                     if selectedTab == .day {
-                        ForEach(Array(mockData.enumerated()), id: \.element.id) { index, data in
+                        ForEach(Self.mockData) { data in
                             DailySleepRow(
                                 dayMonth: data.day,
                                 weekday: data.weekday,
@@ -433,7 +433,10 @@ struct StatisticsView: View {
                             .padding(.top, 32)
                             
                         ConsecutiveDistributionView()
-                            .padding(.top, 40)
+                            .padding(.top, 24)
+                            
+                        MonthCalendarView()
+                            .padding(.top, 24)
                         
                         Spacer()
                     } else if selectedTab == .year {
@@ -475,6 +478,13 @@ struct StatisticsView: View {
                             
                         YearlySleepProportionView()
                             .padding(.top, 40)
+                        
+                        Spacer()
+                    } else if selectedTab == .total {
+                        ConvergenceShiftView(year: 2026)
+                            // Offset negative horizontal padding to make it full width if desired
+                            .padding(.horizontal, -20)
+                            .padding(.top, 24)
                         
                         Spacer()
                     } else {
@@ -588,11 +598,12 @@ struct DailySleepRow: View {
 }
 
 struct WeekTimelineData: Identifiable {
-    let id = UUID()
     let weekday: String
     let bedtime: String
     let wakeTime: String
     let isLate: Bool
+
+    var id: String { weekday }
 }
 
 enum BedtimeCategory: Int, CaseIterable {
@@ -625,7 +636,7 @@ enum BedtimeCategory: Int, CaseIterable {
 }
 
 struct MonthSleepTrajectoryView: View {
-    let days: [BedtimeCategory] = [
+    private static let days: [BedtimeCategory] = [
         .immortal, .nightOwl, .nightOwl, .late, .late,
         .late, .late, .late, .late, .nightOwl,
         .nightOwl, .regular, .regular, .regular, .late,
@@ -680,7 +691,7 @@ struct MonthSleepTrajectoryView: View {
                     // Bars
                     HStack(spacing: 0) {
                         Spacer().frame(width: 48)
-                        ForEach(Array(days.enumerated()), id: \.offset) { index, cat in
+                        ForEach(Array(Self.days.enumerated()), id: \.offset) { index, cat in
                             let barH = CGFloat(cat.rawValue + 1) * stepY
                             VStack {
                                 Spacer()
@@ -699,7 +710,7 @@ struct MonthSleepTrajectoryView: View {
                 Spacer().frame(width: 48)
                 GeometryReader { geo in
                     let w = geo.size.width
-                    let dayWidth = w / CGFloat(days.count)
+                    let dayWidth = w / CGFloat(Self.days.count)
                     
                     let labels = [1, 5, 10, 15, 20, 25, 30]
                     ForEach(labels, id: \.self) { label in
@@ -724,12 +735,12 @@ struct ConsecutiveDistributionView: View {
     private let lateColor = Color(red: 0.88, green: 0.32, blue: 0.22)
     
     // Mock data matching the screenshot
-    let data = [
+    private static let data = [
         (3, 2), // 连续2天: 3段早睡，2段熬夜
         (2, 1), // 连续3天: 2段早睡，1段熬夜
         (1, 2)  // 连续4天+: 1段早睡，2段熬夜
     ]
-    let labels = ["连续2天", "连续3天", "连续4天+"]
+    private static let labels = ["连续2天", "连续3天", "连续4天+"]
     
     var body: some View {
         VStack(spacing: 0) {
@@ -785,11 +796,11 @@ struct ConsecutiveDistributionView: View {
                     // Bars
                     HStack(spacing: 0) {
                         Spacer().frame(width: 28)
-                        let groupWidth = (w - 28) / CGFloat(data.count)
+                        let groupWidth = (w - 28) / CGFloat(Self.data.count)
                         let boxSize: CGFloat = 28 // height of the stacked box
                         
-                        ForEach(0..<data.count, id: \.self) { index in
-                            let item = data[index]
+                        ForEach(0..<Self.data.count, id: \.self) { index in
+                            let item = Self.data[index]
                             
                             HStack(alignment: .bottom, spacing: 12) {
                                 // Early stack
@@ -834,10 +845,10 @@ struct ConsecutiveDistributionView: View {
                 Spacer().frame(width: 28)
                 GeometryReader { geo in
                     let w = geo.size.width
-                    let groupWidth = w / CGFloat(labels.count)
+                    let groupWidth = w / CGFloat(Self.labels.count)
                     
-                    ForEach(0..<labels.count, id: \.self) { index in
-                        Text(labels[index])
+                    ForEach(0..<Self.labels.count, id: \.self) { index in
+                        Text(Self.labels[index])
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(ink.opacity(0.7))
                             .frame(width: groupWidth)
@@ -884,7 +895,7 @@ struct YearlyBedtimeRangeView: View {
     
     // Mock data: mins past 22:00. (e.g. 22:00=0, 04:00=360)
     // To handle before 22:00, we could use negative, but let's assume bedtime is >= 22:00
-    let mockData: [YearRangeData] = [
+    private static let mockData: [YearRangeData] = [
         YearRangeData(month: 1, earliestMins: 30, latestMins: 150),  // 22:30 - 00:30
         YearRangeData(month: 2, earliestMins: 0, latestMins: 180),   // 22:00 - 01:00
         YearRangeData(month: 3, earliestMins: 60, latestMins: 120),  // 23:00 - 00:00
@@ -942,8 +953,8 @@ struct YearlyBedtimeRangeView: View {
                     
                     // Dumbbell Bars (Thin line with dots)
                     let groupWidth = (w - 48) / 12.0
-                    ForEach(0..<mockData.count, id: \.self) { i in
-                        let data = mockData[i]
+                    ForEach(0..<Self.mockData.count, id: \.self) { i in
+                        let data = Self.mockData[i]
                         // Clamp values between 0 and 360 so they don't draw outside
                         let clampedLatest = min(max(data.latestMins, 0), 360)
                         let clampedEarliest = min(max(data.earliestMins, 0), 360)
@@ -1048,9 +1059,7 @@ struct YearlyAverageBedtimeView: View {
                 ForEach(YearlyMetric.allCases, id: \.self) { metric in
                     let isSelected = selectedMetric == metric
                     Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedMetric = metric
-                        }
+                        selectedMetric = metric
                     }) {
                         Text(metric.rawValue)
                             .font(.system(size: 13, weight: isSelected ? .bold : .medium))
@@ -1197,7 +1206,7 @@ struct WeekSleepTimelineView: View {
     let targetBedtime = "23:30"
     let targetWake = "07:30"
     
-    let mockData = [
+    private static let mockData = [
         WeekTimelineData(weekday: "周一", bedtime: "23:15", wakeTime: "07:00", isLate: false),
         WeekTimelineData(weekday: "周二", bedtime: "00:15", wakeTime: "08:00", isLate: true),
         WeekTimelineData(weekday: "周三", bedtime: "22:30", wakeTime: "06:30", isLate: false),
@@ -1223,11 +1232,11 @@ struct WeekSleepTimelineView: View {
     }
     
     var earliestBedtimeStr: String {
-        mockData.min(by: { fraction(for: $0.bedtime) < fraction(for: $1.bedtime) })?.bedtime ?? "22:00"
+        Self.mockData.min(by: { fraction(for: $0.bedtime) < fraction(for: $1.bedtime) })?.bedtime ?? "22:00"
     }
     
     var latestBedtimeStr: String {
-        mockData.max(by: { fraction(for: $0.bedtime) < fraction(for: $1.bedtime) })?.bedtime ?? "02:00"
+        Self.mockData.max(by: { fraction(for: $0.bedtime) < fraction(for: $1.bedtime) })?.bedtime ?? "02:00"
     }
     
     var body: some View {
@@ -1301,7 +1310,7 @@ struct WeekSleepTimelineView: View {
                 
                 // Data Rows
                 VStack(spacing: 16) {
-                    ForEach(mockData) { data in
+                    ForEach(Self.mockData) { data in
                         HStack(alignment: .center, spacing: 0) {
                             Text(data.weekday)
                                 .font(.system(size: 15, weight: .bold))
@@ -1385,7 +1394,7 @@ struct YearlySleepProportionView: View {
     private let lateColor = Color(red: 0.9, green: 0.5, blue: 0.3) // matches orange in screenshot
     
     // Mock data: proportion of early sleep days (before midnight) for each month
-    let earlyProportions: [CGFloat] = [
+    private static let earlyProportions: [CGFloat] = [
         0.35, 0.40, 0.45, 0.55, 0.65, 0.72, 0.75, 0.69, 0.67, 0.69, 0.75, 0.81
     ]
     
@@ -1449,7 +1458,7 @@ struct YearlySleepProportionView: View {
                     let groupWidth = chartW / 12.0
                     
                     ForEach(0..<12, id: \.self) { i in
-                        let earlyProp = earlyProportions[i]
+                        let earlyProp = Self.earlyProportions[i]
                         let xPos = 52 + CGFloat(i) * groupWidth + groupWidth / 2
                         
                         ZStack(alignment: .bottom) {
@@ -1488,6 +1497,113 @@ struct YearlySleepProportionView: View {
             }
             .padding(.top, 12)
         }
+    }
+}
+
+enum MonthDayStatus {
+    case early
+    case late
+    case none
+}
+
+struct MonthCalendarView: View {
+    private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
+    private let earlyColor = Color(red: 0.2, green: 0.65, blue: 0.4)
+    private let lateColor = Color(red: 0.9, green: 0.5, blue: 0.3)
+    
+    let weekdays = ["一", "二", "三", "四", "五", "六", "日"]
+    
+    // Mock 30 days starting on Wednesday (index 2)
+    // 0,1 are empty
+    // Days: 1...30
+    private static let statuses: [MonthDayStatus] = {
+        var arr = Array(repeating: MonthDayStatus.none, count: 35)
+        // Some early streaks
+        arr[2] = .early; arr[3] = .early; arr[4] = .early // day 1-3
+        arr[5] = .late // day 4
+        arr[6] = .early // day 5
+        arr[7] = .late // day 6
+        // Long streak across weeks
+        for i in 8...16 { arr[i] = .early } // day 7-15
+        arr[17] = .late // day 16
+        arr[18] = .late // day 17
+        for i in 19...25 { arr[i] = .early } // day 18-24
+        arr[26] = .late // day 25
+        for i in 27...31 { arr[i] = .early } // day 26-30
+        return arr
+    }()
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Header
+            HStack {
+                Text("本月打卡连续性")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(ink)
+                
+                Spacer()
+                
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Circle().fill(earlyColor).frame(width: 8, height: 8)
+                        Text("早睡").font(.system(size: 12)).foregroundColor(ink.opacity(0.6))
+                    }
+                    HStack(spacing: 4) {
+                        Circle().fill(lateColor.opacity(0.5)).frame(width: 8, height: 8)
+                        Text("熬夜").font(.system(size: 12)).foregroundColor(ink.opacity(0.6))
+                    }
+                }
+            }
+            
+            // Weekday Header
+            HStack(spacing: 0) {
+                ForEach(weekdays, id: \.self) { day in
+                    Text(day)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(ink.opacity(0.4))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Calendar Grid
+            VStack(spacing: 12) {
+                ForEach(0..<5, id: \.self) { row in
+                    HStack(spacing: 0) {
+                        ForEach(0..<7, id: \.self) { col in
+                            let index = row * 7 + col
+                            let dayNum = index - 1 // since 1st is at index 2, wait: index 2 is day 1, so dayNum = index - 1
+                            let status = Self.statuses[index]
+                            
+                            ZStack {
+                                if status == .early {
+                                    Circle()
+                                        .fill(earlyColor.opacity(0.15))
+                                        .frame(width: 32, height: 32)
+                                    
+                                    Text("\(dayNum)")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundColor(earlyColor)
+                                } else if status == .late {
+                                    Circle()
+                                        .fill(lateColor.opacity(0.15))
+                                        .frame(width: 32, height: 32)
+                                    
+                                    Text("\(dayNum)")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundColor(lateColor)
+                                } else if dayNum > 0 && dayNum <= 30 {
+                                    Text("\(dayNum)")
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(ink.opacity(0.3))
+                                }
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 16)
     }
 }
 
