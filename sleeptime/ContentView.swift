@@ -26,6 +26,18 @@ struct ContentView: View {
             }
             .tag(AppTab.plan)
 
+            StatisticsView()
+            .tabItem {
+                Label("统计", systemImage: "chart.bar.fill")
+            }
+            .tag(AppTab.statistics)
+
+            SoundView()
+            .tabItem {
+                Label("声音", systemImage: "speaker.wave.2.fill")
+            }
+            .tag(AppTab.sound)
+
             ProfileView {
                 selectedTab = .plan
             }
@@ -690,6 +702,8 @@ extension View {
 private enum AppTab: CaseIterable {
     case home
     case plan
+    case statistics
+    case sound
     case profile
 
     var title: String {
@@ -698,6 +712,10 @@ private enum AppTab: CaseIterable {
             return "首页"
         case .plan:
             return "计划"
+        case .statistics:
+            return "统计"
+        case .sound:
+            return "声音"
         case .profile:
             return "我的"
         }
@@ -709,6 +727,10 @@ private enum AppTab: CaseIterable {
             return "moon.stars.fill"
         case .plan:
             return "star.fill"
+        case .statistics:
+            return "chart.bar.fill"
+        case .sound:
+            return "speaker.wave.2.fill"
         case .profile:
             return "person.fill"
         }
@@ -859,6 +881,7 @@ struct BlankPlanView: View {
     @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
     @AppStorage("earlySleepPlan.currentStreak") private var currentEarlySleepStreak = 0
     @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
+    @AppStorage("shorterPlan.targetSleepTimeMinutes") private var targetSleepTimeMinutes = 23 * 60 + 30
 
     private var trajectorySegments: [SleepTrajectorySegment] {
         Array(SleepCheckInStore.segments(
@@ -870,6 +893,13 @@ struct BlankPlanView: View {
     private var derivedEarlySleepStreak: Int {
         guard let last = trajectorySegments.last, last.isEarlySleep else { return 0 }
         return last.days
+    }
+
+    private var latestBedtimeMinutes: Int? {
+        SleepCheckInStore.decode(encodedSleepCheckIns)
+            .filter { planStartedAt <= 0 || $0.sleepDate >= Date(timeIntervalSince1970: planStartedAt) }
+            .max { $0.sleepDate < $1.sleepDate }?
+            .bedtimeMinutes
     }
 
     private var currentDay: Int {
@@ -949,12 +979,23 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    LongestEarlySleepCard(
-                        currentValue: activePlanType == "streak" ? derivedEarlySleepStreak : 1,
-                        targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
-                    )
+                    if activePlanType == "streak" {
+                        LongestEarlySleepCard(
+                            currentValue: derivedEarlySleepStreak,
+                            targetValue: targetEarlySleepStreak
+                        )
+                    } else {
+                        LatestBedtimeGoalCard(
+                            bedtimeMinutes: latestBedtimeMinutes,
+                            targetMinutes: targetSleepTimeMinutes
+                        )
 
-                    EmptyPlanFrameworkCard(segments: trajectorySegments)
+                        BedtimeStreakSummaryCard(earlyDays: 2, lateDays: 3)
+                    }
+
+                    if activePlanType == "streak" {
+                        EmptyPlanFrameworkCard(segments: trajectorySegments)
+                    }
 
                     PlanControlFlowCard()
 
@@ -1069,6 +1110,8 @@ struct BlankPlanView: View {
                 activePlanType: activePlanType,
                 targetEarlySleepStreak: targetEarlySleepStreak,
                 currentEarlySleepStreak: currentEarlySleepStreak,
+                targetSleepTimeMinutes: targetSleepTimeMinutes,
+                latestBedtimeMinutes: latestBedtimeMinutes,
                 trajectorySegments: trajectorySegments,
                 meditationCheckInTime: meditationCheckInTime,
                 habits: habits
@@ -1093,6 +1136,8 @@ private struct CurrentPlanExportView: View {
     let activePlanType: String
     let targetEarlySleepStreak: Int
     let currentEarlySleepStreak: Int
+    let targetSleepTimeMinutes: Int
+    let latestBedtimeMinutes: Int?
     let trajectorySegments: [SleepTrajectorySegment]
     let meditationCheckInTime: String?
     let habits: [BedtimeHabit]
@@ -1109,11 +1154,22 @@ private struct CurrentPlanExportView: View {
             }
                 .monospacedDigit()
 
-            LongestEarlySleepCard(
-                currentValue: activePlanType == "streak" ? currentEarlySleepStreak : 1,
-                targetValue: activePlanType == "streak" ? targetEarlySleepStreak : 5
-            )
-            EmptyPlanFrameworkCard(segments: trajectorySegments)
+            if activePlanType == "streak" {
+                LongestEarlySleepCard(
+                    currentValue: currentEarlySleepStreak,
+                    targetValue: targetEarlySleepStreak
+                )
+            } else {
+                LatestBedtimeGoalCard(
+                    bedtimeMinutes: latestBedtimeMinutes,
+                    targetMinutes: targetSleepTimeMinutes
+                )
+
+                BedtimeStreakSummaryCard(earlyDays: 2, lateDays: 3)
+            }
+            if activePlanType == "streak" {
+                EmptyPlanFrameworkCard(segments: trajectorySegments)
+            }
 
             PlanControlFlowCard()
 
@@ -1684,6 +1740,133 @@ private struct LongestEarlySleepCard: View {
     }
 }
 
+private struct LatestBedtimeGoalCard: View {
+    let bedtimeMinutes: Int?
+    let targetMinutes: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("最晚入睡时间")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.black)
+
+                    Text(timeText(prototypeBedtimeMinutes))
+                        .font(.system(size: 38, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.black)
+                }
+
+                Spacer()
+
+                Text("目标最晚 \(timeText(targetMinutes))")
+                    .font(.system(size: 16, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.black.opacity(0.52))
+                    .padding(.top, 2)
+            }
+
+            VStack(spacing: 8) {
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Color(red: 0.96, green: 0.71, blue: 0.0)
+
+                        Color(red: 0.65, green: 0.44, blue: 1.0)
+                            .frame(width: max(proxy.size.width * actualProgress, 0))
+
+                        HStack {
+                            Text(timeText(20 * 60))
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            Spacer()
+                            Text(timeText(targetMinutes))
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.15), radius: 1, x: 0, y: 1)
+                        .padding(.horizontal, 14)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .frame(height: 36)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 20)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
+    }
+
+    private var prototypeBedtimeMinutes: Int {
+        bedtimeMinutes ?? 23 * 60
+    }
+
+    private var normalizedTargetMinutes: Int {
+        targetMinutes <= 20 * 60 ? targetMinutes + 24 * 60 : targetMinutes
+    }
+
+    private var normalizedBedtimeMinutes: Int {
+        prototypeBedtimeMinutes < 20 * 60 ? prototypeBedtimeMinutes + 24 * 60 : prototypeBedtimeMinutes
+    }
+
+    private var actualProgress: CGFloat {
+        let total = max(normalizedTargetMinutes - 20 * 60, 1)
+        let elapsed = normalizedBedtimeMinutes - 20 * 60
+        return min(max(CGFloat(elapsed) / CGFloat(total), 0), 1)
+    }
+
+    private func timelineLabel(_ text: String, alignment: Alignment, emphasized: Bool) -> some View {
+        Text(text)
+            .font(.system(size: 12, weight: emphasized ? .semibold : .medium))
+            .monospacedDigit()
+            .foregroundStyle(emphasized ? Color.black : Color.black.opacity(0.46))
+            .frame(maxWidth: .infinity, alignment: alignment)
+    }
+
+    private func timeText(_ minutes: Int) -> String {
+        String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
+    }
+}
+
+private struct BedtimeStreakSummaryCard: View {
+    let earlyDays: Int
+    let lateDays: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            metric(title: "最长连续早睡", value: earlyDays)
+            metric(title: "最长连续熬夜", value: lateDays)
+        }
+    }
+
+    private func metric(title: String, value: Int) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.62))
+
+            HStack(alignment: .lastTextBaseline, spacing: 3) {
+                Text("\(value)")
+                    .font(.system(size: 28, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.black)
+                Text("天")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.48))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 17)
+        .frame(minHeight: 92)
+        .background(
+            Color.white,
+            in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous)
+        )
+    }
+}
+
 private struct EarlySleepStreakDetailView: View {
     private let recentDays = ["一", "二", "三", "四", "五", "六", "日"]
 
@@ -1851,7 +2034,7 @@ struct TodayWorkCardView: View {
 
                 VStack(spacing: 12) {
                     NavigationLink {
-                        BlankDetailView(title: "熬夜值不值")
+                        BedtimeDecisionView()
                             .sleepDetailChrome(tabBarVisibility)
                     } label: {
                         Text("熬夜值不值")
@@ -2213,7 +2396,15 @@ struct ProfileView: View {
                             CalendarDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
-                            ProfileRowView(icon: "calendar", title: "年度日历", showDivider: false)
+                            ProfileRowView(icon: "calendar", title: "年度日历", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        NavigationLink {
+                            BodyAndSleepDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "heart.text.square", title: "身体与睡眠", showDivider: false)
                         }
                         .buttonStyle(.plain)
                     }
@@ -3185,6 +3376,7 @@ private struct EarlySleepPlanDetailView: View {
     @AppStorage("shorterPlan.isActive") private var isActive = false
     @AppStorage("shorterPlan.durationDays") private var durationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
+    @AppStorage("shorterPlan.targetSleepTimeMinutes") private var targetSleepTimeMinutes = 23 * 60 + 30
     @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
     @AppStorage("earlySleepPlan.history") private var historyData = "[]"
     @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
@@ -3284,7 +3476,8 @@ private struct EarlySleepPlanDetailView: View {
             id: "current-\(startedAt)",
             durationDays: durationDays,
             maxLateStreak: maxLateStreak,
-            startedAt: startedAt
+            startedAt: startedAt,
+            targetSleepTimeMinutes: targetSleepTimeMinutes
         )
     }
 
@@ -3292,7 +3485,7 @@ private struct EarlySleepPlanDetailView: View {
         if activePlanType == "streak" {
             return "在 \(durationDays) 天内，最长连续早睡达到 \(targetEarlySleepStreak) 天 · \(bedtimeText) 前入睡"
         }
-        return "连续熬夜不超过 \(maxLateStreak) 天"
+        return "目标最晚入睡时间 \(String(format: "%02d:%02d", targetSleepTimeMinutes / 60, targetSleepTimeMinutes % 60))"
     }
 
     private var bedtimeText: String {
@@ -3400,7 +3593,7 @@ private struct EarlySleepStreakPlanSetupView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("连续早睡越来越长")
+                    Text("最长连续早睡")
                         .font(.system(size: 30, weight: .bold))
 
                 }
@@ -3409,7 +3602,6 @@ private struct EarlySleepStreakPlanSetupView: View {
 
                 numberSettingCard(
                     title: "计划天数",
-                    explanation: "这个阶段持续多久",
                     value: durationDays,
                     range: 3...30
                 ) { newValue in
@@ -3418,8 +3610,7 @@ private struct EarlySleepStreakPlanSetupView: View {
                 }
 
                 numberSettingCard(
-                    title: "目标连续早睡",
-                    explanation: "本阶段想达到的最长连续天数",
+                    title: "目标连续最长早睡天数",
                     value: targetStreak,
                     range: 2...max(durationDays, 2)
                 ) { targetStreak = $0 }
@@ -3455,36 +3646,32 @@ private struct EarlySleepStreakPlanSetupView: View {
 
     private func numberSettingCard(
         title: String,
-        explanation: String,
         value: Int,
         range: ClosedRange<Int>,
         onChange: @escaping (Int) -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .semibold))
-                    Text(explanation)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
+        HStack(alignment: .center) {
+            Text(title)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.primary)
 
-                Spacer()
+            Spacer()
 
-                Text("\(value) 天")
-                    .font(.system(size: 25, weight: .bold))
-                    .monospacedDigit()
-            }
+            Text("\(value)")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.primary)
 
-            Stepper(value: Binding(get: { value }, set: onChange), in: range) {
-                EmptyView()
-            }
-            .labelsHidden()
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            Text("天")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.secondary)
+                .padding(.trailing, 8)
+
+            Stepper("", value: Binding(get: { value }, set: onChange), in: range)
+                .labelsHidden()
         }
-        .padding(18)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(20)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var targetBedtimeMinutes: Int {
@@ -3507,7 +3694,7 @@ private struct EarlySleepStreakPlanSetupView: View {
         savedTargetStreak = targetStreak
         currentStreak = 0
         activePlanType = "streak"
-        activePlanName = "连续早睡越来越长"
+        activePlanName = "最长连续早睡"
         startedAt = Date().timeIntervalSince1970
         isActive = true
         UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
@@ -3523,6 +3710,7 @@ private struct ShorterLateNightPlanSetupView: View {
     @AppStorage("shorterPlan.isActive") private var isActive = false
     @AppStorage("shorterPlan.durationDays") private var savedDurationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var savedMaxLateStreak = 2
+    @AppStorage("shorterPlan.targetSleepTimeMinutes") private var savedTargetSleepTimeMinutes = 23 * 60 + 30
     @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
     @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
     @AppStorage("earlySleepPlan.history") private var historyData = "[]"
@@ -3531,14 +3719,30 @@ private struct ShorterLateNightPlanSetupView: View {
 
     @State private var durationDays = 7
     @State private var maxLateStreak = 2
+    @State private var targetSleepTimeMinutes = 23 * 60 + 30
 
     let onPlanStarted: () -> Void
+
+    private var targetSleepTimeDate: Binding<Date> {
+        Binding(
+            get: {
+                var components = DateComponents()
+                components.hour = targetSleepTimeMinutes / 60
+                components.minute = targetSleepTimeMinutes % 60
+                return Calendar.current.date(from: components) ?? Date()
+            },
+            set: { newDate in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                targetSleepTimeMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+            }
+        )
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("连续熬夜越来越短")
+                    Text("最晚入睡时间")
                         .font(.system(size: 30, weight: .bold))
 
                 }
@@ -3547,7 +3751,6 @@ private struct ShorterLateNightPlanSetupView: View {
 
                 planSettingCard(
                     title: "计划天数",
-                    explanation: "这个阶段持续多久",
                     value: durationDays,
                     range: 3...30,
                     onChange: { newValue in
@@ -3556,12 +3759,9 @@ private struct ShorterLateNightPlanSetupView: View {
                     }
                 )
 
-                planSettingCard(
-                    title: "最长连续熬夜",
-                    explanation: "允许连续熬夜的上限，不是要求熬夜",
-                    value: maxLateStreak,
-                    range: 0...max(durationDays - 1, 0),
-                    onChange: { maxLateStreak = $0 }
+                timeSettingCard(
+                    title: "目标最晚入睡时间",
+                    dateBinding: targetSleepTimeDate
                 )
 
             }
@@ -3590,54 +3790,66 @@ private struct ShorterLateNightPlanSetupView: View {
         .onAppear {
             durationDays = savedDurationDays
             maxLateStreak = min(savedMaxLateStreak, savedDurationDays - 1)
+            targetSleepTimeMinutes = savedTargetSleepTimeMinutes
         }
+    }
+
+    private func timeSettingCard(
+        title: String,
+        dateBinding: Binding<Date>
+    ) -> some View {
+        HStack(alignment: .center) {
+            Text(title)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            DatePicker("", selection: dateBinding, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+        }
+        .padding(20)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func planSettingCard(
         title: String,
-        explanation: String,
         value: Int,
         range: ClosedRange<Int>,
         onChange: @escaping (Int) -> Void
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .semibold))
-                    Text(explanation)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
+        HStack(alignment: .center) {
+            Text(title)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.primary)
 
-                Spacer()
+            Spacer()
 
-                Text("\(value) 天")
-                    .font(.system(size: 25, weight: .bold, design: .rounded))
-            }
+            Text("\(value)")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.primary)
 
-            Stepper(
-                value: Binding(get: { value }, set: onChange),
-                in: range
-            ) {
-                Text("调整\(title)")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
-            .labelsHidden()
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            Text("天")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.secondary)
+                .padding(.trailing, 8)
+
+            Stepper("", value: Binding(get: { value }, set: onChange), in: range)
+                .labelsHidden()
         }
-        .padding(18)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(20)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func startPlan() {
         archiveCurrentPlanIfNeeded()
         savedDurationDays = durationDays
         savedMaxLateStreak = maxLateStreak
+        savedTargetSleepTimeMinutes = targetSleepTimeMinutes
         currentMaxLateStreak = 0
         activePlanType = "shorter"
-        activePlanName = "连续熬夜越来越短"
+        activePlanName = "最晚入睡时间"
         startedAt = Date().timeIntervalSince1970
         isActive = true
         UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
@@ -3658,7 +3870,8 @@ private struct ShorterLateNightPlanSetupView: View {
             id: "archived-\(startedAt)",
             durationDays: savedDurationDays,
             maxLateStreak: savedMaxLateStreak,
-            startedAt: startedAt
+            startedAt: startedAt,
+            targetSleepTimeMinutes: savedTargetSleepTimeMinutes
         )
         history.removeAll { $0.startedAt == startedAt }
         history.insert(record, at: 0)
@@ -3675,6 +3888,7 @@ private struct EarlySleepPlanRecord: Identifiable, Codable {
     let durationDays: Int
     let maxLateStreak: Int
     let startedAt: Double
+    var targetSleepTimeMinutes: Int?
 
     var startDate: Date { Date(timeIntervalSince1970: startedAt) }
 
@@ -3710,7 +3924,7 @@ private struct EarlySleepPlanRecordCard: View {
                     .foregroundStyle(status == "进行中" ? Color.orange : Color.secondary)
             }
 
-            Text(objective ?? "连续熬夜不超过 \(record.maxLateStreak) 天")
+            Text(objective ?? (record.targetSleepTimeMinutes != nil ? "目标最晚入睡时间 \(String(format: "%02d:%02d", record.targetSleepTimeMinutes! / 60, record.targetSleepTimeMinutes! % 60))" : "连续熬夜不超过 \(record.maxLateStreak) 天"))
                 .font(.system(size: 15))
                 .foregroundStyle(.primary)
 
@@ -4514,6 +4728,368 @@ private struct SleepOnsetRecordView: View {
     }
 }
 
+
+private struct BedtimeDecisionView: View {
+    private enum Step: Int, CaseIterable {
+        case activity
+        case habit
+        case duration
+        case control
+        case tomorrow
+        case choice
+        case result
+    }
+
+    private enum Choice {
+        case sleepNow
+        case limitedContinue
+        case continueTonight
+    }
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var step: Step = .activity
+    @State private var activity = ""
+    @State private var activityDraft = ""
+    @State private var habit = ""
+    @State private var duration = ""
+    @State private var control = ""
+    @State private var tomorrow = ""
+    @State private var finalChoice: Choice?
+    @FocusState private var activityIsFocused: Bool
+
+    private let background = AppTheme.homeBackground
+    private let foreground = Color.black
+    private let accent = Color(red: 0.72, green: 0.30, blue: 0.29)
+
+    var body: some View {
+        ZStack {
+            background.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                topBar
+
+                Group {
+                    if step == .result {
+                        resultView
+                    } else {
+                        questionView
+                    }
+                }
+                .id(step)
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .preferredColorScheme(.light)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                activityIsFocused = true
+            }
+        }
+    }
+
+    private var topBar: some View {
+        HStack {
+            if step.rawValue > Step.activity.rawValue && step != .result {
+                Button(action: goBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 21, weight: .medium))
+                        .foregroundStyle(foreground)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Color.clear.frame(width: 44, height: 44)
+            }
+
+            Spacer()
+
+            if step != .result {
+                Text("\(step.rawValue + 1) / 6")
+                    .font(.system(size: 13, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(foreground.opacity(0.42))
+            }
+
+            Spacer()
+
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(foreground)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+    }
+
+    private var questionView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(question)
+                .font(.system(size: 31, weight: .bold))
+                .foregroundStyle(foreground)
+                .lineSpacing(6)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 72)
+
+            if let supportingText {
+                Text(supportingText)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(foreground.opacity(0.55))
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 14)
+            }
+
+            Spacer(minLength: 36)
+
+            optionLayout
+                .padding(.bottom, 44)
+        }
+        .padding(.horizontal, 28)
+    }
+
+    @ViewBuilder
+    private var optionLayout: some View {
+        let options = currentOptions
+        if step == .activity {
+            VStack(spacing: 18) {
+                TextField("比如刷手机、追剧，或者处理工作", text: $activityDraft, axis: .vertical)
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(Color.black)
+                    .lineLimit(2...4)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 17)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .focused($activityIsFocused)
+                    .submitLabel(.done)
+                    .onSubmit(saveActivity)
+
+                Button(action: saveActivity) {
+                    Text("继续想一想")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(activityDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.black.opacity(0.16) : accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(activityDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        } else if step == .duration {
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                spacing: 18
+            ) {
+                ForEach(options, id: \.self) { option in
+                    circularOption(option)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        } else if options.count == 2 {
+            HStack(spacing: 26) {
+                ForEach(options, id: \.self) { option in
+                    circularOption(option)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        } else {
+            VStack(spacing: 12) {
+                ForEach(options, id: \.self) { option in
+                    Button {
+                        choose(option)
+                    } label: {
+                        Text(option)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(Color.black.opacity(0.84))
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                            .frame(minHeight: 58)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func circularOption(_ title: String) -> some View {
+        Button {
+            choose(title)
+        } label: {
+            Text(title)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(foreground)
+                .multilineTextAlignment(.center)
+                .frame(width: 136, height: 136)
+                .background(accent)
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var question: String {
+        switch step {
+        case .activity: return "今晚熬夜想做什么？"
+        case .habit: return "睡前想做的小习惯，今天完成了吗？"
+        case .duration: return "\(activity)，你还想继续多久？"
+        case .control: return "到了刚才选的时间，你觉得自己能停下来吗？"
+        case .tomorrow: return "如果今晚睡晚一点，你觉得明天会怎么样？"
+        case .choice: return "想过这些以后，今晚准备怎么安排？"
+        case .result: return ""
+        }
+    }
+
+    private var supportingText: String? {
+        switch step {
+        case .habit:
+            return "先看看今晚想照顾好的事情，有没有已经完成。"
+        case .duration:
+            return "选一个差不多的时间，给今晚留个容易做到的小约定。"
+        case .control:
+            return activity.contains("手机")
+                ? "想想平时刷手机的情况，按自己的真实感受来选。"
+                : "回想一下以前做这件事时，通常能不能按时结束。"
+        case .tomorrow:
+            return "不用想得太严重，只要回想一下平时睡晚后的状态。"
+        case .choice:
+            return summary
+        default:
+            return nil
+        }
+    }
+
+    private var currentOptions: [String] {
+        switch step {
+        case .activity: return []
+        case .habit: return ["已经完成", "还没有", "今晚没有安排"]
+        case .duration: return ["10 分钟", "20 分钟", "30 分钟", "还没想好"]
+        case .control: return ["能停下来", "可能停不下来", "通常停不下来"]
+        case .tomorrow: return ["早上不太想起床", "白天可能有点困", "注意力不太集中", "应该没太大影响"]
+        case .choice: return ["现在去睡", "再待一小会儿", "今晚想继续"]
+        case .result: return []
+        }
+    }
+
+    private var summary: String {
+        var parts: [String] = []
+        if habit == "还没有" { parts.append("睡前的小习惯还没完成") }
+        if control != "能停下来" { parts.append("到时间后可能还想继续") }
+        if tomorrow != "应该没太大影响", !tomorrow.isEmpty { parts.append("明天\(tomorrow)") }
+        return parts.isEmpty ? "现在已经想得更清楚了，选一个让自己舒服的安排。" : parts.joined(separator: "，") + "。再看看今晚怎么安排更合适。"
+    }
+
+    private var resultView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+
+            Text(resultTitle)
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(foreground)
+                .lineSpacing(7)
+
+            Text(resultMessage)
+                .font(.system(size: 18, weight: .regular))
+                .foregroundStyle(foreground.opacity(0.68))
+                .lineSpacing(7)
+                .padding(.top, 18)
+
+            Spacer()
+
+            Button {
+                dismiss()
+            } label: {
+                Text("好的")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(foreground)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .background(accent)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 44)
+        }
+        .padding(.horizontal, 30)
+    }
+
+    private var resultTitle: String {
+        switch finalChoice {
+        case .sleepNow: return "那就安心结束今天吧。"
+        case .limitedContinue: return "再待一小会儿，也记得回来休息。"
+        case .continueTonight: return "今晚想多留一会儿，也照顾好自己。"
+        case nil: return "选择已经记下。"
+        }
+    }
+
+    private var resultMessage: String {
+        switch finalChoice {
+        case .sleepNow:
+            return habit == "还没有"
+                ? "先做一个最简单的版本，不必追求完整，然后安心结束今天。"
+                : "放下正在做的事，简单洗漱、关灯，让今天停在这里。"
+        case .limitedContinue:
+            let limit = duration == "还没想好" ? "10 分钟" : duration
+            return "可以设置一个 \(limit) 的计时器。响起以后，就给今天一个温柔的结束。"
+        case .continueTonight:
+            return "给自己留一个最晚休息时间。想停的时候就停，不需要把今晚安排得太满。"
+        case nil:
+            return ""
+        }
+    }
+
+    private func choose(_ answer: String) {
+        switch step {
+        case .activity: activity = answer
+        case .habit: habit = answer
+        case .duration: duration = answer
+        case .control: control = answer
+        case .tomorrow: tomorrow = answer
+        case .choice:
+            switch answer {
+            case "现在去睡": finalChoice = .sleepNow
+            case "再待一小会儿": finalChoice = .limitedContinue
+            default: finalChoice = .continueTonight
+            }
+        case .result: break
+        }
+
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        advance()
+    }
+
+    private func saveActivity() {
+        let value = activityDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return }
+        activity = value
+        activityIsFocused = false
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        advance()
+    }
+
+    private func advance() {
+        let next = Step(rawValue: step.rawValue + 1)
+        guard let next else { return }
+        withAnimation(.easeInOut(duration: 0.22)) {
+            step = next
+        }
+    }
+
+    private func goBack() {
+        let previous = Step(rawValue: step.rawValue - 1)
+        guard let previous else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            step = previous
+        }
+    }
+}
 
 struct StayUpLateReasonView: View {
     @Environment(\.dismiss) private var dismiss

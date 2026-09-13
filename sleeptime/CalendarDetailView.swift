@@ -305,6 +305,7 @@ struct ViewModePicker: View {
 struct MonthGridDetailView: View {
     let year: Int
     let monthIndex: Int
+    var onDayTapped: ((Int) -> Void)? = nil
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -315,8 +316,8 @@ struct MonthGridDetailView: View {
                 LazyVGrid(columns: gridColumns, spacing: 0) {
                     ForEach(kWeekdayLabels, id: \.self) { label in
                         Text(label)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(UIColor.tertiaryLabel))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.primary)
                             .frame(height: 30)
                     }
                 }
@@ -329,7 +330,7 @@ struct MonthGridDetailView: View {
                     
                     // 补充上个月的空白
                     ForEach(0 ..< offset, id: \.self) { _ in
-                        Color.clear.frame(height: 110)
+                        Color.clear.frame(height: 130)
                     }
                     
                     // 当月日期
@@ -358,37 +359,34 @@ struct MonthGridDetailView: View {
         
         let tags = mockTags(for: day)
 
-        VStack(spacing: 8) {
+        VStack(spacing: 2) {
             // 日期数字
-            let weekday = (weekdayOffset(year: year, monthIndex: monthIndex) + day - 1) % 7
-            let isWeekend = weekday == 5 || weekday == 6
             
             Text("\(day)")
-                .font(.system(size: 15, weight: isToday ? .bold : .medium))
-                .foregroundColor(
-                    isToday ? .primary : (isWeekend ? Color.red.opacity(0.8) : .primary)
-                )
-                .padding(.top, 12)
+                .font(.system(size: 17, weight: isToday ? .heavy : .bold))
+                .foregroundColor(.primary)
+                .padding(.top, 8)
             
             // 标签列表
             VStack(spacing: 4) {
                 ForEach(tags, id: \.text) { tag in
                     Text(tag.text)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, minHeight: 16)
-                        .background(tag.bgColor)
-                        .cornerRadius(3)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(tag.bgColor)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.5)
                 }
             }
             .padding(.horizontal, 4)
             
             Spacer(minLength: 0)
         }
-        .frame(height: 110)
+        .frame(height: 130)
         .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onDayTapped?(day)
+        }
         // 只有顶部有极细的分割线，像原生极简日历一样
         .overlay(
             VStack {
@@ -407,23 +405,35 @@ struct MonthGridDetailView: View {
     private func mockTags(for day: Int) -> [MockTag] {
         var tags: [MockTag] = []
         
-        // 用极简的纯色块+白字，像截图里的 "Veterans" 或 "Halloween"
         let isEarly = day % 3 != 0 && day != 5 && day != 12
-        let isLate = !isEarly
-        let playedPhone = day % 4 == 0
+        let isEarlyWake = day % 2 != 0
         
+        // 1. 起床时间
+        let wakeTimeStr = isEarlyWake ? "07:00" : "09:30"
+        tags.append(MockTag(text: wakeTimeStr, bgColor: .primary))
+        
+        // 2. 起床状态
+        if isEarlyWake {
+            tags.append(MockTag(text: "早起", bgColor: .primary))
+        } else {
+            tags.append(MockTag(text: "晚起", bgColor: .primary))
+        }
+        
+        // 3. 入睡时间
+        let bedTimeStr = isEarly ? "23:15" : "01:30"
+        tags.append(MockTag(text: bedTimeStr, bgColor: .primary))
+        
+        // 4. 入睡状态
         if isEarly {
-            // 少量偶尔出现的奖励标记，比如某几天特别棒
-            if day % 7 == 0 {
-                tags.append(MockTag(text: "极佳", bgColor: Color(red: 0.2, green: 0.7, blue: 0.4)))
-            }
-        } else if isLate {
-            tags.append(MockTag(text: "熬夜", bgColor: Color(red: 0.85, green: 0.3, blue: 0.3)))
+            tags.append(MockTag(text: "早睡", bgColor: .primary))
+        } else {
+            tags.append(MockTag(text: "熬夜", bgColor: .primary))
         }
         
-        if playedPhone && tags.count < 1 {
-            tags.append(MockTag(text: "玩手机", bgColor: Color.gray.opacity(0.7)))
-        }
+        // 5. 睡前活动
+        let reasons = ["玩手机", "玩游戏", "刷视频"]
+        let reason = reasons[day % reasons.count]
+        tags.append(MockTag(text: reason, bgColor: .primary))
         
         return tags
     }
@@ -1214,7 +1224,15 @@ struct CelebrityRoutineListView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 12) {
+            LazyVStack(alignment: .leading, spacing: 12) {
+                Text("每个人都有自己的精神坐标。选择一位与你共鸣的人，他的经典名言会在首页随机出现，在需要的时候，为你带来思考与行动的力量。")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Color.black.opacity(0.62))
+                    .lineSpacing(6)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 10)
+
                 if enabledCelebrities.isEmpty {
                     Text("前往名人库开启想关注的名人作息")
                         .font(.system(size: 16, weight: .regular))
