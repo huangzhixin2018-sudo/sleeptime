@@ -470,8 +470,11 @@ struct StatisticsView: View {
                         }
                         .padding(.top, 8)
                         
-                        YearlyAverageBedtimeView()
+                        YearlySummaryCardsView()
                             .padding(.top, 24)
+                            
+                        YearlyAverageBedtimeView()
+                            .padding(.top, 32)
                             
                         YearlyBedtimeRangeView()
                             .padding(.top, 24)
@@ -1604,6 +1607,61 @@ struct MonthCalendarView: View {
             }
         }
         .padding(.vertical, 16)
+    }
+}
+
+struct YearlySummaryCardsView: View {
+    private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
+    private let earlyColor = Color(red: 0.2, green: 0.65, blue: 0.4)
+    private let lateColor = Color(red: 0.9, green: 0.5, blue: 0.3)
+    
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 16) {
+            summaryCard(title: "平均睡眠", value: "7h 14m", subtext: "同比 -15m", icon: "moon.zzz.fill", iconColor: ink)
+            summaryCard(title: "作息规律", value: "85", subtext: "极度自律", icon: "chart.line.uptrend.xyaxis", iconColor: earlyColor)
+            summaryCard(title: "最早起床", value: "05:15", subtext: "8月12日", icon: "sun.max.fill", iconColor: Color.orange)
+            summaryCard(title: "全年熬夜", value: "42 天", subtext: "占全年的 11.5%", icon: "exclamationmark.triangle.fill", iconColor: lateColor)
+        }
+    }
+    
+    private func summaryCard(title: String, value: String, subtext: String, icon: String, iconColor: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(iconColor)
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(ink.opacity(0.6))
+            }
+            
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .foregroundColor(ink)
+                
+                if value == "85" {
+                    Text("/100")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(ink.opacity(0.4))
+                }
+            }
+            
+            Text(subtext)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(ink.opacity(0.4))
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(ink.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 
