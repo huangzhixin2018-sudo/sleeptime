@@ -2711,10 +2711,10 @@ private struct SleepInterval: Identifiable, Codable, Equatable {
 
     static let defaults = [
         SleepInterval(name: "早睡", startMinutes: 20 * 60, endMinutes: 22 * 60),
-        SleepInterval(name: "正常入睡", startMinutes: 22 * 60, endMinutes: 23 * 60 + 30),
-        SleepInterval(name: "轻度晚睡", startMinutes: 23 * 60 + 30, endMinutes: 30),
-        SleepInterval(name: "晚睡", startMinutes: 30, endMinutes: 2 * 60),
-        SleepInterval(name: "深夜入睡", startMinutes: 2 * 60, endMinutes: 6 * 60)
+        SleepInterval(name: "按时", startMinutes: 22 * 60, endMinutes: 23 * 60 + 30),
+        SleepInterval(name: "晚睡", startMinutes: 23 * 60 + 30, endMinutes: 30),
+        SleepInterval(name: "熬夜", startMinutes: 30, endMinutes: 2 * 60),
+        SleepInterval(name: "修仙", startMinutes: 2 * 60, endMinutes: 6 * 60)
     ]
 }
 
@@ -2859,35 +2859,31 @@ private struct SleepIntervalEditCard: View {
     @Binding var interval: SleepInterval
 
     var body: some View {
-        VStack(spacing: 12) {
+        HStack(spacing: 8) {
             TextField("区间名称", text: $interval.name)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.primary)
-
-            HStack(spacing: 10) {
-                intervalTimeField(title: "开始", minutes: $interval.startMinutes)
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color(uiColor: .tertiaryLabel))
-                intervalTimeField(title: "结束", minutes: $interval.endMinutes)
-            }
-        }
-        .padding(16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-
-    private func intervalTimeField(title: String, minutes: Binding<Int>) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            DatePicker("", selection: dateBinding(minutes), displayedComponents: .hourAndMinute)
+                .frame(width: 60, alignment: .leading)
+            
+            Spacer(minLength: 0)
+            
+            DatePicker("", selection: dateBinding($interval.startMinutes), displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .environment(\.locale, Locale(identifier: "zh_CN"))
+            
+            Image(systemName: "arrow.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                
+            DatePicker("", selection: dateBinding($interval.endMinutes), displayedComponents: .hourAndMinute)
                 .labelsHidden()
                 .datePickerStyle(.compact)
                 .environment(\.locale, Locale(identifier: "zh_CN"))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func dateBinding(_ minutes: Binding<Int>) -> Binding<Date> {
@@ -3704,7 +3700,7 @@ private struct EarlySleepStreakPlanSetupView: View {
                 .padding(.horizontal, 2)
                 .padding(.bottom, 6)
 
-                numberSettingCard(
+                planSettingCard(
                     title: "计划天数",
                     value: durationDays,
                     range: 3...30
@@ -3731,10 +3727,10 @@ private struct EarlySleepStreakPlanSetupView: View {
             Button(action: startPlan) {
                 Text("开始计划")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color(uiColor: .systemBackground))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
-                    .background(Color.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Color(red: 0.65, green: 0.32, blue: 0.32), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 18)
@@ -3748,6 +3744,56 @@ private struct EarlySleepStreakPlanSetupView: View {
         }
     }
 
+    private func planSettingCard(
+        title: String,
+        value: Int,
+        range: ClosedRange<Int>,
+        onChange: @escaping (Int) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.primary)
+
+            HStack(spacing: 0) {
+                let options = [7, 14, 21, 30]
+                ForEach(options.indices, id: \.self) { index in
+                    let option = options[index]
+                    let isSelected = value == option
+                    
+                    Button {
+                        onChange(option)
+                    } label: {
+                        HStack(alignment: .lastTextBaseline, spacing: 2) {
+                            Text("\(option)")
+                                .font(.system(size: 20, weight: isSelected ? .bold : .medium))
+                            Text("天")
+                                .font(.system(size: 12, weight: .regular))
+                        }
+                        .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(isSelected ? Color(red: 0.65, green: 0.32, blue: 0.32) : Color.clear)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    if index < options.count - 1 {
+                        Divider()
+                            .background(Color.gray.opacity(0.2))
+                    }
+                }
+            }
+            .background(Color.gray.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .padding(20)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
     private func numberSettingCard(
         title: String,
         value: Int,
@@ -3756,23 +3802,48 @@ private struct EarlySleepStreakPlanSetupView: View {
     ) -> some View {
         HStack(alignment: .center) {
             Text(title)
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.primary)
 
             Spacer()
 
-            Text("\(value)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.primary)
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text("\(value)")
+                    .font(.system(size: 20, weight: .bold))
+                    .monospacedDigit()
+                Text("天")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .padding(.trailing, 12)
 
-            Text("天")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.secondary)
-                .padding(.trailing, 8)
+            HStack(spacing: 0) {
+                Button {
+                    if value > range.lowerBound { onChange(value - 1) }
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.system(size: 14, weight: .bold))
+                        .frame(width: 36, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .disabled(value <= range.lowerBound)
 
-            Stepper("", value: Binding(get: { value }, set: onChange), in: range)
-                .labelsHidden()
+                Divider()
+                    .frame(height: 16)
+                    .background(Color.black.opacity(0.2))
+
+                Button {
+                    if value < range.upperBound { onChange(value + 1) }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .frame(width: 36, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .disabled(value >= range.upperBound)
+            }
+            .background(Color(white: 0.85))
+            .clipShape(Capsule())
+            .foregroundColor(.black)
         }
         .padding(20)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -3880,10 +3951,10 @@ private struct ShorterLateNightPlanSetupView: View {
             Button(action: startPlan) {
                 Text("开始计划")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color(uiColor: .systemBackground))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
-                    .background(Color.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Color(red: 0.65, green: 0.32, blue: 0.32), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 18)
@@ -3902,15 +3973,21 @@ private struct ShorterLateNightPlanSetupView: View {
         title: String,
         dateBinding: Binding<Date>
     ) -> some View {
-        HStack(alignment: .center) {
-            Text(title)
-                .font(.system(size: 18, weight: .medium))
+        VStack(alignment: .leading, spacing: 16) {
+            Text("入睡时间")
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.primary)
 
-            Spacer()
+            HStack(alignment: .center) {
+                Text(title)
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(.primary)
 
-            DatePicker("", selection: dateBinding, displayedComponents: .hourAndMinute)
-                .labelsHidden()
+                Spacer()
+
+                DatePicker("", selection: dateBinding, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+            }
         }
         .padding(20)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -3922,25 +3999,45 @@ private struct ShorterLateNightPlanSetupView: View {
         range: ClosedRange<Int>,
         onChange: @escaping (Int) -> Void
     ) -> some View {
-        HStack(alignment: .center) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(title)
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.primary)
 
-            Spacer()
-
-            Text("\(value)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.primary)
-
-            Text("天")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.secondary)
-                .padding(.trailing, 8)
-
-            Stepper("", value: Binding(get: { value }, set: onChange), in: range)
-                .labelsHidden()
+            HStack(spacing: 0) {
+                let options = [7, 14, 21, 30]
+                ForEach(options.indices, id: \.self) { index in
+                    let option = options[index]
+                    let isSelected = value == option
+                    
+                    Button {
+                        onChange(option)
+                    } label: {
+                        HStack(alignment: .lastTextBaseline, spacing: 2) {
+                            Text("\(option)")
+                                .font(.system(size: 20, weight: isSelected ? .bold : .medium))
+                            Text("天")
+                                .font(.system(size: 12, weight: .regular))
+                        }
+                        .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(isSelected ? Color(red: 0.65, green: 0.32, blue: 0.32) : Color.clear)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    if index < options.count - 1 {
+                        Divider()
+                            .background(Color.gray.opacity(0.2))
+                    }
+                }
+            }
+            .background(Color.gray.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+            )
         }
         .padding(20)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
