@@ -121,8 +121,9 @@ private struct HomeWeekView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 14) {
-                HStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 14) {
+                    HStack {
                 Text("工作日")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(Color.black)
@@ -189,18 +190,32 @@ private struct HomeWeekView: View {
             .padding(.horizontal, 18)
             .padding(.top, 4)
 
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
+                // 1. 清晨
+                Button {
+                    // 预留点击事件
+                } label: {
+                    HomeSleepInsightCard(
+                        title: "清晨",
+                        value: "未记录",
+                        icon: "sunrise"
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                // 2. 午休
                 HomeSleepInsightCard(
                     title: "午休",
                     value: "35分钟",
                     icon: "sun.max"
                 )
 
+                // 3. 入睡
                 Button {
                     sleepOnsetRoute = SleepOnsetRoute(date: lastNightDate)
                 } label: {
                     HomeSleepInsightCard(
-                        title: "入睡情况",
+                        title: "入睡",
                         value: sleepOnsetEntry(for: lastNightDate)?.state.title ?? "未记录",
                         icon: "moon.stars"
                     )
@@ -208,11 +223,20 @@ private struct HomeWeekView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 18)
+            
+            // 下方两个白色新卡片
+            HStack(spacing: 8) {
+                HomePastTodayCard()
+                HomeYearProgressCard()
+            }
+            .padding(.horizontal, 18)
 
             Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppTheme.homeBackground.ignoresSafeArea())
+                }
+                .padding(.bottom, 24)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppTheme.homeBackground.ignoresSafeArea())
         .onAppear(perform: refreshSleepStates)
         .navigationDestination(item: $sleepOnsetRoute) { route in
             SleepOnsetRecordView(
@@ -344,31 +368,118 @@ private struct HomeSleepInsightCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.black.opacity(0.48))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
-                Spacer()
+                Spacer(minLength: 0)
 
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(Color.black.opacity(0.42))
             }
 
             Text(value)
-                .font(.system(size: 21, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.black)
                 .monospacedDigit()
                 .padding(.top, 9)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
 
         }
-        .padding(12)
+        .padding(10)
         .frame(maxWidth: .infinity)
         .frame(height: 78, alignment: .topLeading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+// MARK: - 新增白底卡片
+private struct HomePastTodayCard: View {
+    var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            Text("往年今日")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            Spacer()
+            
+            Text("01:57")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundStyle(.black)
+                .monospacedDigit()
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            Spacer()
+            
+            Text("9月13日")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.black.opacity(0.5))
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .frame(height: 160)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
+
+private struct HomeYearProgressCard: View {
+    var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            Text("今年 2026")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            Spacer()
+            
+            // 进度可视化 (简易模拟轨道)
+            ZStack {
+                Ellipse()
+                    .stroke(Color.black.opacity(0.1), lineWidth: 4)
+                    .frame(width: 100, height: 40)
+                    .rotationEffect(.degrees(-15))
+                
+                Ellipse()
+                    .trim(from: 0, to: 0.7)
+                    .stroke(Color.blue.opacity(0.6), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .frame(width: 100, height: 40)
+                    .rotationEffect(.degrees(-15))
+                
+                // 模拟星球/发光点
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 10, height: 10)
+                    .shadow(color: .blue.opacity(0.8), radius: 4)
+                    .offset(x: 35, y: 15) // 大致定位在轨道上
+                
+                // 百分比放中间
+                Text("70%")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.black)
+            }
+            .frame(maxWidth: .infinity)
+            
+            Spacer()
+            
+            Text("还剩 109 天")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.black.opacity(0.5))
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .frame(height: 160)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
 
 private struct SleepOverviewCard: View {
     let bedtimeMinutes: Int
