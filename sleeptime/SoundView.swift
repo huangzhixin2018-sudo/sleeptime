@@ -10,49 +10,74 @@ struct SoundTrack: Identifiable {
 struct SoundView: View {
     private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20) // Midnight Dark Blue
     
+    // 主题切换状态
+    @AppStorage("selectedSoundThemeIndex") private var selectedThemeIndex = 0
+    @State private var showingThemeSelection = false
+    
     // 分类模块
-    let categories = ["睡眠", "冥想", "声音", "呼吸"]
-    @State private var selectedCategory = "声音"
+    let categories = ["睡眠", "声音", "冥想", "心境"]
+    @State private var selectedCategory = "睡眠"
     
     let tracks = [
-        SoundTrack(trackNumber: "01", title: "Heartbeat", color: Color(red: 0.2, green: 0.1, blue: 0.05)),
-        SoundTrack(trackNumber: "02", title: "Lover's Spit", color: Color(red: 0.6, green: 0.7, blue: 0.8)),
-        SoundTrack(trackNumber: "03", title: "Wait", color: Color(red: 0.25, green: 0.35, blue: 0.25)),
-        SoundTrack(trackNumber: "04", title: "Sunrise", color: Color(red: 0.8, green: 0.7, blue: 0.6))
+        SoundTrack(trackNumber: "01", title: "窗外淅沥", color: Color(red: 0.15, green: 0.20, blue: 0.30)), // 幽暗的雨夜蓝
+        SoundTrack(trackNumber: "02", title: "晚班列车", color: Color(red: 0.22, green: 0.22, blue: 0.25)), // 铁轨的深灰色
+        SoundTrack(trackNumber: "03", title: "炉火噼啪", color: Color(red: 0.45, green: 0.20, blue: 0.10)), // 温暖的暗橙/棕色
+        SoundTrack(trackNumber: "04", title: "盛夏旧风扇", color: Color(red: 0.18, green: 0.28, blue: 0.25)) // 复古的暗青色
     ]
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 
-                // 顶部：设置图标
+                // 顶部：左侧管理，右侧声音库
                 HStack {
+                    Button(action: {
+                        showingThemeSelection = true
+                    }) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .sheet(isPresented: $showingThemeSelection) {
+                        SoundThemeSelectionView(selectedThemeIndex: $selectedThemeIndex)
+                    }
+                    
                     Spacer()
                     
                     Button(action: {
-                        // Open settings
+                        // Open sound library
                     }) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 22, weight: .regular))
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial, in: Circle())
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16) // 修正：移除多余的60pt，直接贴近安全区顶部
+                .padding(.top, 16)
                 .padding(.bottom, 16)
                 
                 // 情绪签名文案
+                let currentTheme = soundThemes[selectedThemeIndex < soundThemes.count ? selectedThemeIndex : 0]
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("周末治愈空间")
+                    Text(currentTheme.title)
                         .font(.system(size: 36, weight: .bold))
                         .foregroundColor(.white)
+                        .contentTransition(.numericText())
+                        .animation(.easeInOut, value: selectedThemeIndex)
                     
-                    Text("这套歌单专为居家专注而设计，融合了温暖的卧室流行与轻快独立流行，用温柔的律动陪伴你度过一个惬意的上午。")
+                    Text(currentTheme.content)
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.white.opacity(0.75))
                         .lineSpacing(6)
+                        .multilineTextAlignment(.leading)
+                        .animation(.easeInOut, value: selectedThemeIndex)
                 }
-                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20) // 微调间距，让每行能多放一个字
                 .padding(.bottom, 32)
                 
                 // 动态分类切换 (胶囊样式横向滚动)
@@ -85,58 +110,51 @@ struct SoundView: View {
                                 )
                             }
                         }
-                        
-                        // 自定义添加分类按钮
-                        Button(action: {
-                            // Add category action
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 12, weight: .bold))
-                                Text("分类")
-                            }
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white.opacity(0.15))
-                            )
-                        }
                     }
                     .padding(.horizontal, 24)
                 }
                 .padding(.bottom, 32)
                 
                 // 专属音频列表
-                VStack(spacing: 24) {
-                    ForEach(tracks) { track in
-                        HStack(spacing: 16) {
-                            // Mock Album Art
-                            Rectangle()
-                                .fill(track.color)
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    Text(track.title.prefix(1))
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.white.opacity(0.5))
-                                )
-                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                            
-                            Text(track.trackNumber)
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.white.opacity(0.6))
-                                .frame(width: 28, alignment: .leading)
-                            
-                            Text(track.title)
-                                .font(.system(size: 17, weight: .regular))
-                                .foregroundColor(.white.opacity(0.9))
-                            
-                            Spacer()
+                if selectedCategory == "睡眠" {
+                    VStack(spacing: 24) {
+                        ForEach(tracks) { track in
+                            HStack(spacing: 16) {
+                                // Mock Album Art
+                                Rectangle()
+                                    .fill(track.color)
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Text(track.title.prefix(1))
+                                            .font(.system(size: 24, weight: .bold))
+                                            .foregroundColor(.white.opacity(0.5))
+                                    )
+                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                
+                                Text(track.trackNumber)
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .frame(width: 28, alignment: .leading)
+                                
+                                Text(track.title)
+                                    .font(.system(size: 17, weight: .regular))
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 24)
                         }
-                        .padding(.horizontal, 24)
                     }
+                } else {
+                    // 其他分类暂时显示空白（或者可以放一个空状态提示）
+                    VStack {
+                        Spacer().frame(height: 80)
+                        Text("暂无内容")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.4))
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
                 }
                 
                 Spacer(minLength: 60)

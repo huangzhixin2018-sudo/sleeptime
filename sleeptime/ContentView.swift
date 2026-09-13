@@ -191,33 +191,26 @@ private struct HomeWeekView: View {
             .padding(.top, 4)
 
             HStack(spacing: 8) {
-                // 1. 清晨
-                Button {
-                    // 预留点击事件
-                } label: {
-                    HomeSleepInsightCard(
-                        title: "清晨",
-                        value: "未记录",
-                        icon: "sunrise"
-                    )
-                }
-                .buttonStyle(.plain)
-                
-                // 2. 午休
-                HomeSleepInsightCard(
-                    title: "午休",
-                    value: "35分钟",
-                    icon: "sun.max"
-                )
-
-                // 3. 入睡
+                // 1. 睡眠状态 (结合清晨与入睡)
                 Button {
                     sleepOnsetRoute = SleepOnsetRoute(date: lastNightDate)
                 } label: {
                     HomeSleepInsightCard(
-                        title: "入睡",
+                        title: "睡眠状态",
                         value: sleepOnsetEntry(for: lastNightDate)?.state.title ?? "未记录",
                         icon: "moon.stars"
+                    )
+                }
+                .buttonStyle(.plain)
+                
+                // 2. 午间小憩
+                Button {
+                    // 预留午休点击事件
+                } label: {
+                    HomeSleepInsightCard(
+                        title: "午间小憩",
+                        value: "35分钟",
+                        icon: "sun.max"
                     )
                 }
                 .buttonStyle(.plain)
