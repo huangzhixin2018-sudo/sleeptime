@@ -1748,33 +1748,16 @@ struct ConvergenceShiftView: View {
     private let c_red = Color(hex: "FF3B30")
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 32) {
-                // Header
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Convergence Shift")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color(hex: "8E8E93"))
-                        .tracking(1.2)
-                        .textCase(.uppercase)
-                    Text("历年入睡区间收敛演变")
-                        .font(.system(size: 24, weight: .heavy))
-                        .foregroundColor(.primary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 44)
-                
-                // Timeline stream
-                VStack(spacing: 36) {
-                    yearGroup(year: 2026, dotColor: Color(hex: "34C759"), months: mock2026())
-                    yearGroup(year: 2025, dotColor: Color(hex: "007AFF"), months: mock2025())
-                    yearGroup(year: 2024, dotColor: Color(hex: "FF3B30"), months: mock2024(), isLast: true)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 60)
+        VStack(alignment: .leading, spacing: 32) {
+            // Timeline stream
+            VStack(spacing: 36) {
+                yearGroup(year: 2026, dotColor: Color(hex: "34C759"), months: mock2026())
+                yearGroup(year: 2025, dotColor: Color(hex: "007AFF"), months: mock2025())
+                yearGroup(year: 2024, dotColor: Color(hex: "FF3B30"), months: mock2024(), isLast: true)
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 60)
         }
-        .background(Color(hex: "FFFFFF").ignoresSafeArea())
     }
     
     private func yearGroup(year: Int, dotColor: Color, months: [(String, [Color?])], isLast: Bool = false) -> some View {
@@ -1819,9 +1802,9 @@ struct ConvergenceShiftView: View {
                         let monthData = months[idx]
                         HStack(spacing: 8) {
                             Text(monthData.0)
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(Color(hex: "8E8E93"))
-                                .frame(width: 24, alignment: .leading)
+                                .font(.system(size: 13, weight: .heavy))
+                                .foregroundColor(.primary)
+                                .frame(width: 32, alignment: .leading)
                             
                             HStack(spacing: 4) {
                                 ForEach(0..<5, id: \.self) { cellIdx in
@@ -1844,13 +1827,16 @@ struct ConvergenceShiftView: View {
         HStack(spacing: 0) {
             Color.clear.frame(width: 32)
             HStack(spacing: 4) {
-                let times = ["22:30", "23:00", "00:00", "01:00", "02:00+"]
+                let times = ["早睡", "常规", "微晚", "熬夜", "野猫"]
                 let colors: [Color] = [c_gold, c_green, c_blue, c_orange, c_red]
                 ForEach(0..<times.count, id: \.self) { idx in
                     VStack(spacing: 6) {
                         Text(times[idx])
                             .font(.system(size: 12, weight: .heavy))
                             .foregroundColor(.primary)
+                            // Add minimum scale factor so longer words fit
+                            .minimumScaleFactor(0.8)
+                            .lineLimit(1)
                         
                         ZStack(alignment: .bottom) {
                             Rectangle().fill(colors[idx]).frame(width: 2.5, height: 8)
