@@ -487,6 +487,9 @@ struct StatisticsView: View {
                             
                         YearlySleepProportionView()
                             .padding(.top, 40)
+                            
+                        YearlyHeatmapView()
+                            .padding(.top, 40)
                         
                         Spacer()
                     } else if selectedTab == .total {
@@ -2164,6 +2167,106 @@ struct YearlyHabitComparisonView: View {
                 .frame(height: 24)
             }
             .padding(.top, 12)
+        }
+    }
+}
+
+enum YearlyHeatmapMetric: String, CaseIterable {
+    case routine = "作息规律"
+    case duration = "睡眠时长"
+    case mood = "醒来心情"
+}
+
+struct YearlyHeatmapView: View {
+    private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
+    private let earlyColor = Color(red: 0.2, green: 0.65, blue: 0.4) // Green
+    private let lateColor = Color(red: 0.9, green: 0.5, blue: 0.3)   // Orange/Red for late
+    private let emptyColor = Color(white: 0.93)
+    
+    @State private var selectedMetric: YearlyHeatmapMetric = .routine
+    
+    // 3 columns layout for 12 months (3 cols x 4 rows)
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+    
+    // 7 columns for days in a month
+    let dayColumns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            
+            // Picker (using the requested Capsule style)
+            HStack(spacing: 0) {
+                ForEach(YearlyHeatmapMetric.allCases, id: \.self) { metric in
+                    let isSelected = selectedMetric == metric
+                    Button(action: {
+                        selectedMetric = metric
+                    }) {
+                        Text(metric.rawValue)
+                            .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                            .foregroundColor(isSelected ? ink : Color(white: 0.55))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .overlay(
+                                VStack(spacing: 0) {
+                                    if isSelected {
+                                        Rectangle().fill(ink).frame(width: 2, height: 4)
+                                        Spacer()
+                                        Rectangle().fill(ink).frame(width: 2, height: 4)
+                                    }
+                                }
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .background(Capsule().fill(Color.white))
+            
+            // Grid
+            LazyVGrid(columns: columns, spacing: 24) {
+                ForEach(1...12, id: \.self) { month in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("\(month)月")
+                            .font(.system(size: 14, weight: .bold)) // Bigger font
+                            .foregroundColor(ink.opacity(0.8))
+                            .frame(maxWidth: .infinity, alignment: .leading) // Explicitly align left
+                        
+                        LazyVGrid(columns: dayColumns, spacing: 2) {
+                            let daysInMonth = (month == 2) ? 28 : (month == 4 || month == 6 || month == 9 || month == 11 ? 30 : 31)
+                            
+                            ForEach(1...daysInMonth, id: \.self) { day in
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(colorForDay(month: month, day: day, metric: selectedMetric))
+                                    .aspectRatio(1, contentMode: .fit)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func colorForDay(month: Int, day: Int, metric: YearlyHeatmapMetric) -> Color {
+        // Mock data logic for heatmap colors (Solid colors only)
+        let baseRandom = (month * 31 + day)
+        let random: Int
+        
+        switch metric {
+        case .routine:
+            random = baseRandom % 100
+        case .duration:
+            random = (baseRandom + 17) % 100
+        case .mood:
+            random = (baseRandom + 43) % 100
+        }
+        
+        if month >= 7 && month <= 9 { // Summer
+            if random < 60 { return lateColor }
+            if random < 80 { return earlyColor }
+            return emptyColor
+        } else {
+            if random < 60 { return earlyColor }
+            if random < 80 { return lateColor }
+            return emptyColor
         }
     }
 }
