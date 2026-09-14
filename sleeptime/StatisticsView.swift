@@ -479,15 +479,12 @@ struct StatisticsView: View {
                         YearlyAverageBedtimeView()
                             .padding(.top, 32)
                             
-                        YearlyBedtimeRangeView()
-                            .padding(.top, 24)
+
                             
                         YearlyHabitComparisonView()
                             .padding(.top, 40)
                             
-                        YearlySleepProportionView()
-                            .padding(.top, 40)
-                            
+
                         YearlyHeatmapView()
                             .padding(.top, 40)
                         
@@ -900,8 +897,18 @@ struct ConsecutiveDistributionView: View {
 }
 
 
-struct YearlyBedtimeRangeView: View {
+
+enum YearlyMetric: String, CaseIterable {
+    case earliestBedtime = "最早入睡"
+    case latestBedtime = "最晚入睡"
+    case averageBedtime = "平均入睡"
+    case averageWake = "平均醒来"
+    case bedtimeRange = "入睡区间"
+}
+
+struct YearlyAverageBedtimeView: View {
     private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
+    private let greenColor = Color(red: 0.2, green: 0.65, blue: 0.4)
     
     struct YearRangeData {
         let month: Int
@@ -909,135 +916,21 @@ struct YearlyBedtimeRangeView: View {
         let latestMins: CGFloat
     }
     
-    // Mock data: mins past 22:00. (e.g. 22:00=0, 04:00=360)
-    // To handle before 22:00, we could use negative, but let's assume bedtime is >= 22:00
-    private static let mockData: [YearRangeData] = [
-        YearRangeData(month: 1, earliestMins: 30, latestMins: 150),  // 22:30 - 00:30
-        YearRangeData(month: 2, earliestMins: 0, latestMins: 180),   // 22:00 - 01:00
-        YearRangeData(month: 3, earliestMins: 60, latestMins: 120),  // 23:00 - 00:00
-        YearRangeData(month: 4, earliestMins: -30, latestMins: 240), // 21:30 - 02:00 (Mapped to 22:00 if needed, but math handles it)
-        YearRangeData(month: 5, earliestMins: 90, latestMins: 210),  // 23:30 - 01:30
-        YearRangeData(month: 6, earliestMins: 120, latestMins: 270), // 00:00 - 02:30
-        YearRangeData(month: 7, earliestMins: 180, latestMins: 360), // 01:00 - 04:00
-        YearRangeData(month: 8, earliestMins: 30, latestMins: 150),  // 22:30 - 00:30
-        YearRangeData(month: 9, earliestMins: 120, latestMins: 270), // 00:00 - 02:30
-        YearRangeData(month: 10, earliestMins: 150, latestMins: 300),// 00:30 - 03:00
-        YearRangeData(month: 11, earliestMins: 90, latestMins: 330), // 23:30 - 03:30
-        YearRangeData(month: 12, earliestMins: 0, latestMins: 180)   // 22:00 - 01:00
+    // Mock data for bedtime range
+    private static let mockRangeData: [YearRangeData] = [
+        YearRangeData(month: 1, earliestMins: 30, latestMins: 150),
+        YearRangeData(month: 2, earliestMins: 0, latestMins: 180),
+        YearRangeData(month: 3, earliestMins: 60, latestMins: 120),
+        YearRangeData(month: 4, earliestMins: -30, latestMins: 240),
+        YearRangeData(month: 5, earliestMins: 90, latestMins: 210),
+        YearRangeData(month: 6, earliestMins: 120, latestMins: 270),
+        YearRangeData(month: 7, earliestMins: 180, latestMins: 360),
+        YearRangeData(month: 8, earliestMins: 30, latestMins: 150),
+        YearRangeData(month: 9, earliestMins: 120, latestMins: 270),
+        YearRangeData(month: 10, earliestMins: 150, latestMins: 300),
+        YearRangeData(month: 11, earliestMins: 90, latestMins: 330),
+        YearRangeData(month: 12, earliestMins: 0, latestMins: 180)
     ]
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack(alignment: .bottom) {
-                Text("年度入睡区间")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(ink)
-                Spacer()
-            }
-            .padding(.bottom, 24)
-            
-            // Chart Area
-            GeometryReader { geo in
-                let w = geo.size.width
-                let h = geo.size.height
-                
-                ZStack {
-                    // Grid lines (22:00 to 04:00 = 360 mins)
-                    let yLabels = ["04:00", "02:00", "00:00", "22:00"]
-                    let yMins: [CGFloat] = [360, 240, 120, 0]
-                    
-                    ForEach(0..<yLabels.count, id: \.self) { i in
-                        let yPos = h * (1 - yMins[i] / 360)
-                        
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(yLabels[i])
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(ink.opacity(0.4))
-                                .frame(width: 36, alignment: .leading)
-                            
-                            Path { path in
-                                path.move(to: CGPoint(x: 0, y: 0))
-                                path.addLine(to: CGPoint(x: w - 48, y: 0))
-                            }
-                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [2, 4]))
-                            .foregroundColor(Color(white: 0.92))
-                            .frame(height: 1)
-                        }
-                        .position(x: w / 2, y: yPos)
-                    }
-                    
-                    // Dumbbell Bars (Thin line with dots)
-                    let groupWidth = (w - 48) / 12.0
-                    ForEach(0..<Self.mockData.count, id: \.self) { i in
-                        let data = Self.mockData[i]
-                        // Clamp values between 0 and 360 so they don't draw outside
-                        let clampedLatest = min(max(data.latestMins, 0), 360)
-                        let clampedEarliest = min(max(data.earliestMins, 0), 360)
-                        
-                        let topY = h * (1 - clampedLatest / 360)
-                        let bottomY = h * (1 - clampedEarliest / 360)
-                        let barHeight = bottomY - topY
-                        
-                        let xPos = 48 + CGFloat(i) * groupWidth + groupWidth / 2
-                        
-                        ZStack {
-                            // Connecting Line
-                            Rectangle()
-                                .fill(ink.opacity(0.15))
-                                .frame(width: 3, height: max(barHeight, 0))
-                                .position(x: xPos, y: topY + barHeight / 2)
-                            
-                            // Top Dot (Latest)
-                            Circle()
-                                .fill(ink)
-                                .frame(width: 8, height: 8)
-                                .position(x: xPos, y: topY)
-                            
-                            // Bottom Dot (Earliest)
-                            Circle()
-                                .strokeBorder(ink, lineWidth: 2)
-                                .background(Circle().fill(Color.white))
-                                .frame(width: 8, height: 8)
-                                .position(x: xPos, y: bottomY)
-                        }
-                    }
-                }
-            }
-            .frame(height: 200)
-            
-            // X-Axis Labels
-            HStack(spacing: 0) {
-                Spacer().frame(width: 48)
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    let groupWidth = w / 12.0
-                    
-                    ForEach(1...12, id: \.self) { month in
-                        Text("\(month)")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(ink.opacity(0.5))
-                            .frame(width: groupWidth)
-                            .position(x: CGFloat(month - 1) * groupWidth + groupWidth / 2, y: geo.size.height / 2)
-                    }
-                }
-                .frame(height: 24)
-            }
-            .padding(.top, 12)
-        }
-    }
-}
-
-enum YearlyMetric: String, CaseIterable {
-    case earliestBedtime = "最早入睡"
-    case latestBedtime = "最晚入睡"
-    case averageBedtime = "平均入睡"
-    case averageWake = "平均醒来"
-}
-
-struct YearlyAverageBedtimeView: View {
-    private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
-    private let greenColor = Color(red: 0.2, green: 0.65, blue: 0.4)
     
     @State private var selectedMetric: YearlyMetric = .averageBedtime
     
@@ -1048,6 +941,7 @@ struct YearlyAverageBedtimeView: View {
         case .latestBedtime: return [120, 150, 130, 90, 140, 180, 240, 160, 110, 80, 130, 170]
         case .averageBedtime: return [30, 70, 50, -20, 10, 110, 140, 60, 20, -10, 40, 90]
         case .averageWake: return [60, 90, 80, 30, 40, 100, 150, 90, 60, 40, 80, 110]
+        case .bedtimeRange: return []
         }
     }
     
@@ -1057,24 +951,27 @@ struct YearlyAverageBedtimeView: View {
         case .latestBedtime: return "01:30"
         case .averageBedtime: return "23:18"
         case .averageWake: return "07:35"
+        case .bedtimeRange: return "23:00 - 01:30"
         }
     }
     
     var yLabels: [String] {
         switch selectedMetric {
-        case .earliestBedtime: return ["00:00", "22:00", "20:00"]
-        case .latestBedtime: return ["03:00", "01:00", "23:00"]
-        case .averageBedtime: return ["01:00", "23:00", "21:00"]
-        case .averageWake: return ["10:00", "08:00", "06:00"]
+        case .earliestBedtime: return ["02:00", "00:00", "22:00", "20:00"]
+        case .latestBedtime: return ["05:00", "03:00", "01:00", "23:00"]
+        case .averageBedtime: return ["03:00", "01:00", "23:00", "21:00"]
+        case .averageWake: return ["12:00", "10:00", "08:00", "06:00"]
+        case .bedtimeRange: return ["04:00", "02:00", "00:00", "22:00"]
         }
     }
     
     var yMins: [CGFloat] {
         switch selectedMetric {
-        case .earliestBedtime: return [120, 0, -120]
-        case .latestBedtime: return [300, 180, 60]
-        case .averageBedtime: return [180, 60, -60]
-        case .averageWake: return [240, 120, 0]
+        case .earliestBedtime: return [240, 120, 0, -120]
+        case .latestBedtime: return [420, 300, 180, 60]
+        case .averageBedtime: return [300, 180, 60, -60]
+        case .averageWake: return [360, 240, 120, 0]
+        case .bedtimeRange: return [360, 240, 120, 0]
         }
     }
     
@@ -1109,13 +1006,36 @@ struct YearlyAverageBedtimeView: View {
             .padding(.bottom, 24)
             
             // Header
-            VStack(alignment: .leading, spacing: 4) {
-                Text(selectedMetric.rawValue)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(ink.opacity(0.6))
-                Text(currentAverageString)
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(ink)
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(selectedMetric.rawValue)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(ink.opacity(0.6))
+                    Text(currentAverageString)
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundColor(ink)
+                }
+                
+                Spacer()
+                
+                if selectedMetric == .bedtimeRange {
+                    HStack(spacing: 12) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .strokeBorder(ink, lineWidth: 1.5)
+                                .background(Circle().fill(Color.white))
+                                .frame(width: 8, height: 8)
+                            Text("最早").font(.system(size: 11, weight: .medium)).foregroundColor(ink.opacity(0.6))
+                        }
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(ink)
+                                .frame(width: 8, height: 8)
+                            Text("最晚").font(.system(size: 11, weight: .medium)).foregroundColor(ink.opacity(0.6))
+                        }
+                    }
+                    .padding(.bottom, 6)
+                }
             }
             .padding(.bottom, 24)
             
@@ -1152,54 +1072,93 @@ struct YearlyAverageBedtimeView: View {
                         .position(x: w / 2, y: yPos)
                     }
                     
-                    // Chart Area Box
-                    let chartW = w - 48
-                    let groupWidth = chartW / 12.0
                     
-                    // Curve Points Calculation
-                    let points: [CGPoint] = currentData.enumerated().map { index, value in
-                        let clamped = min(max(value, yMinScale - 20), yMaxScale + 20) // allow slight overflow
-                        let px = 48 + CGFloat(index) * groupWidth + groupWidth / 2
-                        let py = h * (1 - (clamped - yMinScale) / yRange)
-                        return CGPoint(x: px, y: py)
-                    }
-                    
-                    // Gradient Fill
-                    Path { path in
-                        if points.count > 1 {
-                            path.move(to: CGPoint(x: points[0].x, y: h))
-                            path.addLine(to: points[0])
-                            for i in 1..<points.count {
-                                let pt1 = points[i-1]
-                                let pt2 = points[i]
-                                let midX = (pt1.x + pt2.x) / 2
-                                path.addCurve(to: pt2, control1: CGPoint(x: midX, y: pt1.y), control2: CGPoint(x: midX, y: pt2.y))
+                    if selectedMetric == .bedtimeRange {
+                        // Dumbbell Bars (Thin line with dots)
+                        let groupWidth = (w - 48) / 12.0
+                        ForEach(0..<Self.mockRangeData.count, id: \.self) { i in
+                            let data = Self.mockRangeData[i]
+                            // Clamp values between yMinScale and yMaxScale
+                            let clampedLatest = min(max(data.latestMins, yMinScale), yMaxScale)
+                            let clampedEarliest = min(max(data.earliestMins, yMinScale), yMaxScale)
+                            
+                            let topY = h * (1 - (clampedLatest - yMinScale) / yRange)
+                            let bottomY = h * (1 - (clampedEarliest - yMinScale) / yRange)
+                            let barHeight = bottomY - topY
+                            
+                            let xPos = 48 + CGFloat(i) * groupWidth + groupWidth / 2
+                            
+                            ZStack {
+                                // Connecting Line
+                                Rectangle()
+                                    .fill(ink.opacity(0.15))
+                                    .frame(width: 3, height: max(barHeight, 0))
+                                    .position(x: xPos, y: topY + barHeight / 2)
+                                
+                                // Top Dot (Latest)
+                                Circle()
+                                    .fill(ink)
+                                    .frame(width: 8, height: 8)
+                                    .position(x: xPos, y: topY)
+                                
+                                // Bottom Dot (Earliest)
+                                Circle()
+                                    .strokeBorder(ink, lineWidth: 2)
+                                    .background(Circle().fill(Color.white))
+                                    .frame(width: 8, height: 8)
+                                    .position(x: xPos, y: bottomY)
                             }
-                            path.addLine(to: CGPoint(x: points.last!.x, y: h))
-                            path.closeSubpath()
                         }
-                    }
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [greenColor.opacity(0.3), greenColor.opacity(0.0)]),
-                            startPoint: .top,
-                            endPoint: .bottom
+                    } else {
+                        // Chart Area Box
+                        let chartW = w - 48
+                        let groupWidth = chartW / 12.0
+                        
+                        // Curve Points Calculation
+                        let points: [CGPoint] = currentData.enumerated().map { index, value in
+                            let clamped = min(max(value, yMinScale - 20), yMaxScale + 20) // allow slight overflow
+                            let px = 48 + CGFloat(index) * groupWidth + groupWidth / 2
+                            let py = h * (1 - (clamped - yMinScale) / yRange)
+                            return CGPoint(x: px, y: py)
+                        }
+                        
+                        // Gradient Fill
+                        Path { path in
+                            if points.count > 1 {
+                                path.move(to: CGPoint(x: points[0].x, y: h))
+                                path.addLine(to: points[0])
+                                for i in 1..<points.count {
+                                    let pt1 = points[i-1]
+                                    let pt2 = points[i]
+                                    let midX = (pt1.x + pt2.x) / 2
+                                    path.addCurve(to: pt2, control1: CGPoint(x: midX, y: pt1.y), control2: CGPoint(x: midX, y: pt2.y))
+                                }
+                                path.addLine(to: CGPoint(x: points.last!.x, y: h))
+                                path.closeSubpath()
+                            }
+                        }
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [greenColor.opacity(0.3), greenColor.opacity(0.0)]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
                         )
-                    )
-                    
-                    // Smooth Line
-                    Path { path in
-                        if points.count > 1 {
-                            path.move(to: points[0])
-                            for i in 1..<points.count {
-                                let pt1 = points[i-1]
-                                let pt2 = points[i]
-                                let midX = (pt1.x + pt2.x) / 2
-                                path.addCurve(to: pt2, control1: CGPoint(x: midX, y: pt1.y), control2: CGPoint(x: midX, y: pt2.y))
+                        
+                        // Smooth Line
+                        Path { path in
+                            if points.count > 1 {
+                                path.move(to: points[0])
+                                for i in 1..<points.count {
+                                    let pt1 = points[i-1]
+                                    let pt2 = points[i]
+                                    let midX = (pt1.x + pt2.x) / 2
+                                    path.addCurve(to: pt2, control1: CGPoint(x: midX, y: pt1.y), control2: CGPoint(x: midX, y: pt2.y))
+                                }
                             }
                         }
+                        .stroke(greenColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                     }
-                    .stroke(greenColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                 }
             }
             .frame(height: 160)
@@ -1417,117 +1376,6 @@ struct WeekSleepTimelineView: View {
     }
 }
 
-struct YearlySleepProportionView: View {
-    private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
-    private let earlyColor = Color(red: 0.2, green: 0.65, blue: 0.4)
-    private let lateColor = Color(red: 0.9, green: 0.5, blue: 0.3) // matches orange in screenshot
-    
-    // Mock data: proportion of early sleep days (before midnight) for each month
-    private static let earlyProportions: [CGFloat] = [
-        0.35, 0.40, 0.45, 0.55, 0.65, 0.72, 0.75, 0.69, 0.67, 0.69, 0.75, 0.81
-    ]
-    
-    var body: some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            // Legend
-            HStack(spacing: 16) {
-                HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(earlyColor.opacity(0.8))
-                        .frame(width: 14, height: 14)
-                    Text("凌晨前")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(ink.opacity(0.7))
-                }
-                
-                HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(lateColor.opacity(0.8))
-                        .frame(width: 14, height: 14)
-                    Text("凌晨后")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(ink.opacity(0.7))
-                }
-            }
-            .padding(.bottom, 24)
-            .padding(.trailing, 20)
-            
-            // Chart Area
-            GeometryReader { geo in
-                let w = geo.size.width
-                let h = geo.size.height
-                
-                ZStack {
-                    // Y-Axis Grid Lines
-                    let yLabels = ["100%", "75%", "50%", "25%", "0%"]
-                    let yProportions: [CGFloat] = [1.0, 0.75, 0.5, 0.25, 0.0]
-                    
-                    ForEach(0..<yLabels.count, id: \.self) { i in
-                        let yPos = h * (1 - yProportions[i])
-                        
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(yLabels[i])
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(ink.opacity(0.5))
-                                .frame(width: 40, alignment: .trailing)
-                            
-                            Path { path in
-                                path.move(to: CGPoint(x: 0, y: 0))
-                                path.addLine(to: CGPoint(x: w - 52, y: 0))
-                            }
-                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                            .foregroundColor(Color(white: 0.92))
-                            .frame(height: 1)
-                        }
-                        .position(x: w / 2, y: yPos)
-                    }
-                    
-                    // Bars
-                    let chartW = w - 52
-                    let groupWidth = chartW / 12.0
-                    
-                    ForEach(0..<12, id: \.self) { i in
-                        let earlyProp = Self.earlyProportions[i]
-                        let xPos = 52 + CGFloat(i) * groupWidth + groupWidth / 2
-                        
-                        ZStack(alignment: .bottom) {
-                            // Orange (Late) - full height
-                            Rectangle()
-                                .fill(lateColor.opacity(0.85))
-                                .frame(width: 10, height: h)
-                            
-                            // Green (Early) - partial height
-                            Rectangle()
-                                .fill(earlyColor.opacity(0.85))
-                                .frame(width: 10, height: h * earlyProp)
-                        }
-                        .position(x: xPos, y: h / 2)
-                    }
-                }
-            }
-            .frame(height: 180)
-            
-            // X-Axis Labels
-            HStack(spacing: 0) {
-                Spacer().frame(width: 52)
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    let groupWidth = w / 12.0
-                    
-                    ForEach(1...12, id: \.self) { month in
-                        Text("\(month)")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(ink.opacity(0.5))
-                            .frame(width: groupWidth)
-                            .position(x: CGFloat(month - 1) * groupWidth + groupWidth / 2, y: geo.size.height / 2)
-                    }
-                }
-                .frame(height: 24)
-            }
-            .padding(.top, 12)
-        }
-    }
-}
 
 enum MonthDayStatus {
     case early
@@ -2049,10 +1897,17 @@ struct HabitMonthData {
     let lateDays: Int
 }
 
+enum YearlyHabitComparisonMetric: String, CaseIterable {
+    case distribution = "早晚分布"
+    case streak = "连续趋势"
+}
+
 struct YearlyHabitComparisonView: View {
     private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
     private let earlyColor = Color(red: 0.2, green: 0.65, blue: 0.4) // Green
     private let lateColor = Color(red: 0.8, green: 0.4, blue: 0.9)   // Purple
+    
+    @State private var selectedMetric: YearlyHabitComparisonMetric = .distribution
     
     private static let mockData: [HabitMonthData] = [
         HabitMonthData(month: 1, earlyDays: 20, lateDays: 11),
@@ -2069,26 +1924,63 @@ struct YearlyHabitComparisonView: View {
         HabitMonthData(month: 12, earlyDays: 19, lateDays: 12)
     ]
     
+    private static let mockStreakData: [HabitMonthData] = [
+        HabitMonthData(month: 1, earlyDays: 5, lateDays: 3),
+        HabitMonthData(month: 2, earlyDays: 4, lateDays: 4),
+        HabitMonthData(month: 3, earlyDays: 8, lateDays: 2),
+        HabitMonthData(month: 4, earlyDays: 6, lateDays: 3),
+        HabitMonthData(month: 5, earlyDays: 10, lateDays: 2),
+        HabitMonthData(month: 6, earlyDays: 3, lateDays: 7),
+        HabitMonthData(month: 7, earlyDays: 2, lateDays: 9),
+        HabitMonthData(month: 8, earlyDays: 4, lateDays: 6),
+        HabitMonthData(month: 9, earlyDays: 9, lateDays: 2),
+        HabitMonthData(month: 10, earlyDays: 7, lateDays: 3),
+        HabitMonthData(month: 11, earlyDays: 12, lateDays: 1),
+        HabitMonthData(month: 12, earlyDays: 6, lateDays: 4)
+    ]
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header & Legend
-            HStack(alignment: .bottom) {
-                Text("早睡/熬夜 对比")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(ink)
-                
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Circle().fill(earlyColor).frame(width: 6, height: 6)
-                        Text("早睡").font(.system(size: 11, weight: .medium)).foregroundColor(ink.opacity(0.6))
+            
+            // Picker (Capsule style)
+            HStack(spacing: 0) {
+                ForEach(YearlyHabitComparisonMetric.allCases, id: \.self) { metric in
+                    let isSelected = selectedMetric == metric
+                    Button(action: {
+                        selectedMetric = metric
+                    }) {
+                        Text(metric.rawValue)
+                            .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                            .foregroundColor(isSelected ? ink : Color(white: 0.55))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .overlay(
+                                VStack(spacing: 0) {
+                                    if isSelected {
+                                        Rectangle().fill(ink).frame(width: 2, height: 4)
+                                        Spacer()
+                                        Rectangle().fill(ink).frame(width: 2, height: 4)
+                                    }
+                                }
+                            )
                     }
-                    HStack(spacing: 4) {
-                        Circle().fill(lateColor).frame(width: 6, height: 6)
-                        Text("熬夜").font(.system(size: 11, weight: .medium)).foregroundColor(ink.opacity(0.6))
-                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
+            }
+            .background(Capsule().fill(Color.white))
+            .padding(.bottom, 16)
+            
+            // Legend
+            HStack(spacing: 24) {
+                HStack(spacing: 8) {
+                    Circle().fill(earlyColor).frame(width: 8, height: 8)
+                    Text(selectedMetric == .distribution ? "早睡天数" : "最长连续早睡").font(.system(size: 13, weight: .medium)).foregroundColor(ink.opacity(0.7))
+                }
+                HStack(spacing: 8) {
+                    Circle().fill(lateColor).frame(width: 8, height: 8)
+                    Text(selectedMetric == .distribution ? "熬夜天数" : "最长连续熬夜").font(.system(size: 13, weight: .medium)).foregroundColor(ink.opacity(0.7))
+                }
+                Spacer()
             }
             .padding(.bottom, 24)
             
@@ -2096,12 +1988,13 @@ struct YearlyHabitComparisonView: View {
             GeometryReader { geo in
                 let w = geo.size.width
                 let h = geo.size.height
+                let maxVal: CGFloat = selectedMetric == .distribution ? 31.0 : 15.0
                 
                 ZStack(alignment: .bottomLeading) {
                     // Y-Axis Grid
-                    let yLabels = [30, 20, 10, 0]
+                    let yLabels = selectedMetric == .distribution ? [30, 20, 10, 0] : [15, 10, 5, 0]
                     ForEach(yLabels, id: \.self) { val in
-                        let yPos = h * (1 - CGFloat(val) / 31.0)
+                        let yPos = h * (1 - CGFloat(val) / maxVal)
                         
                         HStack(alignment: .center, spacing: 12) {
                             Text("\(val)")
@@ -2125,13 +2018,14 @@ struct YearlyHabitComparisonView: View {
                     let groupWidth = chartW / 12.0
                     let barWidth: CGFloat = 6
                     let barSpacing: CGFloat = 2
+                    let dataToUse = selectedMetric == .distribution ? Self.mockData : Self.mockStreakData
                     
                     ForEach(0..<12, id: \.self) { i in
-                        let data = Self.mockData[i]
+                        let data = dataToUse[i]
                         let groupCenterX = 36 + CGFloat(i) * groupWidth + groupWidth / 2
                         
-                        let earlyH = h * (CGFloat(data.earlyDays) / 31.0)
-                        let lateH = h * (CGFloat(data.lateDays) / 31.0)
+                        let earlyH = h * (CGFloat(data.earlyDays) / maxVal)
+                        let lateH = h * (CGFloat(data.lateDays) / maxVal)
                         
                         // Early Bar
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
@@ -2221,6 +2115,31 @@ struct YearlyHeatmapView: View {
             }
             .background(Capsule().fill(Color.white))
             
+            // Legend
+            HStack(spacing: 24) {
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(earlyColor)
+                        .frame(width: 14, height: 14)
+                    Text(earlyLabel)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(ink.opacity(0.7))
+                }
+                
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(lateColor)
+                        .frame(width: 14, height: 14)
+                    Text(lateLabel)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(ink.opacity(0.7))
+                }
+                
+                Spacer()
+            }
+            .padding(.top, 4)
+            .padding(.bottom, 8)
+            
             // Grid
             LazyVGrid(columns: columns, spacing: 24) {
                 ForEach(1...12, id: \.self) { month in
@@ -2237,6 +2156,15 @@ struct YearlyHeatmapView: View {
                                 RoundedRectangle(cornerRadius: 2)
                                     .fill(colorForDay(month: month, day: day, metric: selectedMetric))
                                     .aspectRatio(1, contentMode: .fit)
+                            }
+                            
+                            // Pad remaining cells up to 35 so all months have exactly 5 rows
+                            if daysInMonth < 35 {
+                                ForEach((daysInMonth + 1)...35, id: \.self) { _ in
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.clear)
+                                        .aspectRatio(1, contentMode: .fit)
+                                }
                             }
                         }
                     }
@@ -2267,6 +2195,22 @@ struct YearlyHeatmapView: View {
             if random < 60 { return earlyColor }
             if random < 80 { return lateColor }
             return emptyColor
+        }
+    }
+    
+    private var earlyLabel: String {
+        switch selectedMetric {
+        case .routine: return "早睡"
+        case .duration: return "充足 (>7h)"
+        case .mood: return "精神饱满"
+        }
+    }
+    
+    private var lateLabel: String {
+        switch selectedMetric {
+        case .routine: return "熬夜"
+        case .duration: return "缺觉 (<6h)"
+        case .mood: return "疲惫"
         }
     }
 }

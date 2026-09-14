@@ -28,7 +28,7 @@ struct ContentView: View {
 
             StatisticsView()
             .tabItem {
-                Label("统计", systemImage: "chart.bar.fill")
+                Label("统计", systemImage: "square.3.stack.3d")
             }
             .tag(AppTab.statistics)
 

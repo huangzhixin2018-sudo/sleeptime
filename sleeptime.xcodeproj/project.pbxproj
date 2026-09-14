@@ -6,14 +6,65 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C8D233F43057991B004DBAEB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8D233F33057991A004DBAEB /* WidgetKit.framework */; };
+		C8D233F63057991B004DBAEB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8D233F53057991B004DBAEB /* SwiftUI.framework */; };
+		C8D234033057991E004DBAEB /* SleepWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C8D233F13057991A004DBAEB /* SleepWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C8D234013057991E004DBAEB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C8D014DA3045FB30006DB5E9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C8D233F03057991A004DBAEB;
+			remoteInfo = SleepWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C8D234043057991E004DBAEB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C8D234033057991E004DBAEB /* SleepWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		C8D014E23045FB30006DB5E9 /* sleeptime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sleeptime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8D233F13057991A004DBAEB /* SleepWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SleepWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8D233F33057991A004DBAEB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		C8D233F53057991B004DBAEB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C8D234073057991E004DBAEB /* Exceptions for "SleepWidget" folder in "SleepWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C8D233F03057991A004DBAEB /* SleepWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C8D014E43045FB30006DB5E9 /* sleeptime */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = sleeptime;
+			sourceTree = "<group>";
+		};
+		C8D233F73057991B004DBAEB /* SleepWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C8D234073057991E004DBAEB /* Exceptions for "SleepWidget" folder in "SleepWidgetExtension" target */,
+			);
+			path = SleepWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,6 +77,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C8D233EE3057991A004DBAEB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C8D233F63057991B004DBAEB /* SwiftUI.framework in Frameworks */,
+				C8D233F43057991B004DBAEB /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +93,8 @@
 			isa = PBXGroup;
 			children = (
 				C8D014E43045FB30006DB5E9 /* sleeptime */,
+				C8D233F73057991B004DBAEB /* SleepWidget */,
+				C8D233F23057991A004DBAEB /* Frameworks */,
 				C8D014E33045FB30006DB5E9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +103,18 @@
 			isa = PBXGroup;
 			children = (
 				C8D014E23045FB30006DB5E9 /* sleeptime.app */,
+				C8D233F13057991A004DBAEB /* SleepWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C8D233F23057991A004DBAEB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C8D233F33057991A004DBAEB /* WidgetKit.framework */,
+				C8D233F53057991B004DBAEB /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +127,12 @@
 				C8D014DE3045FB30006DB5E9 /* Sources */,
 				C8D014DF3045FB30006DB5E9 /* Frameworks */,
 				C8D014E03045FB30006DB5E9 /* Resources */,
+				C8D234043057991E004DBAEB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C8D234023057991E004DBAEB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C8D014E43045FB30006DB5E9 /* sleeptime */,
@@ -69,6 +143,28 @@
 			productName = sleeptime;
 			productReference = C8D014E23045FB30006DB5E9 /* sleeptime.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C8D233F03057991A004DBAEB /* SleepWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C8D234083057991E004DBAEB /* Build configuration list for PBXNativeTarget "SleepWidgetExtension" */;
+			buildPhases = (
+				C8D233ED3057991A004DBAEB /* Sources */,
+				C8D233EE3057991A004DBAEB /* Frameworks */,
+				C8D233EF3057991A004DBAEB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C8D233F73057991B004DBAEB /* SleepWidget */,
+			);
+			name = SleepWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SleepWidgetExtension;
+			productReference = C8D233F13057991A004DBAEB /* SleepWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +177,9 @@
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					C8D014E13045FB30006DB5E9 = {
+						CreatedOnToolsVersion = 26.1.1;
+					};
+					C8D233F03057991A004DBAEB = {
 						CreatedOnToolsVersion = 26.1.1;
 					};
 				};
@@ -100,12 +199,20 @@
 			projectRoot = "";
 			targets = (
 				C8D014E13045FB30006DB5E9 /* sleeptime */,
+				C8D233F03057991A004DBAEB /* SleepWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C8D014E03045FB30006DB5E9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C8D233EF3057991A004DBAEB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +229,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C8D233ED3057991A004DBAEB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C8D234023057991E004DBAEB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C8D233F03057991A004DBAEB /* SleepWidgetExtension */;
+			targetProxy = C8D234013057991E004DBAEB /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		C8D014EB3045FB33006DB5E9 /* Debug */ = {
@@ -314,6 +436,66 @@
 			};
 			name = Release;
 		};
+		C8D234053057991E004DBAEB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2YQZMC957L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SleepWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SleepWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cike.sleeptime.SleepWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C8D234063057991E004DBAEB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2YQZMC957L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SleepWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SleepWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cike.sleeptime.SleepWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -331,6 +513,15 @@
 			buildConfigurations = (
 				C8D014EE3045FB33006DB5E9 /* Debug */,
 				C8D014EF3045FB33006DB5E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C8D234083057991E004DBAEB /* Build configuration list for PBXNativeTarget "SleepWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C8D234053057991E004DBAEB /* Debug */,
+				C8D234063057991E004DBAEB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
