@@ -106,6 +106,8 @@ private enum SleepCheckInStore {
 }
 
 private struct HomeWeekView: View {
+    @ObservedObject private var liveActivityManager = LiveActivityManager.shared
+
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
     @AppStorage("home.sleepOnsetEntries") private var storedSleepOnsetEntries = "[]"
@@ -202,7 +204,7 @@ private struct HomeWeekView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                
+
                 // 2. 午间小憩
                 Button {
                     // 预留午休点击事件
@@ -216,13 +218,61 @@ private struct HomeWeekView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 18)
-            
+
             // 下方两个白色新卡片
             HStack(spacing: 8) {
                 HomePastTodayCard()
                 HomeYearProgressCard()
             }
             .padding(.horizontal, 18)
+
+            // 睡眠流程控制按钮
+            if liveActivityManager.isSleepFlowActive {
+                Button(action: {
+                    liveActivityManager.stopSleepFlow()
+                }) {
+                    HStack {
+                        Image(systemName: "stop.circle.fill")
+                        Text("结束睡眠流程")
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.red.opacity(0.8))
+                    .cornerRadius(16)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+            } else {
+                Button(action: {
+                    let now = Date()
+                    let calendar = Calendar.current
+                    var components = calendar.dateComponents([.year, .month, .day], from: now)
+                    // 使用当天的23:30作为示例目标时间
+                    components.hour = 23
+                    components.minute = 30
+                    var target = calendar.date(from: components) ?? now.addingTimeInterval(3600)
+                    if target <= now {
+                        target = calendar.date(byAdding: .day, value: 1, to: target) ?? now.addingTimeInterval(3600)
+                    }
+
+                    liveActivityManager.startSleepFlow(targetBedtime: target)
+                }) {
+                    HStack {
+                        Image(systemName: "moon.zzz.fill")
+                        Text("开启睡眠流程")
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.black)
+                    .cornerRadius(16)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+            }
 
             Spacer(minLength: 0)
                 }
@@ -399,17 +449,17 @@ private struct HomePastTodayCard: View {
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity, alignment: .center)
-            
+
             Spacer()
-            
+
             Text("01:57")
                 .font(.system(size: 32, weight: .semibold))
                 .foregroundStyle(.black)
                 .monospacedDigit()
                 .frame(maxWidth: .infinity, alignment: .center)
-            
+
             Spacer()
-            
+
             Text("9月13日")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Color.black.opacity(0.5))
@@ -429,38 +479,38 @@ private struct HomeYearProgressCard: View {
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity, alignment: .center)
-            
+
             Spacer()
-            
+
             // 进度可视化 (简易模拟轨道)
             ZStack {
                 Ellipse()
                     .stroke(Color.black.opacity(0.1), lineWidth: 4)
                     .frame(width: 100, height: 40)
                     .rotationEffect(.degrees(-15))
-                
+
                 Ellipse()
                     .trim(from: 0, to: 0.7)
                     .stroke(Color.blue.opacity(0.6), style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .frame(width: 100, height: 40)
                     .rotationEffect(.degrees(-15))
-                
+
                 // 模拟星球/发光点
                 Circle()
                     .fill(Color.white)
                     .frame(width: 10, height: 10)
                     .shadow(color: .blue.opacity(0.8), radius: 4)
                     .offset(x: 35, y: 15) // 大致定位在轨道上
-                
+
                 // 百分比放中间
                 Text("70%")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(.black)
             }
             .frame(maxWidth: .infinity)
-            
+
             Spacer()
-            
+
             Text("还剩 109 天")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Color.black.opacity(0.5))
@@ -955,11 +1005,11 @@ struct BedtimeHabit: Identifiable, Equatable {
     var alarmTime: Date
     var repeatDays: Set<Int>
     var checkInTime: String?
-    
+
     var isCompleted: Bool {
         checkInTime != nil
     }
-    
+
     var timeString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -1402,7 +1452,7 @@ private struct PlanHabitSection: View {
                             .buttonStyle(.plain)
                             .accessibilityLabel(habit.isCompleted ? "取消\(habit.name)打卡" : "完成\(habit.name)打卡")
                         }
-                        
+
                         // Track week history for THIS habit
                         HStack(spacing: 6) {
                             ForEach(1...7, id: \.self) { day in
@@ -1429,7 +1479,7 @@ private struct PlanHabitSection: View {
                                 .frame(height: 30)
                             }
                         }
-                        
+
                         HStack(spacing: 6) {
                             ForEach(["一", "二", "三", "四", "五", "六", "日"], id: \.self) { weekday in
                                 Text(weekday)
@@ -2073,7 +2123,7 @@ struct TodayWorkCardView: View {
     let btnReviewBg = Color.black.opacity(0.08)
 
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
-    
+
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 2) {
@@ -2163,7 +2213,7 @@ struct TodayWorkCardView: View {
                     } else {
                         HStack(spacing: 8) {
                             let tagsToShow = Array(selectedFactors.prefix(2))
-                            
+
                             ForEach(tagsToShow, id: \.self) { factor in
                                 Button(action: { isShowingFactors = true }) {
                                     Text(factor)
@@ -2175,7 +2225,7 @@ struct TodayWorkCardView: View {
                                         .cornerRadius(12)
                                 }
                             }
-                            
+
                             if selectedFactors.count < 2 {
                                 Button(action: { isShowingFactors = true }) {
                                     Image(systemName: "plus")
@@ -2186,7 +2236,7 @@ struct TodayWorkCardView: View {
                                         .cornerRadius(12)
                                 }
                             }
-                            
+
                             Spacer(minLength: 0)
                         }
                         .frame(maxWidth: .infinity)
@@ -2503,7 +2553,7 @@ struct ProfileView: View {
                             ProfileRowView(icon: "calendar", title: "年度日历", showDivider: true)
                         }
                         .buttonStyle(.plain)
-                        
+
                         NavigationLink {
                             BodyAndSleepDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
@@ -2864,18 +2914,18 @@ private struct SleepIntervalEditCard: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.primary)
                 .frame(width: 60, alignment: .leading)
-            
+
             Spacer(minLength: 0)
-            
+
             DatePicker("", selection: dateBinding($interval.startMinutes), displayedComponents: .hourAndMinute)
                 .labelsHidden()
                 .datePickerStyle(.compact)
                 .environment(\.locale, Locale(identifier: "zh_CN"))
-            
+
             Image(systemName: "arrow.right")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color(uiColor: .tertiaryLabel))
-                
+
             DatePicker("", selection: dateBinding($interval.endMinutes), displayedComponents: .hourAndMinute)
                 .labelsHidden()
                 .datePickerStyle(.compact)
@@ -3760,7 +3810,7 @@ private struct EarlySleepStreakPlanSetupView: View {
                 ForEach(options.indices, id: \.self) { index in
                     let option = options[index]
                     let isSelected = value == option
-                    
+
                     Button {
                         onChange(option)
                     } label: {
@@ -3776,7 +3826,7 @@ private struct EarlySleepStreakPlanSetupView: View {
                         .background(isSelected ? Color(red: 0.65, green: 0.32, blue: 0.32) : Color.clear)
                     }
                     .buttonStyle(.plain)
-                    
+
                     if index < options.count - 1 {
                         Divider()
                             .background(Color.gray.opacity(0.2))
@@ -4009,7 +4059,7 @@ private struct ShorterLateNightPlanSetupView: View {
                 ForEach(options.indices, id: \.self) { index in
                     let option = options[index]
                     let isSelected = value == option
-                    
+
                     Button {
                         onChange(option)
                     } label: {
@@ -4025,7 +4075,7 @@ private struct ShorterLateNightPlanSetupView: View {
                         .background(isSelected ? Color(red: 0.65, green: 0.32, blue: 0.32) : Color.clear)
                     }
                     .buttonStyle(.plain)
-                    
+
                     if index < options.count - 1 {
                         Divider()
                             .background(Color.gray.opacity(0.2))
@@ -4607,14 +4657,14 @@ private struct SettingsManagementView: View {
                         ProfileRowView(icon: "star", title: "早睡方案1", showDivider: true)
                     }
                     .buttonStyle(.plain)
-                    
+
                     NavigationLink {
                         EmptyProfileDetailView()
                     } label: {
                         ProfileRowView(icon: "tag", title: "标签管理", showDivider: true)
                     }
                     .buttonStyle(.plain)
-                    
+
                     NavigationLink {
                         EmptyProfileDetailView()
                     } label: {
@@ -4622,7 +4672,7 @@ private struct SettingsManagementView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                
+
                 ProfileSection {
                     NavigationLink {
                         SleepTrackingDetailView()
@@ -4631,7 +4681,7 @@ private struct SettingsManagementView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                
+
                 ProfileSection {
                     NavigationLink {
                         EmptyProfileDetailView()
@@ -4639,7 +4689,7 @@ private struct SettingsManagementView: View {
                         ProfileRowView(icon: "globe", title: "语言", trailingText: "简体中文", showDivider: true)
                     }
                     .buttonStyle(.plain)
-                    
+
                     NavigationLink {
                         EmptyProfileDetailView()
                     } label: {
@@ -5295,7 +5345,7 @@ private struct BedtimeDecisionView: View {
 struct StayUpLateReasonView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var step = 0
-    
+
     // Step 1 Multi-selection
     @State private var selectedTags: Set<String> = []
     let tags = [
@@ -5306,11 +5356,11 @@ struct StayUpLateReasonView: View {
         "🤯 心事重重睡不着",
         "🍻 聚会/应酬/夜生活"
     ]
-    
+
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 // Top Bar with Close Button
                 HStack {
@@ -5324,9 +5374,9 @@ struct StayUpLateReasonView: View {
                             .padding()
                     }
                 }
-                
+
                 Spacer()
-                
+
                 // Content Area
                 VStack(spacing: 40) {
                     if step == 0 {
@@ -5336,7 +5386,7 @@ struct StayUpLateReasonView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        
+
                         // Tag Grid
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
                             ForEach(tags, id: \.self) { tag in
@@ -5366,7 +5416,7 @@ struct StayUpLateReasonView: View {
                         }
                         .padding(.horizontal, 30)
                         .transition(.opacity)
-                        
+
                     } else if step == 1 {
                         Text("剖析一下，当时最真实的心理状态是什么？")
                             .font(.system(size: 26, weight: .bold))
@@ -5374,7 +5424,7 @@ struct StayUpLateReasonView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        
+
                         VStack(spacing: 16) {
                             stepButton(title: "白天太忙，想找回一点属于自己的时间") { advanceStep() }
                             stepButton(title: "当时完全沉浸进去了，没意识到时间流逝") { advanceStep() }
@@ -5383,7 +5433,7 @@ struct StayUpLateReasonView: View {
                         }
                         .padding(.horizontal, 40)
                         .transition(.opacity)
-                        
+
                     } else if step == 2 {
                         Text("发现原因就是最大的进步！今晚如果它再来，我们怎么反击？")
                             .font(.system(size: 24, weight: .bold))
@@ -5392,7 +5442,7 @@ struct StayUpLateReasonView: View {
                             .padding(.horizontal, 20)
                             .lineSpacing(6)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        
+
                         VStack(spacing: 16) {
                             stepButton(title: "提前定个“断电”闹钟，响了绝不碰手机") { advanceStep() }
                             stepButton(title: "睡前把最大的诱惑源（手机/平板）放远点") { advanceStep() }
@@ -5400,14 +5450,14 @@ struct StayUpLateReasonView: View {
                         }
                         .padding(.horizontal, 30)
                         .transition(.opacity)
-                        
+
                     } else if step == 3 {
                         VStack(spacing: 24) {
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: 64))
                                 .foregroundColor(.black)
                                 .transition(.scale.combined(with: .opacity))
-                            
+
                             Text("很好！\n熬夜魔的弱点已记录在案。")
                                 .font(.system(size: 26, weight: .bold))
                                 .foregroundColor(.black)
@@ -5418,9 +5468,9 @@ struct StayUpLateReasonView: View {
                         .padding(.horizontal, 30)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 // Bottom Button Action
                 if step == 0 {
                     Button {
@@ -5463,7 +5513,7 @@ struct StayUpLateReasonView: View {
         }
         .navigationBarHidden(true)
     }
-    
+
     private func stepButton(title: String, action: @escaping () -> Void) -> some View {
         Button {
             action()
@@ -5481,7 +5531,7 @@ struct StayUpLateReasonView: View {
                 )
         }
     }
-    
+
     private func advanceStep() {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             step += 1
@@ -5492,19 +5542,19 @@ struct StayUpLateReasonView: View {
 struct AddHabitSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var habits: [BedtimeHabit]
-    
+
     @State private var name: String = ""
     @State private var hasAlarm: Bool = true
     @State private var alarmTime: Date = Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date()
     @State private var repeatDays: Set<Int> = [0, 1, 2, 3, 4, 5, 6] // Default all
-    
+
     let daysOfWeek = ["日", "一", "二", "三", "四", "五", "六"]
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.white.ignoresSafeArea()
-                
+
                 VStack(spacing: 24) {
                     // Header
                     HStack {
@@ -5513,15 +5563,15 @@ struct AddHabitSheet: View {
                         }
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(.gray)
-                        
+
                         Spacer()
-                        
+
                         Text("新建睡前习惯")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.black)
-                        
+
                         Spacer()
-                        
+
                         Button("保存") {
                             let newHabit = BedtimeHabit(
                                 name: name.isEmpty ? "新习惯" : name,
@@ -5540,22 +5590,22 @@ struct AddHabitSheet: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
-                    
+
                     ScrollView {
                         VStack(alignment: .leading, spacing: 32) {
-                            
+
                             // Name Input
                             VStack(alignment: .leading, spacing: 8) {
                                 TextField("习惯名称，如：冥想、拉伸、看书...", text: $name)
                                     .font(.system(size: 20, weight: .medium))
                                     .padding(.vertical, 8)
-                                
+
                                 Rectangle()
                                     .fill(Color.gray.opacity(0.3))
                                     .frame(height: 1)
                             }
                             .padding(.horizontal, 20)
-                            
+
                             // Alarm Section
                             VStack(alignment: .leading, spacing: 16) {
                                 Toggle(isOn: $hasAlarm) {
@@ -5564,7 +5614,7 @@ struct AddHabitSheet: View {
                                         .foregroundColor(.black)
                                 }
                                 .tint(.black)
-                                
+
                                 if hasAlarm {
                                     HStack {
                                         Text("时间")
@@ -5578,14 +5628,14 @@ struct AddHabitSheet: View {
                                 }
                             }
                             .padding(.horizontal, 20)
-                            
+
                             // Repeat Days Section
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("重复日期")
                                     .font(.system(size: 18, weight: .medium))
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 20)
-                                
+
                                 HStack {
                                     ForEach(0..<7, id: \.self) { index in
                                         Button {
@@ -5613,7 +5663,7 @@ struct AddHabitSheet: View {
                                 }
                                 .padding(.horizontal, 20)
                             }
-                            
+
                         }
                         .padding(.top, 10)
                     }

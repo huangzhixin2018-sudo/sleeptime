@@ -1,80 +1,83 @@
-//
-//  SleepWidgetLiveActivity.swift
-//  SleepWidget
-//
-//  Created by zhixin on 2026/9/14.
-//
-
 import ActivityKit
 import WidgetKit
 import SwiftUI
 
-struct SleepWidgetAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-    }
-
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
-
 struct SleepWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SleepWidgetAttributes.self) { context in
-            // Lock screen/banner UI goes here
-            VStack {
-                Text("Hello \(context.state.emoji)")
+            VStack(spacing: 8) {
+                HStack {
+                    Image(systemName: "moon.stars.fill")
+                        .foregroundColor(.yellow)
+                        .font(.title2)
+
+                    Text("距入睡还有")
+                        .font(.headline)
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Text(timerInterval: context.attributes.startTime...context.attributes.targetBedtime, countsDown: true)
+                        .font(.title2.monospacedDigit().bold())
+                        .foregroundColor(.cyan)
+                }
+
+                ProgressView(
+                    timerInterval: context.attributes.startTime...context.attributes.targetBedtime,
+                    countsDown: true
+                )
+                .tint(.cyan)
+
+                Text(context.state.message)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
             }
-            .activityBackgroundTint(Color.cyan)
+            .padding()
+            .activityBackgroundTint(Color.black.opacity(0.8))
             .activitySystemActionForegroundColor(Color.black)
 
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI goes here.  Compose the expanded UI through
-                // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    HStack {
+                        Image(systemName: "moon.stars.fill")
+                            .foregroundColor(.yellow)
+                        Text("目标:")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    Text(context.attributes.targetBedtime, style: .time)
+                        .font(.headline)
+                        .foregroundColor(.cyan)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
-                    // more content
+                    VStack(alignment: .leading) {
+                        Text(context.state.message)
+                            .font(.subheadline)
+
+                        ProgressView(
+                            timerInterval: context.attributes.startTime...context.attributes.targetBedtime,
+                            countsDown: true
+                        )
+                        .tint(.cyan)
+                    }
+                    .padding(.top, 4)
                 }
             } compactLeading: {
-                Text("L")
+                Image(systemName: "moon.zzz.fill")
+                    .foregroundColor(.yellow)
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                Text(timerInterval: context.attributes.startTime...context.attributes.targetBedtime, countsDown: true)
+                    .monospacedDigit()
+                    .foregroundColor(.cyan)
             } minimal: {
-                Text(context.state.emoji)
+                Image(systemName: "moon.zzz.fill")
+                    .foregroundColor(.yellow)
             }
-            .widgetURL(URL(string: "http://www.apple.com"))
-            .keylineTint(Color.red)
+            .widgetURL(URL(string: "sleeptime://home"))
+            .keylineTint(Color.cyan)
         }
     }
-}
-
-extension SleepWidgetAttributes {
-    fileprivate static var preview: SleepWidgetAttributes {
-        SleepWidgetAttributes(name: "World")
-    }
-}
-
-extension SleepWidgetAttributes.ContentState {
-    fileprivate static var smiley: SleepWidgetAttributes.ContentState {
-        SleepWidgetAttributes.ContentState(emoji: "😀")
-     }
-     
-     fileprivate static var starEyes: SleepWidgetAttributes.ContentState {
-         SleepWidgetAttributes.ContentState(emoji: "🤩")
-     }
-}
-
-#Preview("Notification", as: .content, using: SleepWidgetAttributes.preview) {
-   SleepWidgetLiveActivity()
-} contentStates: {
-    SleepWidgetAttributes.ContentState.smiley
-    SleepWidgetAttributes.ContentState.starEyes
 }

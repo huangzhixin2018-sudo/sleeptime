@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C8D234093057A001004DBAEB /* SleepWidgetAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D2340A3057A001004DBAEB /* SleepWidgetAttributes.swift */; };
 		C8D233F43057991B004DBAEB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8D233F33057991A004DBAEB /* WidgetKit.framework */; };
 		C8D233F63057991B004DBAEB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8D233F53057991B004DBAEB /* SwiftUI.framework */; };
 		C8D234033057991E004DBAEB /* SleepWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C8D233F13057991A004DBAEB /* SleepWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -38,6 +39,7 @@
 
 /* Begin PBXFileReference section */
 		C8D014E23045FB30006DB5E9 /* sleeptime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sleeptime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8D2340A3057A001004DBAEB /* SleepWidgetAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepWidget/SleepWidgetAttributes.swift; sourceTree = SOURCE_ROOT; };
 		C8D233F13057991A004DBAEB /* SleepWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SleepWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C8D233F33057991A004DBAEB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		C8D233F53057991B004DBAEB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -92,6 +94,7 @@
 		C8D014D93045FB30006DB5E9 = {
 			isa = PBXGroup;
 			children = (
+				C8D2340A3057A001004DBAEB /* SleepWidgetAttributes.swift */,
 				C8D014E43045FB30006DB5E9 /* sleeptime */,
 				C8D233F73057991B004DBAEB /* SleepWidget */,
 				C8D233F23057991A004DBAEB /* Frameworks */,
@@ -226,6 +229,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C8D234093057A001004DBAEB /* SleepWidgetAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -380,6 +384,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "用于验证身份并开启应用锁";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -414,6 +419,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "用于验证身份并开启应用锁";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

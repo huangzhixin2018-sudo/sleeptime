@@ -47,13 +47,32 @@ struct SleepWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        VStack(alignment: .center, spacing: 0) {
+            Text("入睡时间")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .center)
 
-            Text("Emoji:")
-            Text(entry.emoji)
+            Spacer(minLength: 10)
+
+            Text(entry.date, style: .time)
+                .font(.system(size: 38, weight: .medium))
+                .foregroundColor(.white)
+                .monospacedDigit()
+                .frame(maxWidth: .infinity, alignment: .center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 10)
+
+            Text("晚安打卡")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background(Color.white, in: Capsule())
         }
+        .widgetURL(URL(string: "sleeptime://checkin"))
     }
 }
 
@@ -64,15 +83,16 @@ struct SleepWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 SleepWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
+                    .containerBackground(Color.black, for: .widget)
             } else {
                 SleepWidgetEntryView(entry: entry)
                     .padding()
-                    .background()
+                    .background(Color.black)
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("晚安打卡")
+        .description("快速在桌面记录你的入睡时间。")
+        .supportedFamilies([.systemSmall])
     }
 }
 
