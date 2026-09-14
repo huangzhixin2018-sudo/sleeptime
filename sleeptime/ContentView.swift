@@ -1167,6 +1167,7 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
+                    if activePlanType != "fish" {
                     // 计划页面的动态阶段指示器
                     PlanStageCarouselView(
                         totalDays: planDurationDays,
@@ -1186,15 +1187,11 @@ struct BlankPlanView: View {
                             bedtimeMinutes: latestBedtimeMinutes,
                             targetMinutes: targetSleepTimeMinutes
                         )
-
-                        BedtimeStreakSummaryCard(earlyDays: 2, lateDays: 3)
                     }
 
                     if activePlanType == "streak" {
                         EmptyPlanFrameworkCard(segments: trajectorySegments)
                     }
-
-                    PlanControlFlowCard()
 
                     TodayWorkCardView(
                         planDurationDays: planDurationDays,
@@ -1265,6 +1262,13 @@ struct BlankPlanView: View {
                             .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    
+                    // 页面底部的装饰性小鱼
+                    SimpleFishView()
+                        .frame(width: 44, height: 26)
+                        .padding(.top, 16)
+                        .padding(.bottom, 20)
+                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
@@ -1361,14 +1365,10 @@ private struct CurrentPlanExportView: View {
                     bedtimeMinutes: latestBedtimeMinutes,
                     targetMinutes: targetSleepTimeMinutes
                 )
-
-                BedtimeStreakSummaryCard(earlyDays: 2, lateDays: 3)
             }
             if activePlanType == "streak" {
                 EmptyPlanFrameworkCard(segments: trajectorySegments)
             }
-
-            PlanControlFlowCard()
 
             TodayWorkCardView(
                 planDurationDays: planDurationDays,
@@ -1797,50 +1797,6 @@ private struct EmptyPlanFrameworkCard: View {
     }
 }
 
-private struct PlanControlFlowCard: View {
-    private let accentColor = Color(red: 0.18, green: 0.48, blue: 0.36)
-
-    var body: some View {
-        HStack(spacing: 0) {
-            flowText("熬夜魔", weight: .semibold, color: .black)
-            Spacer(minLength: 7)
-            arrow
-            Spacer(minLength: 7)
-            flowText("选择早睡", weight: .medium, color: .black)
-            Spacer(minLength: 7)
-            arrow
-            Spacer(minLength: 7)
-            flowText("增强掌控力", weight: .medium, color: .black)
-            Spacer(minLength: 7)
-            arrow
-            Spacer(minLength: 7)
-            flowText("早睡喵", weight: .semibold, color: accentColor)
-        }
-        .padding(.horizontal, 8)
-        .frame(maxWidth: .infinity)
-        .frame(height: 46)
-        .background(
-            Color.white,
-            in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous)
-        )
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("熬夜魔，选择早睡，增强掌控力，成为早睡喵")
-    }
-
-    private func flowText(_ text: String, weight: Font.Weight, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 14, weight: weight))
-            .foregroundStyle(color)
-            .lineLimit(1)
-            .minimumScaleFactor(0.9)
-    }
-
-    private var arrow: some View {
-        Image(systemName: "chevron.right")
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(Color.black.opacity(0.28))
-    }
-}
 
 private struct LongestEarlySleepCard: View {
     let currentValue: Int
@@ -1937,61 +1893,27 @@ private struct LongestEarlySleepCard: View {
     }
 }
 
+
 private struct LatestBedtimeGoalCard: View {
     let bedtimeMinutes: Int?
     let targetMinutes: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 7) {
-                    Text("最晚入睡时间")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.black)
-
-                    Text(timeText(prototypeBedtimeMinutes))
-                        .font(.system(size: 38, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.black)
-                }
-
-                Spacer()
-
-                Text("目标最晚 \(timeText(targetMinutes))")
-                    .font(.system(size: 16, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.black.opacity(0.52))
-                    .padding(.top, 2)
-            }
-
-            VStack(spacing: 8) {
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Color(red: 0.96, green: 0.71, blue: 0.0)
-
-                        Color(red: 0.65, green: 0.44, blue: 1.0)
-                            .frame(width: max(proxy.size.width * actualProgress, 0))
-
-                        HStack {
-                            Text(timeText(20 * 60))
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                            Spacer()
-                            Text(timeText(targetMinutes))
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        }
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.15), radius: 1, x: 0, y: 1)
-                        .padding(.horizontal, 14)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                }
-                .frame(height: 36)
-            }
+        HStack {
+            Text("熬夜超时")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.black)
+            
+            Spacer()
+            
+            Text(timeText(prototypeBedtimeMinutes))
+                .font(.system(size: 18, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(Color.black)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 20)
-        .padding(.bottom, 16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 52)
+        .frame(maxWidth: .infinity)
         .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
     }
 
@@ -1999,70 +1921,13 @@ private struct LatestBedtimeGoalCard: View {
         bedtimeMinutes ?? 23 * 60
     }
 
-    private var normalizedTargetMinutes: Int {
-        targetMinutes <= 20 * 60 ? targetMinutes + 24 * 60 : targetMinutes
-    }
-
-    private var normalizedBedtimeMinutes: Int {
-        prototypeBedtimeMinutes < 20 * 60 ? prototypeBedtimeMinutes + 24 * 60 : prototypeBedtimeMinutes
-    }
-
-    private var actualProgress: CGFloat {
-        let total = max(normalizedTargetMinutes - 20 * 60, 1)
-        let elapsed = normalizedBedtimeMinutes - 20 * 60
-        return min(max(CGFloat(elapsed) / CGFloat(total), 0), 1)
-    }
-
-    private func timelineLabel(_ text: String, alignment: Alignment, emphasized: Bool) -> some View {
-        Text(text)
-            .font(.system(size: 12, weight: emphasized ? .semibold : .medium))
-            .monospacedDigit()
-            .foregroundStyle(emphasized ? Color.black : Color.black.opacity(0.46))
-            .frame(maxWidth: .infinity, alignment: alignment)
-    }
 
     private func timeText(_ minutes: Int) -> String {
         String(format: "%02d:%02d", (minutes / 60) % 24, minutes % 60)
     }
 }
 
-private struct BedtimeStreakSummaryCard: View {
-    let earlyDays: Int
-    let lateDays: Int
 
-    var body: some View {
-        HStack(spacing: 12) {
-            metric(title: "最长连续早睡", value: earlyDays)
-            metric(title: "最长连续熬夜", value: lateDays)
-        }
-    }
-
-    private func metric(title: String, value: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.black.opacity(0.62))
-
-            HStack(alignment: .lastTextBaseline, spacing: 3) {
-                Text("\(value)")
-                    .font(.system(size: 28, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.black)
-                Text("天")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.48))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 17)
-        .frame(minHeight: 92)
-        .background(
-            Color.white,
-            in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous)
-        )
-    }
-}
 
 private struct EarlySleepStreakDetailView: View {
     private let recentDays = ["一", "二", "三", "四", "五", "六", "日"]
@@ -3591,6 +3456,7 @@ private struct EarlySleepPlanDetailView: View {
     @State private var isShowingPlanPicker = false
     @State private var isShowingShorterSetup = false
     @State private var isShowingStreakSetup = false
+    @State private var isShowingFishSetup = false
 
     let onPlanStarted: () -> Void
 
@@ -3664,11 +3530,16 @@ private struct EarlySleepPlanDetailView: View {
                         isShowingStreakSetup = true
                     } else if plan.title == "最晚入睡时间" {
                         isShowingShorterSetup = true
+                    } else if plan.title == "养鱼计划" {
+                        isShowingFishSetup = true
                     }
                 }
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+        }
+        .fullScreenCover(isPresented: $isShowingFishSetup) {
+            EarlySleepFishPlanSetupView(onPlanStarted: onPlanStarted)
         }
     }
 
@@ -4268,6 +4139,12 @@ private struct EarlySleepPlan: Identifiable {
             title: "最晚入睡时间",
             subtitle: "",
             color: Color(red: 0.23, green: 0.48, blue: 0.95),
+            isAvailable: true
+        ),
+        EarlySleepPlan(
+            title: "养鱼计划",
+            subtitle: "",
+            color: Color(red: 0.2, green: 0.6, blue: 0.6),
             isAvailable: true
         )
     ]

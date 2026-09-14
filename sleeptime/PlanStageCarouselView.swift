@@ -4,77 +4,149 @@ struct PlanStageCarouselView: View {
     let totalDays: Int
     let currentDay: Int
     
+    @State private var scrolledDay: Int?
+
+    private var displayedDay: Int {
+        scrolledDay ?? currentDay
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
-            GeometryReader { geometry in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 20) {
-                        ForEach(1...totalDays, id: \.self) { day in
-                            StageItemView(day: day, isCurrent: day == currentDay)
-                                .scrollTransition(.interactive, axis: .horizontal) { content, phase in
-                                    content
-                                        .scaleEffect(phase.isIdentity ? 1.0 : 0.7)
-                                        // 提高未选中状态的透明度，避免看不见
-                                        .opacity(phase.isIdentity ? 1.0 : 0.6)
-                                }
-                        }
-                    }
-                    .scrollTargetLayout()
+            stageScroller
+            .frame(height: 90)
+            .offset(y: -8) // 让整排鱼整体上移一点
+            .onAppear {
+                if scrolledDay == nil {
+                    scrolledDay = currentDay
                 }
-                .contentMargins(.horizontal, geometry.size.width / 2 - 40, for: .scrollContent)
-                .scrollTargetBehavior(.viewAligned)
             }
-            .frame(height: 90) // 给足够的高度容纳放大后的多边形
             
-            // 下方文字
-            VStack(spacing: 6) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(red: 0.5, green: 0.4, blue: 1.0))
-                    .frame(width: 32, height: 32)
-                    .background(Color(red: 0.95, green: 0.94, blue: 0.98))
-                    .clipShape(Circle())
-                
-                Text("\(totalDays) days")
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                    .tracking(1)
-            }
+            dayDescription
+            .padding(.top, 0)
+            .animation(.easeInOut, value: displayedDay)
         }
         .padding(.vertical, 16)
-        // 移除了白色/灰色的底层卡片背景，让它自然融入父视图
+    }
+
+    private var stageScroller: some View {
+        GeometryReader { geometry in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 20) {
+                    ForEach(1...totalDays, id: \.self) { day in
+                        StageItemView(day: day, currentDay: currentDay)
+                            .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                                content
+                                    .scaleEffect(phase.isIdentity ? 1.0 : 0.7)
+                                    .opacity(phase.isIdentity ? 1.0 : 0.6)
+                            }
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollPosition(id: $scrolledDay)
+            .contentMargins(.horizontal, geometry.size.width / 2 - 40, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+        }
+    }
+
+    private var dayDescription: some View {
+        let info = getDayInfo(for: displayedDay)
+
+        return VStack(spacing: 8) {
+            Text(info.title)
+                .font(.system(size: 22, weight: .heavy))
+                .foregroundColor(.primary)
+
+            Text(info.subtitle)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(info.subtitleColor)
+        }
+    }
+    
+    // 模拟数据逻辑（后续可以替换为真实的计划数据）
+    private func getDayInfo(for day: Int) -> (title: String, subtitle: String, subtitleColor: Color) {
+        let themeBlue = Color(red: 0.3, green: 0.4, blue: 0.7)
+        if day > currentDay {
+            return ("目标 24:30", "真正的平静，来源于对时间的掌控。", themeBlue)
+        } else if day == currentDay {
+            return ("23:30 准备 — 目标 24:45", "万物皆有回音，包括今夜的早睡。", themeBlue)
+        } else {
+            let isSuccess = day % 2 != 0
+            if isSuccess {
+                return ("实际 24:15", "每一次自律，都在雕刻更自由的自己。", themeBlue)
+            } else {
+                return ("实际 25:30", "接纳偶尔的失控，然后重新找回方向。", themeBlue)
+            }
+        }
     }
 }
 
 struct StageItemView: View {
     let day: Int
-    let isCurrent: Bool
+    let currentDay: Int
     
     var body: some View {
         ZStack {
-            // 使用六边形作为底板，并加上高级的渐变色
-            Image(systemName: "hexagon.fill")
-                .resizable()
-                .scaledToFit()
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color(red: 0.6, green: 0.5, blue: 1.0), Color(red: 0.4, green: 0.3, blue: 0.9)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .rotationEffect(.degrees(90)) // 旋转一下让六边形平放
-                .shadow(color: Color(red: 0.4, green: 0.3, blue: 0.9).opacity(0.3), radius: 8, x: 0, y: 5)
-            
-            // 内部文案：显示第几天，或者一个星星
-            VStack(spacing: 2) {
-                Text("Day")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.8))
-                Text("\(day)")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+            StageFishArtwork(day: day, currentDay: currentDay)
+
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Text("\(day)")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(Color.primary.opacity(0.7))
+                        .padding(5)
+                        .background(Color(.systemBackground).opacity(0.95))
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                        .offset(x: 4, y: 4)
+                }
             }
         }
         .frame(width: 80, height: 80)
+    }
+}
+
+private struct StageFishArtwork: View {
+    let day: Int
+    let currentDay: Int
+
+    private var gradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(red: 0.4, green: 0.5, blue: 0.8), Color(red: 0.2, green: 0.3, blue: 0.6)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if day > currentDay {
+            inactiveFish(systemName: "fish", opacity: 0.25)
+        } else if day == currentDay {
+            activeFish(shadowOpacity: 0.4, radius: 6, y: 3)
+        } else if day.isMultiple(of: 2) {
+            inactiveFish(systemName: "fish.fill", opacity: 0.15)
+        } else {
+            activeFish(shadowOpacity: 0.3, radius: 4, y: 2)
+        }
+    }
+
+    private func activeFish(shadowOpacity: Double, radius: CGFloat, y: CGFloat) -> some View {
+        Image(systemName: "fish.fill")
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(gradient)
+            .shadow(color: Color(red: 0.2, green: 0.3, blue: 0.6).opacity(shadowOpacity), radius: radius, x: 0, y: y)
+            .padding(16)
+    }
+
+    private func inactiveFish(systemName: String, opacity: Double) -> some View {
+        Image(systemName: systemName)
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(Color.gray.opacity(opacity))
+            .padding(20)
     }
 }
