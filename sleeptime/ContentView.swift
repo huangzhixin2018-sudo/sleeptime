@@ -62,7 +62,7 @@ struct ContentView: View {
     }
 }
 
-private struct SleepCheckInRecord: Codable, Identifiable {
+struct SleepCheckInRecord: Codable, Identifiable {
     let id: UUID
     let sleepDate: Date
     let bedtimeMinutes: Int
@@ -72,7 +72,7 @@ private struct SleepCheckInRecord: Codable, Identifiable {
     let isDemo: Bool?
 }
 
-private struct SleepTrajectorySegment: Identifiable {
+struct SleepTrajectorySegment: Identifiable {
     let id = UUID()
     let isEarlySleep: Bool
     var dates: [Date]
@@ -81,7 +81,7 @@ private struct SleepTrajectorySegment: Identifiable {
     var days: Int { dates.count }
 }
 
-private enum SleepCheckInStore {
+enum SleepCheckInStore {
     static func decode(_ encoded: String) -> [SleepCheckInRecord] {
         guard let data = encoded.data(using: .utf8) else { return [] }
         return (try? JSONDecoder().decode([SleepCheckInRecord].self, from: data)) ?? []
@@ -2577,6 +2577,14 @@ struct ProfileView: View {
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "book.pages", title: "睡眠札记", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            SleepStreakShelfView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "trophy.fill", title: "连睡收集架", showDivider: true)
                         }
                         .buttonStyle(.plain)
 
@@ -5723,5 +5731,135 @@ struct BlankDetailView: View {
         .background(Color.white.ignoresSafeArea())
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct SleepStreakShelfView: View {
+    @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
+
+    private var streakCounts: [Int: Int] {
+        let segments = SleepCheckInStore.segments(
+            from: SleepCheckInStore.decode(encodedSleepCheckIns),
+            startedAt: 0.0
+        ).filter { $0.isEarlySleep }
+
+        var counts: [Int: Int] = [1: 0, 2: 0, 3: 0, 4: 0, 5: 0]
+        for segment in segments {
+            let d = segment.days
+            if d == 1 { counts[1, default: 0] += 1 }
+            else if d == 2 { counts[2, default: 0] += 1 }
+            else if d == 3 { counts[3, default: 0] += 1 }
+            else if d == 4 { counts[4, default: 0] += 1 }
+            else if d >= 5 { counts[5, default: 0] += 1 }
+        }
+        return counts
+    }
+
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.yellow, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .padding(.top, 20)
+
+                    Text("连睡收集架")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+
+                    Text("每一次坚持，都是一座耀眼的里程碑")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.bottom, 16)
+
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ShelfBadgeCard(daysLabel: "早睡 1 天", daysValue: 1, count: streakCounts[1] ?? 0, iconName: "star.fill", tintColor: .blue)
+                    ShelfBadgeCard(daysLabel: "连续 2 天", daysValue: 2, count: streakCounts[2] ?? 0, iconName: "sparkles", tintColor: .green)
+                    ShelfBadgeCard(daysLabel: "连续 3 天", daysValue: 3, count: streakCounts[3] ?? 0, iconName: "flame.fill", tintColor: .orange)
+                    ShelfBadgeCard(daysLabel: "连续 4 天", daysValue: 4, count: streakCounts[4] ?? 0, iconName: "bolt.fill", tintColor: .pink)
+                }
+
+                // 5天及以上徽章单独横跨占满
+                ShelfBadgeCard(daysLabel: "连续 5+ 天", daysValue: 5, count: streakCounts[5] ?? 0, iconName: "crown.fill", tintColor: .purple, isWide: true)
+            }
+            .padding(20)
+        }
+        .background(Color(red: 0.96, green: 0.96, blue: 0.97).ignoresSafeArea())
+        .navigationTitle("收集架")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ShelfBadgeCard: View {
+    let daysLabel: String
+    let daysValue: Int
+    let count: Int
+    let iconName: String
+    let tintColor: Color
+    var isWide: Bool = false
+
+    private var isUnlocked: Bool {
+        count > 0
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(isUnlocked ? tintColor.opacity(0.15) : Color.gray.opacity(0.1))
+                    .frame(width: 64, height: 64)
+
+                Image(systemName: isUnlocked ? iconName : "lock.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(isUnlocked ? tintColor : .gray.opacity(0.4))
+            }
+
+            VStack(spacing: 4) {
+                Text(daysLabel)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(isUnlocked ? .primary : .secondary)
+
+                if isUnlocked {
+                    Text("已收集 \(count) 次")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(tintColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(tintColor.opacity(0.1))
+                        .cornerRadius(6)
+                } else {
+                    Text("未解锁")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(isUnlocked ? 0.05 : 0.02), radius: 10, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isUnlocked ? tintColor.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
+    }
+}
+
+struct SleepStreakShelfView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            SleepStreakShelfView()
+        }
     }
 }
