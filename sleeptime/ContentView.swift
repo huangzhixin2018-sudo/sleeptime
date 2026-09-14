@@ -1133,15 +1133,23 @@ struct BlankPlanView: View {
                     Spacer()
 
                     HStack(spacing: 8) {
-                        Image(systemName: "medal.fill")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.95, green: 0.67, blue: 0.16))
-                            .frame(width: 36, height: 36)
-                            .background(Color(.systemBackground))
-                            .clipShape(Circle())
+                        NavigationLink {
+                            MedalDetailView()
+                        } label: {
+                            Image(systemName: "medal.fill")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(Color(red: 0.95, green: 0.67, blue: 0.16))
+                                .frame(width: 36, height: 36)
+                                .background(Color(.systemBackground))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
 
                         NavigationLink {
-                            EarlySleepStreakDetailView()
+                            EarlySleepStreakDetailView(
+                                currentValue: derivedEarlySleepStreak,
+                                targetValue: targetEarlySleepStreak
+                            )
                         } label: {
                             HStack(spacing: 4) {
                                 Text("🔥")
@@ -1175,12 +1183,7 @@ struct BlankPlanView: View {
                     // 日间连胜与任务进度卡片（第二张卡片）
                     PlanDualStatsCard()
                     
-                    if activePlanType == "streak" {
-                        LongestEarlySleepCard(
-                            currentValue: derivedEarlySleepStreak,
-                            targetValue: targetEarlySleepStreak
-                        )
-                    } else {
+                    if activePlanType != "streak" {
                         LatestBedtimeGoalCard(
                             bedtimeMinutes: latestBedtimeMinutes,
                             targetMinutes: targetSleepTimeMinutes
@@ -1189,15 +1192,9 @@ struct BlankPlanView: View {
 
                     if activePlanType == "streak" {
                         EmptyPlanFrameworkCard(segments: trajectorySegments)
+                            .padding(.vertical, 8)
                     }
 
-                    TodayWorkCardView(
-                        planDurationDays: planDurationDays,
-                        maxLateStreak: maxLateStreak,
-                        currentDay: currentDay,
-                        planStartedAt: planStartedAt,
-                        isShorterPlanActive: isShorterPlanActive
-                    )
 
                     HStack(spacing: 8) {
                         NavigationLink {
@@ -1248,6 +1245,8 @@ struct BlankPlanView: View {
                     }
 
                     PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
 
                     Button {
                         exportCurrentPlan()
@@ -1355,12 +1354,7 @@ private struct CurrentPlanExportView: View {
             }
                 .monospacedDigit()
 
-            if activePlanType == "streak" {
-                LongestEarlySleepCard(
-                    currentValue: currentEarlySleepStreak,
-                    targetValue: targetEarlySleepStreak
-                )
-            } else {
+            if activePlanType != "streak" {
                 LatestBedtimeGoalCard(
                     bedtimeMinutes: latestBedtimeMinutes,
                     targetMinutes: targetSleepTimeMinutes
@@ -1370,13 +1364,6 @@ private struct CurrentPlanExportView: View {
                 EmptyPlanFrameworkCard(segments: trajectorySegments)
             }
 
-            TodayWorkCardView(
-                planDurationDays: planDurationDays,
-                maxLateStreak: maxLateStreak,
-                currentDay: currentDay,
-                planStartedAt: planStartedAt,
-                isShorterPlanActive: isShorterPlanActive
-            )
 
             HStack(spacing: 8) {
                 PlanPatternCard(
@@ -1427,7 +1414,11 @@ private struct PlanHabitSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.black)
+                
                 Text("睡前习惯")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(Color.black)
@@ -1435,15 +1426,29 @@ private struct PlanHabitSection: View {
                 Spacer()
 
                 if showsAddButton {
-                    Button(action: { isShowingAddHabitSheet = true }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.black)
-                            .frame(width: 32, height: 32)
-                            .contentShape(Rectangle())
+                    HStack(spacing: 8) {
+                        Button(action: {
+                            // TODO: Manage habits action
+                        }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color.black)
+                                .frame(width: 32, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("管理习惯")
+
+                        Button(action: { isShowingAddHabitSheet = true }) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color.black)
+                                .frame(width: 32, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("添加睡前习惯")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("添加睡前习惯")
                 }
             }
 
@@ -1929,7 +1934,36 @@ private struct LatestBedtimeGoalCard: View {
 
 
 
+private struct MedalDetailView: View {
+    var body: some View {
+        ScrollView {
+            VStack {
+                Image("stay_up_late_demon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .padding(.top, 40)
+                
+                Text("熬夜掌控力与勋章")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.top, 20)
+                
+                Text("勋章系统即将上线...")
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 8)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .background(AppTheme.pageBackground.ignoresSafeArea())
+        .navigationTitle("勋章")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 private struct EarlySleepStreakDetailView: View {
+    var currentValue: Int
+    var targetValue: Int
     private let recentDays = ["一", "二", "三", "四", "五", "六", "日"]
 
     var body: some View {
@@ -1953,6 +1987,11 @@ private struct EarlySleepStreakDetailView: View {
                     streakMetric(title: "历史最长", value: "0 天")
                     streakMetric(title: "本月早睡", value: "0 天")
                 }
+                
+                LongestEarlySleepCard(
+                    currentValue: currentValue,
+                    targetValue: targetValue
+                )
 
                 VStack(alignment: .leading, spacing: 18) {
                     Text("最近 7 天")
@@ -2009,169 +2048,7 @@ private struct EarlySleepStreakDetailView: View {
     }
 }
 
-struct TodayWorkCardView: View {
-    @State private var isShowingControlInfo = false
-    @State private var isShowingFactors = false
-    @State private var selectedFactors: Set<String> = []
 
-    let planDurationDays: Int
-    let maxLateStreak: Int
-    let currentDay: Int
-    let planStartedAt: Double
-    let isShorterPlanActive: Bool
-
-    let textDark = Color.black.opacity(0.88)
-    let textGrey = Color.black.opacity(0.48)
-    let cardBg = Color.white
-
-    let trackBg = Color.black.opacity(0.12)
-    let trackFill = Color.black.opacity(0.82)
-
-    let btnAttackBg = Color.black.opacity(0.88)
-    let btnReviewBg = Color.black.opacity(0.08)
-
-    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
-
-    var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 2) {
-                Text("早睡掌控力")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundColor(textDark)
-
-                Button {
-                    isShowingControlInfo = true
-                } label: {
-                    Image(systemName: "questionmark.circle")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24, height: 28)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("了解掌控力")
-
-                Spacer()
-
-                Text("Lv.1")
-                .font(.system(size: 19, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(textDark)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("早睡掌控力 Lv.1")
-            }
-
-            HStack(spacing: 7) {
-                ForEach(0..<7, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(index < 1 ? trackFill : trackBg.opacity(0.3))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 38)
-                        .overlay {
-                            if index < 1 {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(.white)
-                            } else {
-                                Text("\(dateDayNumber(for: index))")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .monospacedDigit()
-                                    .foregroundStyle(textGrey)
-                            }
-                        }
-                }
-            }
-
-            HStack(alignment: .center, spacing: 20) {
-                VStack(spacing: 8) {
-                    Image("stay_up_late_demon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 80, height: 80)
-
-                    Text("熬夜魔")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(textDark)
-                }
-                .frame(width: 96)
-
-                VStack(spacing: 12) {
-                    NavigationLink {
-                        BedtimeDecisionView()
-                            .sleepDetailChrome(tabBarVisibility)
-                    } label: {
-                        Text("熬夜值不值")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(btnAttackBg)
-                            .clipShape(Capsule())
-                    }
-
-                    if selectedFactors.isEmpty {
-                        Button(action: { isShowingFactors = true }) {
-                            Text("记录熬夜原因")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(textDark)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(btnReviewBg)
-                                .clipShape(Capsule())
-                        }
-                    } else {
-                        HStack(spacing: 8) {
-                            let tagsToShow = Array(selectedFactors.prefix(2))
-
-                            ForEach(tagsToShow, id: \.self) { factor in
-                                Button(action: { isShowingFactors = true }) {
-                                    Text(factor)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(textDark)
-                                        .padding(.horizontal, 16)
-                                        .frame(height: 44)
-                                        .background(btnReviewBg)
-                                        .cornerRadius(12)
-                                }
-                            }
-
-                            if selectedFactors.count < 2 {
-                                Button(action: { isShowingFactors = true }) {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(textDark)
-                                        .frame(width: 44, height: 44)
-                                        .background(btnReviewBg)
-                                        .cornerRadius(12)
-                                }
-                            }
-
-                            Spacer(minLength: 0)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-            }
-        }
-        .padding(20)
-        .background(cardBg, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-        .alert("什么是早睡掌控力？", isPresented: $isShowingControlInfo) {
-            Button("知道了", role: .cancel) {}
-        } message: {
-            Text("当你想熬夜时，主动结束一次熬夜倾向或打断连续熬夜，就会获得1次掌控力。")
-        }
-        .sheet(isPresented: $isShowingFactors) {
-            SleepFactorsSheetView(selectedItems: $selectedFactors)
-                .presentationDetents([.fraction(0.85), .large])
-                .presentationDragIndicator(.visible)
-        }
-    }
-
-    private func dateDayNumber(for index: Int) -> Int {
-        let startDate = planStartedAt > 0 ? Date(timeIntervalSince1970: planStartedAt) : Date()
-        let date = Calendar.current.date(byAdding: .day, value: index, to: startDate) ?? startDate
-        return Calendar.current.component(.day, from: date)
-    }
-}
 
 struct EarlySleepPlan1DetailView: View {
     @State private var exportedPlan: ExportedPlanImage?

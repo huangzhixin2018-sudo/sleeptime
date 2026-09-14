@@ -29,7 +29,7 @@ struct PlanDualStatsCard: View {
                 }
                 .frame(height: 60)
                 
-                Text("日间连胜")
+                Text("当前连续早睡")
                     .font(.system(size: 15))
                     .foregroundColor(.primary)
                 
@@ -93,7 +93,7 @@ struct PlanDualStatsCard: View {
                 }
                 .frame(height: 60)
                 
-                Text("完工")
+                Text("行动进度")
                     .font(.system(size: 15))
                     .foregroundColor(.primary)
                 
