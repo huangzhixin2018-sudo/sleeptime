@@ -83,10 +83,3 @@ struct SleepWidget: Widget {
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
-
-#Preview(as: .systemSmall) {
-    SleepWidget()
-} timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
-}

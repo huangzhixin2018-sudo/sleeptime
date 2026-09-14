@@ -1167,6 +1167,15 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
+                    // 计划页面的动态阶段指示器
+                    PlanStageCarouselView(
+                        totalDays: planDurationDays,
+                        currentDay: currentDay
+                    )
+                    
+                    // 日间连胜与任务进度卡片（第二张卡片）
+                    PlanDualStatsCard()
+                    
                     if activePlanType == "streak" {
                         LongestEarlySleepCard(
                             currentValue: derivedEarlySleepStreak,
