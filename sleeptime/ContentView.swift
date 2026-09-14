@@ -54,6 +54,11 @@ struct ContentView: View {
         .onChange(of: selectedTab) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.8)
         }
+        .onOpenURL { url in
+            if url.scheme == "sleeptime" {
+                selectedTab = .home
+            }
+        }
     }
 }
 
@@ -213,6 +218,34 @@ private struct HomeWeekView: View {
                         title: "午间小憩",
                         value: "35分钟",
                         icon: "sun.max"
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 18)
+
+            // 3. 新增：时刻记录卡片
+            HStack(spacing: 8) {
+                Button {
+                    // 预留“早睡时刻”点击事件
+                } label: {
+                    HomeSleepInsightCard(
+                        title: "早睡时刻",
+                        value: "去记录",
+                        icon: "sun.and.horizon.fill",
+                        iconColor: .orange
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    // 预留“熬夜转折”点击事件
+                } label: {
+                    HomeSleepInsightCard(
+                        title: "熬夜转折",
+                        value: "去记录",
+                        icon: "moon.zzz.fill",
+                        iconColor: .purple
                     )
                 }
                 .buttonStyle(.plain)
@@ -408,6 +441,7 @@ private struct HomeSleepInsightCard: View {
     let title: String
     let value: String
     let icon: String
+    var iconColor: Color? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -422,7 +456,7 @@ private struct HomeSleepInsightCard: View {
 
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color.black.opacity(0.42))
+                    .foregroundStyle(iconColor ?? Color.black.opacity(0.42))
             }
 
             Text(value)

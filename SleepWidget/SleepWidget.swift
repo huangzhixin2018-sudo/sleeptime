@@ -47,30 +47,24 @@ struct SleepWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack(alignment: .center, spacing: 0) {
+        VStack(spacing: 8) {
             Text("入睡时间")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .center)
-
-            Spacer(minLength: 10)
+                .font(.headline)
+                .foregroundColor(Color.white)
 
             Text(entry.date, style: .time)
-                .font(.system(size: 38, weight: .medium))
-                .foregroundColor(.white)
-                .monospacedDigit()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 10)
+                .font(.title)
+                .bold()
+                .foregroundColor(Color.white)
 
             Text("晚安打卡")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 36)
-                .background(Color.white, in: Capsule())
+                .font(.caption)
+                .bold()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+                .background(Color.white)
+                .foregroundColor(Color.black)
+                .clipShape(Capsule())
         }
         .widgetURL(URL(string: "sleeptime://checkin"))
     }
@@ -81,18 +75,12 @@ struct SleepWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(iOS 17.0, *) {
-                SleepWidgetEntryView(entry: entry)
-                    .containerBackground(Color.black, for: .widget)
-            } else {
-                SleepWidgetEntryView(entry: entry)
-                    .padding()
-                    .background(Color.black)
-            }
+            SleepWidgetEntryView(entry: entry)
+                .containerBackground(Color(white: 0.1), for: .widget)
         }
         .configurationDisplayName("晚安打卡")
         .description("快速在桌面记录你的入睡时间。")
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
