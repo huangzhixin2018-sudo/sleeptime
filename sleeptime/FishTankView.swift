@@ -19,7 +19,7 @@ let FISH_TIERS = [
     FishTier(id: 2, days: 3, name: "鱼苗", desc: "初具成形的小节奏", size: 34, speed: 0.7, color: Color(red: 59/255, green: 130/255, blue: 246/255)),
     FishTier(id: 3, days: 4, name: "幼鱼", desc: "逐步稳定的作息骨架", size: 42, speed: 0.5, color: Color(red: 37/255, green: 99/255, blue: 235/255)),
     FishTier(id: 4, days: 5, name: "青鱼", desc: "规律已深入骨髓", size: 50, speed: 0.45, color: Color(red: 15/255, green: 118/255, blue: 110/255)),
-    FishTier(id: 5, days: 6, name: "大鱼 / 鱼王", desc: "完成稳定深度作息", size: 68, speed: 0.35, color: Color(red: 30/255, green: 27/255, blue: 75/255))
+    FishTier(id: 5, days: 6, name: "大鱼", desc: "完成稳定深度作息", size: 68, speed: 0.35, color: Color(red: 30/255, green: 27/255, blue: 75/255))
 ]
 
 struct FishNode: Identifiable {
@@ -145,9 +145,19 @@ struct FishTankView: View {
                 Text("早睡鱼群")
                     .font(.system(size: 22, weight: .bold))
                 Spacer()
-                Text("鱼缸资产: \(vm.totalCount) 尾")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("已收集")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    Text("\(vm.totalCount)")
+                        .font(.custom("AvenirNextCondensed-Heavy", size: 26))
+                        .foregroundColor(.primary)
+                    
+                    Text("条")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal, 4)
             
@@ -185,9 +195,10 @@ struct FishTankView: View {
                     }
                 } symbols: {
                     ForEach(FISH_TIERS, id: \.id) { tier in
-                        Image(systemName: "fish.fill")
-                            .font(.system(size: tier.size))
-                            .foregroundStyle(tier.color)
+                        Image("custom_fish")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: tier.size, height: tier.size)
                             .tag(tier.id)
                     }
                 }
@@ -240,23 +251,51 @@ struct FishTankControlCard: View {
     @ObservedObject var vm: FishTankViewModel
     
     var body: some View {
-        VStack(spacing: 14) {
-            VStack(spacing: 8) {
-                HStack {
-                    Text("本次连续早睡: \(vm.selectedDays >= 6 ? "6+" : "\(vm.selectedDays)") 天")
-                        .font(.system(size: 15, weight: .bold))
-                    Spacer()
-                    Text("生成：\(FISH_TIERS[min(vm.selectedDays - 1, 5)].name)")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.blue)
+        VStack(spacing: 20) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("本次连续早睡")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(vm.selectedDays >= 6 ? "6+" : "\(vm.selectedDays)")")
+                            .font(.custom("AvenirNextCondensed-Heavy", size: 36))
+                            .foregroundColor(.primary)
+                        Text("天")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
-                Slider(value: Binding(
-                    get: { Double(vm.selectedDays) },
-                    set: { vm.selectedDays = Int($0) }
-                ), in: 1...6, step: 1)
-                .tint(.black)
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("将生成")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    HStack(spacing: 6) {
+                        Image("custom_fish")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 18, height: 18)
+                        Text(FISH_TIERS[min(vm.selectedDays - 1, 5)].name)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(FISH_TIERS[min(vm.selectedDays - 1, 5)].color.opacity(0.1))
+                    .cornerRadius(8)
+                }
             }
+            
+            Slider(value: Binding(
+                get: { Double(vm.selectedDays) },
+                set: { vm.selectedDays = Int($0) }
+            ), in: 1...6, step: 1)
+            .tint(FISH_TIERS[min(vm.selectedDays - 1, 5)].color)
             
             Button {
                 let index = min(vm.selectedDays - 1, 5)
@@ -264,20 +303,20 @@ struct FishTankControlCard: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             } label: {
                 Text("沉淀至鱼缸")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(Color.black, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .frame(height: 50)
+                    .background(LinearGradient(colors: [Color(red: 40/255, green: 50/255, blue: 80/255), Color.black], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
-        .background(Color(red: 248/255, green: 249/255, blue: 250/255), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-        )
+        .padding(20)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
     }
 }
             
@@ -288,20 +327,26 @@ struct BentoCell: View {
     let count: Int
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             Text("\(tier.name) (\(tier.days)d)")
-                .font(.system(size: 11))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                
             Text("\(count)")
-                .font(.system(size: 16, weight: .bold))
+                .font(.custom("AvenirNextCondensed-Bold", size: 30))
+                .foregroundColor(count > 0 ? tier.color : Color.gray.opacity(0.4))
+                .padding(.top, 4)
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 16)
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 248/255, green: 249/255, blue: 250/255))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.gray.opacity(0.2), lineWidth: 1))
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 3)
     }
 }

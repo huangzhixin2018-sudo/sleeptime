@@ -119,6 +119,10 @@ private struct HomeWeekView: View {
 
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
+    @State private var habits: [BedtimeHabit] = [
+        BedtimeHabit(name: "冥想", hasAlarm: true, alarmTime: Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date(), repeatDays: [0,1,2,3,4,5,6], checkInTime: nil)
+    ]
+    @State private var isShowingAddHabitSheet = false
     @AppStorage("home.sleepOnsetEntries") private var storedSleepOnsetEntries = "[]"
     @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
     @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
@@ -312,8 +316,12 @@ private struct HomeWeekView: View {
                 
                 FishTankControlCard(vm: fishTankVM)
                     .padding(.horizontal, 18)
-                    .padding(.top, 16)
+                    .padding(.top, 4)
             }
+            
+            PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
+                .padding(.horizontal, 18)
+                .padding(.top, 16)
 
             Spacer(minLength: 0)
                 }
@@ -322,6 +330,9 @@ private struct HomeWeekView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(AppTheme.homeBackground.ignoresSafeArea())
         .onAppear(perform: refreshSleepStates)
+        .sheet(isPresented: $isShowingAddHabitSheet) {
+            AddHabitSheet(habits: $habits)
+        }
         .navigationDestination(item: $sleepOnsetRoute) { route in
             SleepOnsetRecordView(
                 date: route.date,
@@ -1060,10 +1071,6 @@ struct BedtimeHabit: Identifiable, Equatable {
 struct BlankPlanView: View {
     @State private var exportedPlan: ExportedPlanImage?
     @State private var meditationCheckInTime: String?
-    @State private var habits: [BedtimeHabit] = [
-        BedtimeHabit(name: "冥想", hasAlarm: true, alarmTime: Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date(), repeatDays: [0,1,2,3,4,5,6], checkInTime: nil)
-    ]
-    @State private var isShowingAddHabitSheet = false
     @AppStorage("shorterPlan.isActive") private var isShorterPlanActive = false
     @AppStorage("shorterPlan.durationDays") private var planDurationDays = 7
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
@@ -1200,10 +1207,6 @@ struct BlankPlanView: View {
                         )
                     }
 
-                    if activePlanType == "streak" {
-                        EmptyPlanFrameworkCard(segments: trajectorySegments)
-                            .padding(.vertical, 8)
-                    }
 
 
                     } // End of activePlanType != "fish"
@@ -1256,6 +1259,8 @@ struct BlankPlanView: View {
                         .buttonStyle(.plain)
                     }
 
+
+
                     if activePlanType != "fish" {
                         Button {
                             exportCurrentPlan()
@@ -1276,11 +1281,14 @@ struct BlankPlanView: View {
                             .padding(.bottom, 20)
                     } else {
                         FishTankView(vm: fishTankVM)
+                        
+                        EmptyPlanFrameworkCard(
+                            segments: trajectorySegments,
+                            planName: "沉淀鱼缸计划"
+                        )
+                            .padding(.top, 16)
+                            .padding(.bottom, 8)
                     }
-
-                    PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
-                        .padding(.top, 16)
-                        .padding(.bottom, 8)
 
                 }
                 .padding(.horizontal, 14)
@@ -1293,9 +1301,6 @@ struct BlankPlanView: View {
             .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $exportedPlan) { plan in
                 ActivityShareSheet(items: [plan.image])
-            }
-            .sheet(isPresented: $isShowingAddHabitSheet) {
-                AddHabitSheet(habits: $habits)
             }
             .onAppear(perform: synchronizePlanStreaks)
             .onChange(of: encodedSleepCheckIns) {
@@ -1327,8 +1332,7 @@ struct BlankPlanView: View {
                 targetSleepTimeMinutes: targetSleepTimeMinutes,
                 latestBedtimeMinutes: latestBedtimeMinutes,
                 trajectorySegments: trajectorySegments,
-                meditationCheckInTime: meditationCheckInTime,
-                habits: habits
+                meditationCheckInTime: meditationCheckInTime
             )
                 .frame(width: 390)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1354,7 +1358,6 @@ private struct CurrentPlanExportView: View {
     let latestBedtimeMinutes: Int?
     let trajectorySegments: [SleepTrajectorySegment]
     let meditationCheckInTime: String?
-    let habits: [BedtimeHabit]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -1375,7 +1378,17 @@ private struct CurrentPlanExportView: View {
                 )
             }
             if activePlanType == "streak" {
-                EmptyPlanFrameworkCard(segments: trajectorySegments)
+                let planName: String = {
+                    switch activePlanType {
+                    case "fish": return "沉淀鱼缸计划"
+                    case "streak": return "最长早睡挑战"
+                    default: return "渐进早睡计划"
+                    }
+                }()
+                EmptyPlanFrameworkCard(
+                    segments: trajectorySegments,
+                    planName: planName
+                )
             }
 
 
@@ -1408,12 +1421,6 @@ private struct CurrentPlanExportView: View {
                 )
                 .frame(width: 100)
             }
-
-            PlanHabitSection(
-                habits: .constant(habits),
-                isShowingAddHabitSheet: .constant(false),
-                showsAddButton: false
-            )
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 18)
@@ -1686,136 +1693,6 @@ private struct PatternFolderShape: Shape {
         return path
     }
 }
-
-private struct EmptyPlanFrameworkCard: View {
-    let segments: [SleepTrajectorySegment]
-
-    private var isEmpty: Bool { segments.isEmpty }
-
-    var body: some View {
-        GeometryReader { proxy in
-            let dividerX = proxy.size.width * 0.15
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white)
-
-                VStack(spacing: 2) {
-                    ForEach(["作", "息", "轨", "迹"], id: \.self) { character in
-                        Text(character)
-                            .font(.system(size: 15, weight: .bold))
-                    }
-                }
-                .foregroundStyle(Color.black)
-                .position(x: dividerX / 2, y: proxy.size.height / 2)
-
-                Group {
-                    if isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("看见每段作息的变化")
-                                .font(.system(size: 17, weight: .semibold))
-
-                            Text("完成睡眠记录后，早睡与熬夜将会分段呈现，让作息变化清晰可见")
-                                .font(.system(size: 16, weight: .regular))
-                                .lineSpacing(6)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .foregroundStyle(Color.black)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 20)
-                    } else {
-                        HStack(spacing: 5) {
-                            ForEach(segments) { segment in
-                                trackingMetric(
-                                    title: segment.title,
-                                    value: segment.days,
-                                    dateRange: dateRange(for: segment.dates)
-                                )
-                            }
-                        }
-                        .padding(8)
-                        .padding(.horizontal, 8)
-                    }
-                }
-                .frame(width: proxy.size.width - dividerX, height: proxy.size.height)
-                .position(
-                    x: dividerX + (proxy.size.width - dividerX) / 2,
-                    y: proxy.size.height / 2
-                )
-
-                Path { path in
-                    path.move(to: CGPoint(x: dividerX, y: 10))
-                    path.addLine(to: CGPoint(x: dividerX, y: proxy.size.height - 10))
-                }
-                .stroke(
-                    Color.black.opacity(0.14),
-                    style: StrokeStyle(lineWidth: 1.5, dash: [6, 6])
-                )
-
-                VStack {
-                    Circle()
-                        .fill(AppTheme.homeBackground)
-                        .frame(width: 14, height: 14)
-                        .offset(y: -7)
-
-                    Spacer()
-
-                    Circle()
-                        .fill(AppTheme.homeBackground)
-                        .frame(width: 14, height: 14)
-                        .offset(y: 7)
-                }
-                .position(x: dividerX, y: proxy.size.height / 2)
-            }
-        }
-        .frame(height: 124)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            isEmpty
-                ? "作息轨迹，完成睡眠记录后，早睡与熬夜将会分段呈现，让作息变化清晰可见"
-                : "作息轨迹，" + segments.map { "\($0.title)\($0.days)天" }.joined(separator: "，")
-        )
-    }
-
-    private func dateRange(for dates: [Date]) -> String {
-        guard let first = dates.first, let last = dates.last else { return "" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M.d"
-        let firstText = formatter.string(from: first)
-        let lastText = formatter.string(from: last)
-        return Calendar.current.isDate(first, inSameDayAs: last) ? firstText : "\(firstText)–\(lastText)"
-    }
-
-    private func trackingMetric(title: String, value: Int, dateRange: String) -> some View {
-        VStack(alignment: .center, spacing: 10) {
-            Text(title)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.black)
-                .tracking(0)
-                .lineLimit(1)
-                .frame(height: 20)
-                .frame(maxWidth: .infinity, alignment: .center)
-
-            Text("\(value)天")
-                .font(.system(size: 24, weight: .medium))
-                .monospacedDigit()
-                .foregroundStyle(Color.black)
-                .frame(height: 32)
-                .frame(maxWidth: .infinity, alignment: .center)
-
-            Text(dateRange)
-                .font(.system(size: 12, weight: .medium))
-                .monospacedDigit()
-                .foregroundStyle(Color.black.opacity(0.56))
-                .lineLimit(1)
-                .frame(height: 18)
-                .frame(maxWidth: .infinity, alignment: .center)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
 
 private struct LongestEarlySleepCard: View {
     let currentValue: Int

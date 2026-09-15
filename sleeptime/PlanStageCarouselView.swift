@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct PlanStageCarouselView: View {
     let totalDays: Int
@@ -11,10 +12,9 @@ struct PlanStageCarouselView: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 0) {
             stageScroller
-            .frame(height: 90)
-            .offset(y: -8) // 让整排鱼整体上移一点
+            .frame(height: 150)
             .onAppear {
                 if scrolledDay == nil {
                     scrolledDay = currentDay
@@ -22,7 +22,7 @@ struct PlanStageCarouselView: View {
             }
             
             dayDescription
-            .padding(.top, 0)
+            .padding(.top, -20) // Pull text up and reduce layout spacing
             .animation(.easeInOut, value: displayedDay)
         }
         .padding(.vertical, 16)
@@ -31,7 +31,7 @@ struct PlanStageCarouselView: View {
     private var stageScroller: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 20) {
+                HStack(spacing: 45) {
                     ForEach(1...totalDays, id: \.self) { day in
                         StageItemView(day: day, currentDay: currentDay)
                             .scrollTransition(.interactive, axis: .horizontal) { content, phase in
@@ -44,22 +44,30 @@ struct PlanStageCarouselView: View {
                 .scrollTargetLayout()
             }
             .scrollPosition(id: $scrolledDay)
-            .contentMargins(.horizontal, geometry.size.width / 2 - 40, for: .scrollContent)
+            .scrollClipDisabled()
+            .contentMargins(.horizontal, geometry.size.width / 2 - 45, for: .scrollContent)
             .scrollTargetBehavior(.viewAligned)
+            .onChange(of: scrolledDay) { oldValue, newValue in
+                if oldValue != newValue && newValue != nil {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
+            }
         }
     }
 
     private var dayDescription: some View {
         let info = getDayInfo(for: displayedDay)
 
-        return VStack(spacing: 8) {
+        return VStack(spacing: 12) {
             Text(info.title)
-                .font(.system(size: 22, weight: .heavy))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundColor(.primary)
 
             Text(info.subtitle)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: displayedDay == currentDay ? 18 : 16, weight: displayedDay == currentDay ? .bold : .medium))
                 .foregroundColor(info.subtitleColor)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
         }
     }
     
@@ -67,18 +75,17 @@ struct PlanStageCarouselView: View {
     
     // 模拟数据逻辑（后续可以替换为真实的计划数据）
     private func getDayInfo(for day: Int) -> (title: String, subtitle: String, subtitleColor: Color) {
-        let themeBlue = activePlanType == "fish" ? Color.cyan : Color(red: 0.3, green: 0.4, blue: 0.7)
-        if day > currentDay {
-            return ("目标 24:30", "真正的平静，来源于对时间的掌控。", themeBlue)
+        let themeColor = Color(red: 120/255, green: 130/255, blue: 150/255) // 大气沉稳的灰蓝色
+        let highlightColor = Color(red: 102/255, green: 137/255, blue: 226/255) // 品牌蓝
+        
+        if day == 2 {
+            return ("实际 25:30", "接纳偶尔的失控，然后重新找回方向。", themeColor)
+        } else if day > currentDay {
+            return ("目标 24:30", "真正的平静，来源于对时间的掌控。", themeColor)
         } else if day == currentDay {
-            return ("23:30 准备 — 目标 24:45", "万物皆有回音，包括今夜的早睡。", themeBlue)
+            return ("23:30 准备 — 目标 24:45", "改变，从一次选择开始", highlightColor)
         } else {
-            let isSuccess = day % 2 != 0
-            if isSuccess {
-                return ("实际 24:15", "每一次自律，都在雕刻更自由的自己。", themeBlue)
-            } else {
-                return ("实际 25:30", "接纳偶尔的失控，然后重新找回方向。", themeBlue)
-            }
+            return ("实际 24:15", "每一次自律，都在雕刻更自由的自己。", themeColor)
         }
     }
 }
@@ -95,13 +102,14 @@ struct StageItemView: View {
             let isToday = day == currentDay
             let baseColor = isFuture ? Color(white: 0.95) : Color(red: 230/255, green: 238/255, blue: 254/255)
             let shadowColor = isFuture ? Color.black.opacity(0.05) : Color(red: 230/255, green: 238/255, blue: 254/255).opacity(0.5)
+            let strokeColor = isFuture ? Color.gray.opacity(0.2) : Color(red: 102/255, green: 137/255, blue: 226/255).opacity(isToday ? 0.8 : 0.3)
 
             Circle()
                 .fill(baseColor)
                 .shadow(color: shadowColor, radius: isToday ? 8 : 4, x: 0, y: isToday ? 4 : 2)
                 .overlay(
                     Circle()
-                        .stroke(Color.white.opacity(isToday ? 0.8 : 0), lineWidth: 3)
+                        .strokeBorder(strokeColor, lineWidth: isToday ? 3 : 1.5)
                 )
 
             VStack(spacing: 2) {
@@ -142,13 +150,19 @@ private struct StageFishArtwork: View {
 
     @ViewBuilder
     var body: some View {
-        if day > currentDay {
+        if day == 2 {
+            Image("cat_paw")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(Color.black.opacity(0.8))
+                .shadow(color: Color.black.opacity(0.15), radius: 3, y: 1)
+                .padding(8)
+        } else if day > currentDay {
             inactiveFish(name: "custom_fish", opacity: 0.3)
                 .grayscale(1.0) // 去色变灰，表示未解锁
         } else if day == currentDay {
             activeFish(shadowOpacity: 0.4, radius: 6, y: 3)
-        } else if day.isMultiple(of: 2) {
-            inactiveFish(name: "custom_fish", opacity: 1.0) // 过去的已经解锁，保持全彩
         } else {
             activeFish(shadowOpacity: 0.3, radius: 4, y: 2)
         }
