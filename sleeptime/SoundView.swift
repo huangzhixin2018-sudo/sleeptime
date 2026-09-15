@@ -1,84 +1,151 @@
 import SwiftUI
 
-struct SoundTrack: Identifiable {
-    let id = UUID()
+private struct SoundTrack: Identifiable {
+    var id: String { trackNumber + title }
     let trackNumber: String
     let title: String
     let color: Color
 }
 
+private struct MoodCard: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        Button(action: {
+            // Action for card
+        }) {
+            HStack(spacing: 16) {
+                // Icon Box
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color)
+                    .frame(width: 64, height: 64)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.8))
+                    )
+                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text(subtitle)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.3))
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white.opacity(0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
 struct SoundView: View {
     private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20) // Midnight Dark Blue
-    
+
     // 主题切换状态
     @AppStorage("selectedSoundThemeIndex") private var selectedThemeIndex = 0
     @State private var showingThemeSelection = false
-    
+
     // 分类模块
-    let categories = ["睡眠", "声音", "冥想", "心境"]
+    private let categories = ["睡眠", "声音", "冥想", "心境"]
     @State private var selectedCategory = "睡眠"
-    
-    let tracks = [
+
+    private let sleepTracks = [
         SoundTrack(trackNumber: "01", title: "窗外淅沥", color: Color(red: 0.15, green: 0.20, blue: 0.30)), // 幽暗的雨夜蓝
         SoundTrack(trackNumber: "02", title: "晚班列车", color: Color(red: 0.22, green: 0.22, blue: 0.25)), // 铁轨的深灰色
         SoundTrack(trackNumber: "03", title: "炉火噼啪", color: Color(red: 0.45, green: 0.20, blue: 0.10)), // 温暖的暗橙/棕色
         SoundTrack(trackNumber: "04", title: "盛夏旧风扇", color: Color(red: 0.18, green: 0.28, blue: 0.25)) // 复古的暗青色
     ]
+
+    private let soundTracks = [
+        SoundTrack(trackNumber: "01", title: "夏日蝉鸣", color: Color(red: 0.25, green: 0.35, blue: 0.20)), // 森林绿
+        SoundTrack(trackNumber: "02", title: "海浪拍岸", color: Color(red: 0.10, green: 0.30, blue: 0.45)), // 深海蓝
+        SoundTrack(trackNumber: "03", title: "山涧清泉", color: Color(red: 0.20, green: 0.40, blue: 0.35)), // 溪流青
+        SoundTrack(trackNumber: "04", title: "老式电视", color: Color(red: 0.30, green: 0.30, blue: 0.35))  // 噪点灰
+    ]
+
+    private let meditationTracks = [
+        SoundTrack(trackNumber: "01", title: "清晨正念", color: Color(red: 0.40, green: 0.30, blue: 0.45)), // 晨曦紫
+        SoundTrack(trackNumber: "02", title: "深度放松", color: Color(red: 0.20, green: 0.25, blue: 0.35)), // 宁静蓝
+        SoundTrack(trackNumber: "03", title: "呼吸法", color: Color(red: 0.35, green: 0.45, blue: 0.40)),   // 柔和绿
+        SoundTrack(trackNumber: "04", title: "入眠引导", color: Color(red: 0.15, green: 0.15, blue: 0.25))   // 暗夜紫
+    ]
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                
-                // 顶部：左侧管理，右侧声音库
-                HStack {
-                    Button(action: {
-                        showingThemeSelection = true
-                    }) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .sheet(isPresented: $showingThemeSelection) {
-                        SoundThemeSelectionView(selectedThemeIndex: $selectedThemeIndex)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        // Open sound library
-                    }) {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 16)
-                
-                // 情绪签名文案
+
                 let currentTheme = soundThemes[selectedThemeIndex < soundThemes.count ? selectedThemeIndex : 0]
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(currentTheme.title)
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
-                        .contentTransition(.numericText())
-                        .animation(.easeInOut, value: selectedThemeIndex)
+                
+                // 顶部：文案与右侧声音库图标的组合
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(alignment: .top) {
+                        // 将标题作为主题切换入口
+                        Button(action: {
+                            showingThemeSelection = true
+                        }) {
+                            HStack(spacing: 8) {
+                                Text(currentTheme.title)
+                                    .font(.system(size: 30, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .contentTransition(.numericText())
+                                    .animation(.easeInOut, value: selectedThemeIndex)
+
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .padding(.top, 2)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .sheet(isPresented: $showingThemeSelection) {
+                            SoundThemeSelectionView(selectedThemeIndex: $selectedThemeIndex)
+                        }
+
+                        Spacer()
+
+                        // 右侧声音库图标
+                        Button(action: {
+                            // Open sound library
+                        }) {
+                            Image(systemName: "square.grid.2x2")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(width: 40, height: 40)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                    }
                     
                     Text(currentTheme.content)
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.white.opacity(0.75))
-                        .lineSpacing(6)
+                        .lineSpacing(10)
                         .multilineTextAlignment(.leading)
                         .animation(.easeInOut, value: selectedThemeIndex)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20) // 微调间距，让每行能多放一个字
-                .padding(.bottom, 32)
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 40)
                 
                 // 动态分类切换 (胶囊样式横向滚动)
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -116,9 +183,9 @@ struct SoundView: View {
                 .padding(.bottom, 32)
                 
                 // 专属音频列表
-                if selectedCategory == "睡眠" {
+                if !currentTracks.isEmpty {
                     VStack(spacing: 24) {
-                        ForEach(tracks) { track in
+                        ForEach(currentTracks) { track in
                             HStack(spacing: 16) {
                                 // Mock Album Art
                                 Rectangle()
@@ -145,16 +212,26 @@ struct SoundView: View {
                             .padding(.horizontal, 24)
                         }
                     }
-                } else {
-                    // 其他分类暂时显示空白（或者可以放一个空状态提示）
-                    VStack {
-                        Spacer().frame(height: 80)
-                        Text("暂无内容")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.4))
-                        Spacer()
+                } else if selectedCategory == "心境" {
+                    // 心境专有卡片列表
+                    VStack(spacing: 20) {
+                        // 系统推荐的名言
+                        MoodCard(
+                            title: "每日箴言",
+                            subtitle: "采撷触动灵魂的文字",
+                            icon: "quote.bubble.fill",
+                            color: Color(red: 0.25, green: 0.35, blue: 0.45)
+                        )
+
+                        // 自己收集的名言
+                        MoodCard(
+                            title: "心语珍藏",
+                            subtitle: "记录你的每一次感悟",
+                            icon: "bookmark.fill",
+                            color: Color(red: 0.35, green: 0.25, blue: 0.35)
+                        )
                     }
-                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
                 }
                 
                 Spacer(minLength: 60)
@@ -166,6 +243,15 @@ struct SoundView: View {
         .toolbarBackground(bgColor, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarColorScheme(.dark, for: .tabBar)
+    }
+
+    private var currentTracks: [SoundTrack] {
+        switch selectedCategory {
+        case "睡眠": sleepTracks
+        case "声音": soundTracks
+        case "冥想": meditationTracks
+        default: []
+        }
     }
 }
 

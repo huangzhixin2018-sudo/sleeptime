@@ -11,14 +11,8 @@ struct SleepFactorCategory: Identifiable {
     let title: String
     let isPro: Bool
     let items: [SleepFactorItem]
-}
 
-struct SleepFactorsSheetView: View {
-    @Environment(\.dismiss) private var dismiss
-    
-    @Binding var selectedItems: Set<String>
-    
-    let categories: [SleepFactorCategory] = [
+    static let allCategories: [SleepFactorCategory] = [
         SleepFactorCategory(title: "饮食", isPro: false, items: [
             SleepFactorItem(icon: "🍸", name: "喝酒"),
             SleepFactorItem(icon: "☕️", name: "咖啡和茶"),
@@ -41,6 +35,14 @@ struct SleepFactorsSheetView: View {
             SleepFactorItem(icon: "🤧", name: "生病了")
         ])
     ]
+}
+
+struct SleepFactorsSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @Binding var selectedItems: Set<String>
+
+    let categories: [SleepFactorCategory] = SleepFactorCategory.allCategories
     
     var body: some View {
         let homeBackground = Color(red: 243.0 / 255.0, green: 244.0 / 255.0, blue: 246.0 / 255.0)

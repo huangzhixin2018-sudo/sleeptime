@@ -244,11 +244,9 @@ private struct HomeWeekView: View {
 
             // 3. 新增：时刻记录卡片
             HStack(spacing: 8) {
-                Button {
-                    // 预留“早睡时刻”点击事件
-                } label: {
+                NavigationLink(destination: FactorsDetailView()) {
                     HomeSleepInsightCard(
-                        title: "早睡时刻",
+                        title: "影响因素",
                         value: "去记录",
                         icon: "sun.and.horizon.fill",
                         iconColor: .orange
@@ -256,14 +254,12 @@ private struct HomeWeekView: View {
                 }
                 .buttonStyle(.plain)
 
-                Button {
-                    // 预留“熬夜转折”点击事件
-                } label: {
+                NavigationLink(destination: MorningFeelingDetailView()) {
                     HomeSleepInsightCard(
-                        title: "熬夜转折",
+                        title: "清晨的感觉",
                         value: "去记录",
-                        icon: "moon.zzz.fill",
-                        iconColor: .purple
+                        icon: "sun.haze.fill",
+                        iconColor: .orange
                     )
                 }
                 .buttonStyle(.plain)
@@ -1308,7 +1304,7 @@ struct BlankPlanView: View {
                         
                         EmptyPlanFrameworkCard(
                             segments: trajectorySegments,
-                            planName: "沉淀鱼缸计划"
+                            planName: "养鱼计划"
                         )
                             .padding(.top, 16)
                             .padding(.bottom, 8)
