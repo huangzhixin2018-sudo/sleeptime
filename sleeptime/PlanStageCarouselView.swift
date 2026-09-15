@@ -36,8 +36,8 @@ struct PlanStageCarouselView: View {
                         StageItemView(day: day, currentDay: currentDay)
                             .scrollTransition(.interactive, axis: .horizontal) { content, phase in
                                 content
-                                    .scaleEffect(phase.isIdentity ? 1.0 : 0.7)
-                                    .opacity(phase.isIdentity ? 1.0 : 0.6)
+                                    .scaleEffect(phase.isIdentity ? 1.25 : 0.8)
+                                    .opacity(phase.isIdentity ? 1.0 : 0.4)
                             }
                     }
                 }
@@ -63,9 +63,11 @@ struct PlanStageCarouselView: View {
         }
     }
     
+    @AppStorage("activePlanType") private var activePlanType = "streak"
+    
     // 模拟数据逻辑（后续可以替换为真实的计划数据）
     private func getDayInfo(for day: Int) -> (title: String, subtitle: String, subtitleColor: Color) {
-        let themeBlue = Color(red: 0.3, green: 0.4, blue: 0.7)
+        let themeBlue = activePlanType == "fish" ? Color.cyan : Color(red: 0.3, green: 0.4, blue: 0.7)
         if day > currentDay {
             return ("目标 24:30", "真正的平静，来源于对时间的掌控。", themeBlue)
         } else if day == currentDay {
@@ -85,26 +87,25 @@ struct StageItemView: View {
     let day: Int
     let currentDay: Int
     
+    @AppStorage("activePlanType") private var activePlanType = "streak"
+    
     var body: some View {
         ZStack {
-            StageFishArtwork(day: day, currentDay: currentDay)
+            Circle()
+                .fill(Color(red: 230/255, green: 238/255, blue: 254/255))
+                .shadow(color: Color(red: 230/255, green: 238/255, blue: 254/255).opacity(0.5), radius: 6, x: 0, y: 3)
 
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Text("\(day)")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(Color.primary.opacity(0.7))
-                        .padding(5)
-                        .background(Color(.systemBackground).opacity(0.95))
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                        .offset(x: 4, y: 4)
-                }
+            VStack(spacing: 2) {
+                StageFishArtwork(day: day, currentDay: currentDay)
+                    .frame(height: 48)
+
+                Text("\(day)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(Color(red: 140/255, green: 160/255, blue: 210/255))
             }
+            .offset(y: 2) // slightly shift down to balance the visual center
         }
-        .frame(width: 80, height: 80)
+        .frame(width: 90, height: 90)
     }
 }
 
@@ -112,41 +113,50 @@ private struct StageFishArtwork: View {
     let day: Int
     let currentDay: Int
 
+    @AppStorage("activePlanType") private var activePlanType = "streak"
+
     private var gradient: LinearGradient {
-        LinearGradient(
-            colors: [Color(red: 0.4, green: 0.5, blue: 0.8), Color(red: 0.2, green: 0.3, blue: 0.6)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        if activePlanType == "fish" {
+            return LinearGradient(
+                colors: [Color.cyan.opacity(0.8), Color.blue.opacity(0.9)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        } else {
+            return LinearGradient(
+                colors: [Color(red: 0.4, green: 0.5, blue: 0.8), Color(red: 0.2, green: 0.3, blue: 0.6)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
 
     @ViewBuilder
     var body: some View {
         if day > currentDay {
-            inactiveFish(systemName: "fish", opacity: 0.25)
+            inactiveFish(name: "custom_fish", opacity: 0.25)
         } else if day == currentDay {
             activeFish(shadowOpacity: 0.4, radius: 6, y: 3)
         } else if day.isMultiple(of: 2) {
-            inactiveFish(systemName: "fish.fill", opacity: 0.15)
+            inactiveFish(name: "custom_fish", opacity: 0.15)
         } else {
             activeFish(shadowOpacity: 0.3, radius: 4, y: 2)
         }
     }
 
     private func activeFish(shadowOpacity: Double, radius: CGFloat, y: CGFloat) -> some View {
-        Image(systemName: "fish.fill")
+        Image("custom_fish")
             .resizable()
             .scaledToFit()
-            .foregroundStyle(gradient)
             .shadow(color: Color(red: 0.2, green: 0.3, blue: 0.6).opacity(shadowOpacity), radius: radius, x: 0, y: y)
-            .padding(16)
+            .padding(.horizontal, 8)
     }
 
-    private func inactiveFish(systemName: String, opacity: Double) -> some View {
-        Image(systemName: systemName)
+    private func inactiveFish(name: String, opacity: Double) -> some View {
+        Image(name)
             .resizable()
             .scaledToFit()
-            .foregroundColor(Color.gray.opacity(opacity))
-            .padding(20)
+            .opacity(opacity)
+            .padding(.horizontal, 8)
     }
 }

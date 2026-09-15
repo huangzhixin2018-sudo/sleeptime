@@ -135,7 +135,7 @@ class FishTankViewModel: ObservableObject {
 }
 
 struct FishTankView: View {
-    @StateObject private var vm = FishTankViewModel()
+    @ObservedObject var vm: FishTankViewModel
     
     var body: some View {
         VStack(spacing: 16) {
@@ -211,46 +211,6 @@ struct FishTankView: View {
             .frame(height: 320)
             .animation(.easeInOut, value: vm.toastMessage)
             
-            // Control Card
-            VStack(spacing: 14) {
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("本次连续早睡: \(vm.selectedDays >= 6 ? "6+" : "\(vm.selectedDays)") 天")
-                            .font(.system(size: 15, weight: .bold))
-                        Spacer()
-                        Text("生成：\(FISH_TIERS[min(vm.selectedDays - 1, 5)].name)")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Slider(value: Binding(
-                        get: { Double(vm.selectedDays) },
-                        set: { vm.selectedDays = Int($0) }
-                    ), in: 1...6, step: 1)
-                    .tint(.black)
-                }
-                
-                Button {
-                    let index = min(vm.selectedDays - 1, 5)
-                    vm.addFish(tierIndex: index)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                } label: {
-                    Text("沉淀至鱼缸")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(Color.black, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(16)
-            .background(Color(red: 248/255, green: 249/255, blue: 250/255), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-            )
-            
             // Bento Grid
             Grid(horizontalSpacing: 8, verticalSpacing: 8) {
                 GridRow {
@@ -265,6 +225,7 @@ struct FishTankView: View {
                 }
             }
             
+            
         }
         .onAppear {
             vm.startEngine()
@@ -274,6 +235,53 @@ struct FishTankView: View {
         }
     }
 }
+
+struct FishTankControlCard: View {
+    @ObservedObject var vm: FishTankViewModel
+    
+    var body: some View {
+        VStack(spacing: 14) {
+            VStack(spacing: 8) {
+                HStack {
+                    Text("本次连续早睡: \(vm.selectedDays >= 6 ? "6+" : "\(vm.selectedDays)") 天")
+                        .font(.system(size: 15, weight: .bold))
+                    Spacer()
+                    Text("生成：\(FISH_TIERS[min(vm.selectedDays - 1, 5)].name)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
+                
+                Slider(value: Binding(
+                    get: { Double(vm.selectedDays) },
+                    set: { vm.selectedDays = Int($0) }
+                ), in: 1...6, step: 1)
+                .tint(.black)
+            }
+            
+            Button {
+                let index = min(vm.selectedDays - 1, 5)
+                vm.addFish(tierIndex: index)
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            } label: {
+                Text("沉淀至鱼缸")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.black, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .background(Color(red: 248/255, green: 249/255, blue: 250/255), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+            
+
 
 struct BentoCell: View {
     let tier: FishTier

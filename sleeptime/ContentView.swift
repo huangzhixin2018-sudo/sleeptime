@@ -11,6 +11,7 @@ import LocalAuthentication
 struct ContentView: View {
     @State private var selectedTab: AppTab = .home
     @StateObject private var tabBarVisibility = SleepTabBarVisibility()
+    @StateObject private var fishTankVM = FishTankViewModel()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -47,6 +48,7 @@ struct ContentView: View {
             .tag(AppTab.profile)
         }
         .environmentObject(tabBarVisibility)
+        .environmentObject(fishTankVM)
         .background(
             SleepTabBarVisibilityBridge(isHidden: tabBarVisibility.isHidden)
                 .frame(width: 0, height: 0)
@@ -112,6 +114,8 @@ enum SleepCheckInStore {
 
 private struct HomeWeekView: View {
     @ObservedObject private var liveActivityManager = LiveActivityManager.shared
+
+    @EnvironmentObject var fishTankVM: FishTankViewModel
 
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
@@ -305,6 +309,10 @@ private struct HomeWeekView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 8)
+                
+                FishTankControlCard(vm: fishTankVM)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 16)
             }
 
             Spacer(minLength: 0)
@@ -1061,6 +1069,7 @@ struct BlankPlanView: View {
     @AppStorage("shorterPlan.maxLateStreak") private var maxLateStreak = 2
     @AppStorage("shorterPlan.currentMaxLateStreak") private var currentMaxLateStreak = 0
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
+    @EnvironmentObject var fishTankVM: FishTankViewModel
 
     @AppStorage("shorterPlan.startedAt") private var planStartedAt = 0.0
     @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
@@ -1173,7 +1182,6 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    if activePlanType != "fish" {
                     // 计划页面的动态阶段指示器
                     PlanStageCarouselView(
                         totalDays: planDurationDays,
@@ -1182,6 +1190,8 @@ struct BlankPlanView: View {
                     
                     // 日间连胜与任务进度卡片（第二张卡片）
                     PlanDualStatsCard()
+                    
+                    if activePlanType != "fish" {
                     
                     if activePlanType != "streak" {
                         LatestBedtimeGoalCard(
@@ -1195,6 +1205,8 @@ struct BlankPlanView: View {
                             .padding(.vertical, 8)
                     }
 
+
+                    } // End of activePlanType != "fish"
 
                     HStack(spacing: 8) {
                         NavigationLink {
@@ -1244,30 +1256,32 @@ struct BlankPlanView: View {
                         .buttonStyle(.plain)
                     }
 
+                    if activePlanType != "fish" {
+                        Button {
+                            exportCurrentPlan()
+                        } label: {
+                            Label("导出图片", systemImage: "square.and.arrow.down")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.black)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // 页面底部的装饰性小鱼
+                        SimpleFishView()
+                            .frame(width: 44, height: 26)
+                            .padding(.top, 16)
+                            .padding(.bottom, 20)
+                    } else {
+                        FishTankView(vm: fishTankVM)
+                    }
+
                     PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
                         .padding(.top, 16)
                         .padding(.bottom, 8)
 
-                    Button {
-                        exportCurrentPlan()
-                    } label: {
-                        Label("导出图片", systemImage: "square.and.arrow.down")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    
-                    // 页面底部的装饰性小鱼
-                    SimpleFishView()
-                        .frame(width: 44, height: 26)
-                        .padding(.top, 16)
-                        .padding(.bottom, 20)
-                    } else {
-                        FishTankView()
-                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
