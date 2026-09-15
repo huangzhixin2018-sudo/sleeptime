@@ -16,7 +16,7 @@ struct PlanDualStatsCard: View {
                     .foregroundColor(isOceanTheme ? .blue : Color(red: 0.1, green: 0.1, blue: 0.15))
                     .frame(height: 60)
                 
-                Text("当前连续早睡")
+                Text("连续早睡")
                     .font(.system(size: 15))
                     .foregroundColor(isOceanTheme ? .blue : .primary)
                 

@@ -154,6 +154,16 @@ private struct HomeWeekView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("礼物")
+
+                Button(action: { isShowingAddHabitSheet = true }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.78))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("添加习惯")
             }
                 .padding(.horizontal, 18)
                 .padding(.top, 10)
@@ -314,9 +324,7 @@ private struct HomeWeekView: View {
                 .padding(.horizontal, 18)
                 .padding(.top, 8)
                 
-                FishTankControlCard(vm: fishTankVM)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 4)
+
             }
             
             PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
@@ -431,7 +439,7 @@ private struct HomeWeekView: View {
     }
 
     private func sleepOnsetEntry(for date: Date) -> SleepOnsetEntry? {
-        decodedSleepOnsetEntries.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+        decodedSleepOnsetEntries.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) })
     }
 
     private var decodedSleepOnsetEntries: [SleepOnsetEntry] {
@@ -1189,11 +1197,18 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    // 计划页面的动态阶段指示器
-                    PlanStageCarouselView(
-                        totalDays: planDurationDays,
-                        currentDay: currentDay
-                    )
+                    if activePlanType == "streak" {
+                        PlanTimelineCarouselView(
+                            totalDays: planDurationDays,
+                            currentDay: currentDay
+                        )
+                    } else {
+                        // 计划页面的动态阶段指示器
+                        PlanStageCarouselView(
+                            totalDays: planDurationDays,
+                            currentDay: currentDay
+                        )
+                    }
                     
                     // 日间连胜与任务进度卡片（第二张卡片）
                     PlanDualStatsCard()
@@ -1210,6 +1225,13 @@ struct BlankPlanView: View {
 
 
                     } // End of activePlanType != "fish"
+                    
+                    if activePlanType == "streak" {
+                        LongestEarlySleepCard(
+                            currentValue: currentEarlySleepStreak,
+                            targetValue: targetEarlySleepStreak
+                        )
+                    }
 
                     HStack(spacing: 8) {
                         NavigationLink {
@@ -1262,17 +1284,19 @@ struct BlankPlanView: View {
 
 
                     if activePlanType != "fish" {
-                        Button {
-                            exportCurrentPlan()
-                        } label: {
-                            Label("导出图片", systemImage: "square.and.arrow.down")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.black)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 50)
-                                .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
+                        let planName: String = {
+                            switch activePlanType {
+                            case "fish": return "养鱼计划"
+                            case "streak": return "不养鱼计划"
+                            default: return "渐进早睡计划"
+                            }
+                        }()
+                        
+                        EmptyPlanFrameworkCard(
+                            segments: trajectorySegments,
+                            planName: planName
+                        )
+                        .padding(.top, 8)
                         
                         // 页面底部的装饰性小鱼
                         SimpleFishView()
@@ -1380,8 +1404,8 @@ private struct CurrentPlanExportView: View {
             if activePlanType == "streak" {
                 let planName: String = {
                     switch activePlanType {
-                    case "fish": return "沉淀鱼缸计划"
-                    case "streak": return "最长早睡挑战"
+                    case "fish": return "养鱼计划"
+                    case "streak": return "不养鱼计划"
                     default: return "渐进早睡计划"
                     }
                 }()
@@ -1435,51 +1459,22 @@ private struct PlanHabitSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.black)
-                
-                Text("睡前习惯")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(Color.black)
-
-                Spacer()
-
-                if showsAddButton {
-                    HStack(spacing: 8) {
-                        Button(action: {
-                            // TODO: Manage habits action
-                        }) {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(Color.black)
-                                .frame(width: 32, height: 32)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("管理习惯")
-
-                        Button(action: { isShowingAddHabitSheet = true }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(Color.black)
-                                .frame(width: 32, height: 32)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("添加睡前习惯")
-                    }
-                }
-            }
-
             VStack(spacing: 16) {
                 ForEach($habits) { $habit in
-                    VStack(spacing: 12) {
-                        HStack(alignment: .lastTextBaseline, spacing: 8) {
-                            Text(habit.name)
-                                .font(.system(size: 23, weight: .bold))
-                                .foregroundStyle(Color.black)
+                    NavigationLink {
+                        HabitDetailView(habit: $habit) {
+                            if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                                withAnimation {
+                                    _ = habits.remove(at: index)
+                                }
+                            }
+                        }
+                    } label: {
+                        VStack(spacing: 12) {
+                            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                                Text(habit.name)
+                                    .font(.system(size: 23, weight: .bold))
+                                    .foregroundStyle(Color.black)
 
                             if habit.hasAlarm {
                                 Text("（\(habit.timeString) 提醒）")
@@ -1563,6 +1558,8 @@ private struct PlanHabitSection: View {
                     .padding(.bottom, 18)
                     .frame(maxWidth: .infinity)
                     .background(Color.white, in: RoundedRectangle(cornerRadius: AppTheme.planCardRadius, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -1826,23 +1823,30 @@ private struct LatestBedtimeGoalCard: View {
 
 
 private struct MedalDetailView: View {
+    @EnvironmentObject var fishTankVM: FishTankViewModel
+    
     var body: some View {
         ScrollView {
-            VStack {
-                Image("stay_up_late_demon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 120, height: 120)
-                    .padding(.top, 40)
+            VStack(spacing: 24) {
+                VStack {
+                    Image("stay_up_late_demon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .padding(.top, 40)
+                    
+                    Text("熬夜掌控力与勋章")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .padding(.top, 20)
+                    
+                    Text("勋章系统即将上线...")
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+                }
                 
-                Text("熬夜掌控力与勋章")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding(.top, 20)
-                
-                Text("勋章系统即将上线...")
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 8)
+                FishTankControlCard(vm: fishTankVM)
+                    .padding(.horizontal)
             }
             .frame(maxWidth: .infinity)
         }
@@ -1867,7 +1871,7 @@ private struct EarlySleepStreakDetailView: View {
                     Text("0")
                         .font(.system(size: 52, weight: .bold, design: .rounded))
 
-                    Text("当前连续早睡天数")
+                    Text("连续早睡天数")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -1875,14 +1879,9 @@ private struct EarlySleepStreakDetailView: View {
                 .padding(.vertical, 28)
 
                 HStack(spacing: 12) {
-                    streakMetric(title: "历史最长", value: "0 天")
+                    streakMetric(title: "历史最长", value: "\(currentValue) 天")
                     streakMetric(title: "本月早睡", value: "0 天")
                 }
-                
-                LongestEarlySleepCard(
-                    currentValue: currentValue,
-                    targetValue: targetValue
-                )
 
                 VStack(alignment: .leading, spacing: 18) {
                     Text("最近 7 天")
