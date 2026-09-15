@@ -91,13 +91,22 @@ struct StageItemView: View {
     
     var body: some View {
         ZStack {
+            let isFuture = day > currentDay
+            let isToday = day == currentDay
+            let baseColor = isFuture ? Color(white: 0.95) : Color(red: 230/255, green: 238/255, blue: 254/255)
+            let shadowColor = isFuture ? Color.black.opacity(0.05) : Color(red: 230/255, green: 238/255, blue: 254/255).opacity(0.5)
+
             Circle()
-                .fill(Color(red: 230/255, green: 238/255, blue: 254/255))
-                .shadow(color: Color(red: 230/255, green: 238/255, blue: 254/255).opacity(0.5), radius: 6, x: 0, y: 3)
+                .fill(baseColor)
+                .shadow(color: shadowColor, radius: isToday ? 8 : 4, x: 0, y: isToday ? 4 : 2)
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(isToday ? 0.8 : 0), lineWidth: 3)
+                )
 
             VStack(spacing: 2) {
                 StageFishArtwork(day: day, currentDay: currentDay)
-                    .frame(height: 48)
+                    .frame(height: 54)
 
                 Text("\(day)")
                     .font(.system(size: 14, weight: .bold))
@@ -134,11 +143,12 @@ private struct StageFishArtwork: View {
     @ViewBuilder
     var body: some View {
         if day > currentDay {
-            inactiveFish(name: "custom_fish", opacity: 0.25)
+            inactiveFish(name: "custom_fish", opacity: 0.3)
+                .grayscale(1.0) // 去色变灰，表示未解锁
         } else if day == currentDay {
             activeFish(shadowOpacity: 0.4, radius: 6, y: 3)
         } else if day.isMultiple(of: 2) {
-            inactiveFish(name: "custom_fish", opacity: 0.15)
+            inactiveFish(name: "custom_fish", opacity: 1.0) // 过去的已经解锁，保持全彩
         } else {
             activeFish(shadowOpacity: 0.3, radius: 4, y: 2)
         }
@@ -149,7 +159,7 @@ private struct StageFishArtwork: View {
             .resizable()
             .scaledToFit()
             .shadow(color: Color(red: 0.2, green: 0.3, blue: 0.6).opacity(shadowOpacity), radius: radius, x: 0, y: y)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 4)
     }
 
     private func inactiveFish(name: String, opacity: Double) -> some View {
@@ -157,6 +167,6 @@ private struct StageFishArtwork: View {
             .resizable()
             .scaledToFit()
             .opacity(opacity)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 4)
     }
 }
