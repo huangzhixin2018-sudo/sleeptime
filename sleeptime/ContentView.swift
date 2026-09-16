@@ -116,6 +116,7 @@ private struct HomeWeekView: View {
     @ObservedObject private var liveActivityManager = LiveActivityManager.shared
 
     @EnvironmentObject var fishTankVM: FishTankViewModel
+    @EnvironmentObject var tabBarVisibility: SleepTabBarVisibility
 
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
@@ -216,13 +217,13 @@ private struct HomeWeekView: View {
             .padding(.top, 4)
 
             HStack(spacing: 8) {
-                // 1. 睡眠状态 (结合清晨与入睡)
-                Button {
-                    sleepOnsetRoute = SleepOnsetRoute(date: lastNightDate)
-                } label: {
+                // 1. 睡眠状态 → 情绪感知详情页
+                NavigationLink(destination: SleepStatusDetailView()
+                    .sleepDetailChrome(tabBarVisibility)
+                ) {
                     HomeSleepInsightCard(
                         title: "睡眠状态",
-                        value: sleepOnsetEntry(for: lastNightDate)?.state.title ?? "未记录",
+                        value: "情绪感知",
                         icon: "moon.stars"
                     )
                 }
@@ -244,7 +245,9 @@ private struct HomeWeekView: View {
 
             // 3. 新增：时刻记录卡片
             HStack(spacing: 8) {
-                NavigationLink(destination: FactorsDetailView()) {
+                NavigationLink(destination: FactorsDetailView()
+                    .sleepDetailChrome(tabBarVisibility)
+                ) {
                     HomeSleepInsightCard(
                         title: "影响因素",
                         value: "去记录",
@@ -254,7 +257,9 @@ private struct HomeWeekView: View {
                 }
                 .buttonStyle(.plain)
 
-                NavigationLink(destination: MorningFeelingDetailView()) {
+                NavigationLink(destination: MorningFeelingDetailView()
+                    .sleepDetailChrome(tabBarVisibility)
+                ) {
                     HomeSleepInsightCard(
                         title: "清晨的感觉",
                         value: "去记录",
