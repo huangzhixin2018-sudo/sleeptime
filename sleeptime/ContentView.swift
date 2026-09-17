@@ -120,18 +120,17 @@ private struct HomeWeekView: View {
 
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
+    @State private var isEarlySleepPreview = false
     @State private var habits: [BedtimeHabit] = [
         BedtimeHabit(name: "冥想", hasAlarm: true, alarmTime: Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date(), repeatDays: [0,1,2,3,4,5,6], checkInTime: nil)
     ]
     @State private var isShowingAddHabitSheet = false
     @AppStorage("home.sleepOnsetEntries") private var storedSleepOnsetEntries = "[]"
-    @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
     @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
     @AppStorage("sleepGoal.workdayBedtime") private var workdayBedtime = 23 * 60
     @AppStorage("sleepGoal.workdayWakeTime") private var workdayWakeTime = 7 * 60
     @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
     @AppStorage("sleepGoal.weekendWakeTime") private var weekendWakeTime = 7 * 60
-    @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
 
     private let weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
@@ -197,34 +196,39 @@ private struct HomeWeekView: View {
                 .padding(.top, 18)
 
             VStack(alignment: .leading, spacing: 0) {
-                Image("sleeping_cat")
+                Image(isEarlySleepPreview ? "early_sleep_cat" : "sleeping_cat")
                     .resizable()
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 296)
+                    .frame(width: 296, height: 88, alignment: .bottom)
+                    .offset(y: isEarlySleepPreview ? 6 : 0)
                     .padding(.leading, 10)
                     .padding(.bottom, -1)
 
                 SleepOverviewCard(
-                    bedtimeMinutes: currentCheckIn?.bedtimeMinutes ?? targetBedtimeMinutes,
-                    durationMinutes: currentCheckIn?.durationMinutes ?? plannedDurationMinutes,
-                    wakeMinutes: currentCheckIn?.wakeMinutes ?? fixedWakeMinutes,
-                    isCheckedIn: currentCheckIn != nil,
-                    onCheckIn: saveSleepCheckIn
+                    bedtimeMinutes: targetBedtimeMinutes,
+                    durationMinutes: plannedDurationMinutes,
+                    wakeMinutes: fixedWakeMinutes,
+                    isCheckedIn: isEarlySleepPreview,
+                    isEarlySleep: isEarlySleepPreview,
+                    onCheckIn: {
+                        isEarlySleepPreview = true
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
+                    }
                 )
             }
             .padding(.horizontal, 18)
             .padding(.top, 4)
 
             HStack(spacing: 8) {
-                // 1. 睡眠状态 → 情绪感知详情页
-                NavigationLink(destination: SleepStatusDetailView()
+                NavigationLink(destination: MorningFeelingDetailView()
                     .sleepDetailChrome(tabBarVisibility)
                 ) {
                     HomeSleepInsightCard(
-                        title: "睡眠状态",
-                        value: "情绪感知",
-                        icon: "moon.stars"
+                        title: "清晨的感觉",
+                        value: "去记录",
+                        icon: "sun.haze.fill",
+                        iconColor: .orange
                     )
                 }
                 .buttonStyle(.plain)
@@ -257,14 +261,13 @@ private struct HomeWeekView: View {
                 }
                 .buttonStyle(.plain)
 
-                NavigationLink(destination: MorningFeelingDetailView()
+                NavigationLink(destination: SleepStatusDetailView()
                     .sleepDetailChrome(tabBarVisibility)
                 ) {
                     HomeSleepInsightCard(
-                        title: "清晨的感觉",
-                        value: "去记录",
-                        icon: "sun.haze.fill",
-                        iconColor: .orange
+                        title: "睡眠状态",
+                        value: "情绪感知",
+                        icon: "moon.stars"
                     )
                 }
                 .buttonStyle(.plain)
@@ -356,14 +359,6 @@ private struct HomeWeekView: View {
         Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     }
 
-    private var sleepCheckIns: [SleepCheckInRecord] {
-        SleepCheckInStore.decode(encodedSleepCheckIns)
-    }
-
-    private var currentCheckIn: SleepCheckInRecord? {
-        sleepCheckIns.first { Calendar.current.isDate($0.sleepDate, inSameDayAs: Date()) }
-    }
-
     private var usesWorkdaySchedule: Bool {
         let weekday = Calendar.current.component(.weekday, from: Date())
         let workdays = Set(workdaySelection.split(separator: ",").compactMap { Int($0) })
@@ -385,53 +380,6 @@ private struct HomeWeekView: View {
     private func minutesUntilWake(from bedtime: Int, wake: Int) -> Int {
         let difference = wake - bedtime
         return difference > 0 ? difference : difference + 24 * 60
-    }
-
-    private func saveSleepCheckIn() {
-        guard currentCheckIn == nil else { return }
-        let now = Date()
-        let calendar = Calendar.current
-        let bedtime = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
-        let boundary = targetBedtimeMinutes + allowedDeviation
-        let normalizedBedtime = bedtime < 12 * 60 ? bedtime + 24 * 60 : bedtime
-        let normalizedBoundary = boundary < 12 * 60 ? boundary + 24 * 60 : boundary
-        let record = SleepCheckInRecord(
-            id: UUID(),
-            sleepDate: now,
-            bedtimeMinutes: bedtime,
-            wakeMinutes: fixedWakeMinutes,
-            durationMinutes: minutesUntilWake(from: bedtime, wake: fixedWakeMinutes),
-            isEarlySleep: normalizedBedtime <= normalizedBoundary,
-            isDemo: false
-        )
-        var records = sleepCheckIns
-        let demoStart = calendar.date(byAdding: .day, value: -5, to: calendar.startOfDay(for: now)) ?? now
-        records.removeAll {
-            $0.isDemo == true || calendar.startOfDay(for: $0.sleepDate) >= demoStart
-        }
-        records.append(contentsOf: demoTrajectoryRecords(endingWith: record))
-        if let encoded = SleepCheckInStore.encode(records) {
-            encodedSleepCheckIns = encoded
-        }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)
-    }
-
-    private func demoTrajectoryRecords(endingWith current: SleepCheckInRecord) -> [SleepCheckInRecord] {
-        let calendar = Calendar.current
-        let pattern = [true, true, false, false, false, true]
-        return pattern.enumerated().map { index, isEarlySleep in
-            let dayOffset = index - (pattern.count - 1)
-            let date = calendar.date(byAdding: .day, value: dayOffset, to: current.sleepDate) ?? current.sleepDate
-            return SleepCheckInRecord(
-                id: index == pattern.count - 1 ? current.id : UUID(),
-                sleepDate: date,
-                bedtimeMinutes: index == pattern.count - 1 ? current.bedtimeMinutes : (isEarlySleep ? 22 * 60 + 50 : 24 * 60 + 20) % (24 * 60),
-                wakeMinutes: current.wakeMinutes,
-                durationMinutes: index == pattern.count - 1 ? current.durationMinutes : (isEarlySleep ? 8 * 60 + 10 : 6 * 60 + 40),
-                isEarlySleep: isEarlySleep,
-                isDemo: true
-            )
-        }
     }
 
     private func weekdayIndex(for date: Date) -> Int {
@@ -589,6 +537,7 @@ private struct SleepOverviewCard: View {
     let durationMinutes: Int
     let wakeMinutes: Int
     let isCheckedIn: Bool
+    let isEarlySleep: Bool
     let onCheckIn: () -> Void
 
     var body: some View {
@@ -596,7 +545,8 @@ private struct SleepOverviewCard: View {
             SleepDurationDisplay(
                 bedtimeMinutes: bedtimeMinutes,
                 durationMinutes: durationMinutes,
-                wakeMinutes: wakeMinutes
+                wakeMinutes: wakeMinutes,
+                isEarlySleep: isEarlySleep
             )
 
             Button(action: onCheckIn) {
@@ -627,6 +577,7 @@ private struct SleepDurationDisplay: View {
     let bedtimeMinutes: Int
     let durationMinutes: Int
     let wakeMinutes: Int
+    let isEarlySleep: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -635,7 +586,7 @@ private struct SleepDurationDisplay: View {
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(Color.black)
 
-                Text("熬夜喵")
+                Text(isEarlySleep ? "早睡喵" : "熬夜喵")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(Color.black)
 
@@ -655,7 +606,7 @@ private struct SleepDurationDisplay: View {
             Text(timeText(bedtimeMinutes))
                 .font(.system(size: 50, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(Color(red: 0.72, green: 0.29, blue: 0.30))
+                .foregroundStyle(isEarlySleep ? Color.blue : Color(red: 0.72, green: 0.29, blue: 0.30))
                 .padding(.top, 12)
 
             Text("入睡时间")
@@ -1160,6 +1111,7 @@ struct BlankPlanView: View {
                     HStack(spacing: 8) {
                         NavigationLink {
                             MedalDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             Image(systemName: "medal.fill")
                                 .font(.system(size: 17, weight: .semibold))
@@ -1824,36 +1776,67 @@ private struct LatestBedtimeGoalCard: View {
 
 
 private struct MedalDetailView: View {
-    @EnvironmentObject var fishTankVM: FishTankViewModel
-    
+    private let columns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
+    ]
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack {
-                    Image("stay_up_late_demon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 120, height: 120)
-                        .padding(.top, 40)
-                    
-                    Text("熬夜掌控力与勋章")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .padding(.top, 20)
-                    
-                    Text("勋章系统即将上线...")
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 8)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("图鉴")
+                        .font(.system(size: 32, weight: .bold))
+
+                    Spacer()
+
+                    Text("6 / 6")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.42))
                 }
-                
-                FishTankControlCard(vm: fishTankVM)
-                    .padding(.horizontal)
+
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(FISH_TIERS, id: \.id) { tier in
+                        FishGuideCard(tier: tier)
+                    }
+                }
             }
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 36)
         }
-        .background(AppTheme.pageBackground.ignoresSafeArea())
-        .navigationTitle("勋章")
+        .background(AppTheme.homeBackground.ignoresSafeArea())
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct FishGuideCard: View {
+    let tier: FishTier
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image("custom_fish")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .frame(height: 88)
+                .padding(.horizontal, 18)
+
+            Spacer(minLength: 10)
+
+            Text(tier.name)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.black.opacity(0.88))
+
+            Text(tier.englishName)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.black.opacity(0.38))
+                .padding(.top, 3)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

@@ -7,28 +7,14 @@ private struct SoundTrack: Identifiable {
     let color: Color
 }
 
-private struct MoodCard: View {
+private struct MoodCard<Destination: View>: View {
     let title: String
     let subtitle: String
-    let icon: String
-    let color: Color
+    let destination: Destination
 
     var body: some View {
-        Button(action: {
-            // Action for card
-        }) {
+        NavigationLink(destination: destination) {
             HStack(spacing: 16) {
-                // Icon Box
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(color)
-                    .frame(width: 64, height: 64)
-                    .overlay(
-                        Image(systemName: icon)
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.8))
-                    )
-                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-
                 VStack(alignment: .leading, spacing: 6) {
                     Text(title)
                         .font(.system(size: 18, weight: .bold))
@@ -92,7 +78,8 @@ struct SoundView: View {
     ]
     
     var body: some View {
-        ScrollView(showsIndicators: false) {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
 
                 let currentTheme = soundThemes[selectedThemeIndex < soundThemes.count ? selectedThemeIndex : 0]
@@ -125,9 +112,7 @@ struct SoundView: View {
                         Spacer()
 
                         // 右侧声音库图标
-                        Button(action: {
-                            // Open sound library
-                        }) {
+                        NavigationLink(destination: SoundLibraryDetailView()) {
                             Image(systemName: "square.grid.2x2")
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.white)
@@ -219,26 +204,25 @@ struct SoundView: View {
                         MoodCard(
                             title: "每日箴言",
                             subtitle: "采撷触动灵魂的文字",
-                            icon: "quote.bubble.fill",
-                            color: Color(red: 0.25, green: 0.35, blue: 0.45)
+                            destination: QuoteOfTheDayView()
                         )
 
                         // 自己收集的名言
                         MoodCard(
                             title: "心语珍藏",
                             subtitle: "记录你的每一次感悟",
-                            icon: "bookmark.fill",
-                            color: Color(red: 0.35, green: 0.25, blue: 0.35)
+                            destination: MyQuotesView()
                         )
                     }
                     .padding(.horizontal, 24)
                 }
                 
                 Spacer(minLength: 60)
-            }
-        }
+            } // end VStack
+        } // end ScrollView
         .background(bgColor.ignoresSafeArea())
         .navigationBarHidden(true)
+        } // end NavigationStack
         // 使底部 TabBar 适配暗黑模式，并融为一体
         .toolbarBackground(bgColor, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
@@ -254,6 +238,72 @@ struct SoundView: View {
         }
     }
 }
+
+struct QuoteOfTheDayView: View {
+    @Environment(\.dismiss) private var dismiss
+    private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20)
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.white)
+                        .font(.system(size: 20, weight: .semibold))
+                }
+                Spacer()
+                Text("每日箴言")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Image(systemName: "chevron.left").opacity(0)
+            }
+            .padding()
+            
+            Spacer()
+            Text("暂无内容")
+                .foregroundColor(.white.opacity(0.6))
+            Spacer()
+        }
+        .background(bgColor.ignoresSafeArea())
+        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+struct MyQuotesView: View {
+    @Environment(\.dismiss) private var dismiss
+    private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20)
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.white)
+                        .font(.system(size: 20, weight: .semibold))
+                }
+                Spacer()
+                Text("心语珍藏")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Image(systemName: "chevron.left").opacity(0)
+            }
+            .padding()
+            
+            Spacer()
+            Text("暂无内容")
+                .foregroundColor(.white.opacity(0.6))
+            Spacer()
+        }
+        .background(bgColor.ignoresSafeArea())
+        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+
 
 #Preview {
     SoundView()

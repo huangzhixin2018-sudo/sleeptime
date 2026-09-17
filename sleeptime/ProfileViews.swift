@@ -28,7 +28,13 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
 
-                        emptyProfileNavigationRow(icon: "alarm", title: "闹钟提醒", trailingText: "未开启", showDivider: true)
+                        NavigationLink {
+                            AlarmDetailView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "alarm", title: "闹钟与事件", trailingText: "2", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
                         NavigationLink {
                             WidgetGalleryDetailView()
                                 .sleepDetailChrome(tabBarVisibility)
@@ -79,6 +85,22 @@ struct ProfileView: View {
                                 .sleepDetailChrome(tabBarVisibility)
                         } label: {
                             ProfileRowView(icon: "calendar", title: "年度日历", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            HolidayListView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "suitcase", title: "法定节假日", showDivider: true)
+                        }
+                        .buttonStyle(.plain)
+
+                        NavigationLink {
+                            ShiftCalendarView()
+                                .sleepDetailChrome(tabBarVisibility)
+                        } label: {
+                            ProfileRowView(icon: "calendar.badge.clock", title: "排班日历", showDivider: true)
                         }
                         .buttonStyle(.plain)
 

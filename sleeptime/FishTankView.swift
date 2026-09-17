@@ -7,6 +7,7 @@ struct FishTier {
     let id: Int
     let days: Int
     let name: String
+    let englishName: String
     let desc: String
     let size: CGFloat
     let speed: Double
@@ -14,12 +15,12 @@ struct FishTier {
 }
 
 let FISH_TIERS = [
-    FishTier(id: 0, days: 1, name: "小鱼干", desc: "刚起步的单日早睡", size: 24, speed: 0.2, color: Color(red: 156/255, green: 163/255, blue: 175/255)),
-    FishTier(id: 1, days: 2, name: "小鱼", desc: "初步连续的轻快起步", size: 28, speed: 0.6, color: Color(red: 100/255, green: 116/255, blue: 139/255)),
-    FishTier(id: 2, days: 3, name: "鱼苗", desc: "初具成形的小节奏", size: 34, speed: 0.7, color: Color(red: 59/255, green: 130/255, blue: 246/255)),
-    FishTier(id: 3, days: 4, name: "幼鱼", desc: "逐步稳定的作息骨架", size: 42, speed: 0.5, color: Color(red: 37/255, green: 99/255, blue: 235/255)),
-    FishTier(id: 4, days: 5, name: "青鱼", desc: "规律已深入骨髓", size: 50, speed: 0.45, color: Color(red: 15/255, green: 118/255, blue: 110/255)),
-    FishTier(id: 5, days: 6, name: "大鱼", desc: "完成稳定深度作息", size: 68, speed: 0.35, color: Color(red: 30/255, green: 27/255, blue: 75/255))
+    FishTier(id: 0, days: 1, name: "小鱼干", englishName: "TINY MINNOW", desc: "刚起步的单日早睡", size: 24, speed: 0.2, color: Color(red: 156/255, green: 163/255, blue: 175/255)),
+    FishTier(id: 1, days: 2, name: "小鱼", englishName: "LITTLE FIN", desc: "初步连续的轻快起步", size: 28, speed: 0.6, color: Color(red: 100/255, green: 116/255, blue: 139/255)),
+    FishTier(id: 2, days: 3, name: "鱼苗", englishName: "BLUE FRY", desc: "初具成形的小节奏", size: 34, speed: 0.7, color: Color(red: 59/255, green: 130/255, blue: 246/255)),
+    FishTier(id: 3, days: 4, name: "幼鱼", englishName: "YOUNG FIN", desc: "逐步稳定的作息骨架", size: 42, speed: 0.5, color: Color(red: 37/255, green: 99/255, blue: 235/255)),
+    FishTier(id: 4, days: 5, name: "青鱼", englishName: "JADE SWIMMER", desc: "规律已深入骨髓", size: 50, speed: 0.45, color: Color(red: 15/255, green: 118/255, blue: 110/255)),
+    FishTier(id: 5, days: 6, name: "大鱼", englishName: "DEEPWATER", desc: "完成稳定深度作息", size: 68, speed: 0.35, color: Color(red: 30/255, green: 27/255, blue: 75/255))
 ]
 
 struct FishNode: Identifiable {
@@ -34,7 +35,6 @@ struct FishNode: Identifiable {
 class FishTankViewModel: ObservableObject {
     @Published var counts: [Int] = [0, 0, 0, 0, 0, 0]
     @Published var totalCount: Int = 0
-    @Published var selectedDays: Int = 3
     @Published var toastMessage: String? = nil
     
     var fishList: [FishNode] = []
@@ -47,11 +47,13 @@ class FishTankViewModel: ObservableObject {
             displayLink = CADisplayLink(target: self, selector: #selector(tick))
             displayLink?.add(to: .main, forMode: .common)
             
-            // 预设两条鱼 (cold start)
+            // 图鉴原型阶段默认展示六类鱼，每类两条。
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 if self.fishList.isEmpty {
-                    self.addFish(tierIndex: 0)
-                    self.addFish(tierIndex: 2)
+                    for tierIndex in FISH_TIERS.indices {
+                        self.addFish(tierIndex: tierIndex, showsToast: false)
+                        self.addFish(tierIndex: tierIndex, showsToast: false)
+                    }
                 }
             }
         }
@@ -62,7 +64,7 @@ class FishTankViewModel: ObservableObject {
         displayLink = nil
     }
     
-    func addFish(tierIndex: Int) {
+    func addFish(tierIndex: Int, showsToast: Bool = true) {
         let tier = FISH_TIERS[tierIndex]
         counts[tierIndex] += 1
         totalCount += 1
@@ -82,7 +84,9 @@ class FishTankViewModel: ObservableObject {
         )
         fishList.append(node)
         
-        showToast("已存入 1 尾「\(tier.name)」")
+        if showsToast {
+            showToast("已存入 1 尾「\(tier.name)」")
+        }
     }
     
     private var toastTimer: Timer?
@@ -246,81 +250,6 @@ struct FishTankView: View {
         }
     }
 }
-
-struct FishTankControlCard: View {
-    @ObservedObject var vm: FishTankViewModel
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("本次连续早睡")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.secondary)
-                    
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("\(vm.selectedDays >= 6 ? "6+" : "\(vm.selectedDays)")")
-                            .font(.custom("AvenirNextCondensed-Heavy", size: 36))
-                            .foregroundColor(.primary)
-                        Text("天")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("将生成")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                    
-                    HStack(spacing: 6) {
-                        Image("custom_fish")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 18, height: 18)
-                        Text(FISH_TIERS[min(vm.selectedDays - 1, 5)].name)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.primary)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(FISH_TIERS[min(vm.selectedDays - 1, 5)].color.opacity(0.1))
-                    .cornerRadius(8)
-                }
-            }
-            
-            Slider(value: Binding(
-                get: { Double(vm.selectedDays) },
-                set: { vm.selectedDays = Int($0) }
-            ), in: 1...6, step: 1)
-            .tint(FISH_TIERS[min(vm.selectedDays - 1, 5)].color)
-            
-            Button {
-                let index = min(vm.selectedDays - 1, 5)
-                vm.addFish(tierIndex: index)
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            } label: {
-                Text("沉淀至鱼缸")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(LinearGradient(colors: [Color(red: 40/255, green: 50/255, blue: 80/255), Color.black], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(20)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, x: 0, y: 4)
-    }
-}
-            
-
 
 struct BentoCell: View {
     let tier: FishTier
