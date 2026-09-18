@@ -24,6 +24,16 @@ struct EmotionDetailView: View {
         }
         .navigationTitle("睡眠札记")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(.light, for: .navigationBar)
         .preferredColorScheme(.light)

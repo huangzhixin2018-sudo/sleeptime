@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private struct SoundTrack: Identifiable {
     var id: String { trackNumber + title }
@@ -8,49 +9,35 @@ private struct SoundTrack: Identifiable {
 }
 
 private struct MoodCard<Destination: View>: View {
+    @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
+
     let title: String
-    let subtitle: String
     let destination: Destination
 
     var body: some View {
-        NavigationLink(destination: destination) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-
-                    Text(subtitle)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.white.opacity(0.6))
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.3))
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.white.opacity(0.04))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
+        NavigationLink {
+            destination
+                .sleepDetailChrome(tabBarVisibility)
+        } label: {
+            Text(title)
+                .font(.system(size: 19, weight: .bold))
+                .foregroundStyle(Color.black)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(.horizontal, 16)
+                .frame(height: 112)
+                .background(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(Color.white)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
 struct SoundView: View {
-    private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20) // Midnight Dark Blue
-
-    // 主题切换状态
-    @AppStorage("selectedSoundThemeIndex") private var selectedThemeIndex = 0
-    @State private var showingThemeSelection = false
+    private let bgColor = Color(red: 0.945, green: 0.95, blue: 0.957)
 
     // 分类模块
     private let categories = ["睡眠", "声音", "冥想", "心境"]
@@ -81,52 +68,18 @@ struct SoundView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-
-                let currentTheme = soundThemes[selectedThemeIndex < soundThemes.count ? selectedThemeIndex : 0]
                 
-                // 顶部：文案与右侧声音库图标的组合
+                // 顶部文案
                 VStack(alignment: .leading, spacing: 20) {
-                    HStack(alignment: .top) {
-                        // 将标题作为主题切换入口
-                        Button(action: {
-                            showingThemeSelection = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Text(currentTheme.title)
-                                    .font(.system(size: 30, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .contentTransition(.numericText())
-                                    .animation(.easeInOut, value: selectedThemeIndex)
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .padding(.top, 2)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .sheet(isPresented: $showingThemeSelection) {
-                            SoundThemeSelectionView(selectedThemeIndex: $selectedThemeIndex)
-                        }
-
-                        Spacer()
-
-                        // 右侧声音库图标
-                        NavigationLink(destination: SoundLibraryDetailView()) {
-                            Image(systemName: "square.grid.2x2")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(width: 40, height: 40)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                    }
+                    Text("听见自己的声音")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(.black)
                     
-                    Text(currentTheme.content)
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(.white.opacity(0.75))
-                        .lineSpacing(10)
+                    Text("世界有太多声音，教导我们该如何生活。与其向外寻找答案，不如停下来听听自己。你内心细微的情绪与感受，都在告诉你，什么才是真正重要的。")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.black.opacity(0.75))
+                        .lineSpacing(8)
                         .multilineTextAlignment(.leading)
-                        .animation(.easeInOut, value: selectedThemeIndex)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
@@ -149,16 +102,16 @@ struct SoundView: View {
                                     Text(category)
                                         .font(.system(size: 14, weight: selectedCategory == category ? .bold : .medium))
                                 }
-                                .foregroundColor(selectedCategory == category ? .black : .white.opacity(0.9))
+                                .foregroundColor(selectedCategory == category ? .white : .black.opacity(0.9))
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                                 .background(
                                     Capsule()
-                                        .fill(selectedCategory == category ? Color.white : Color.clear)
+                                        .fill(selectedCategory == category ? Color.black : Color.clear)
                                 )
                                 .overlay(
                                     Capsule()
-                                        .stroke(selectedCategory == category ? Color.clear : Color.white.opacity(0.3), lineWidth: 1)
+                                        .stroke(selectedCategory == category ? Color.clear : Color.black.opacity(0.3), lineWidth: 1)
                                 )
                             }
                         }
@@ -179,18 +132,18 @@ struct SoundView: View {
                                     .overlay(
                                         Text(track.title.prefix(1))
                                             .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(.white.opacity(0.5))
+                                            .foregroundColor(.black.opacity(0.5))
                                     )
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                                 
                                 Text(track.trackNumber)
                                     .font(.system(size: 16, weight: .regular))
-                                    .foregroundColor(.white.opacity(0.6))
+                                    .foregroundColor(.black.opacity(0.6))
                                     .frame(width: 28, alignment: .leading)
                                 
                                 Text(track.title)
                                     .font(.system(size: 17, weight: .regular))
-                                    .foregroundColor(.white.opacity(0.9))
+                                    .foregroundColor(.black.opacity(0.9))
                                 
                                 Spacer()
                             }
@@ -199,22 +152,51 @@ struct SoundView: View {
                     }
                 } else if selectedCategory == "心境" {
                     // 心境专有卡片列表
-                    VStack(spacing: 20) {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(), spacing: 10),
+                            GridItem(.flexible(), spacing: 10)
+                        ],
+                        spacing: 10
+                    ) {
+                        // 心之所向
+                        MoodCard(
+                            title: "心之所向",
+                            destination: LifeKeywordsView()
+                        )
+
+                        // 我的便利贴
+                        MoodCard(
+                            title: "我的便利贴",
+                            destination: MyStickyNotesView()
+                        )
+
+                        // 小期待
+                        MoodCard(
+                            title: "小期待",
+                            destination: SmallExpectationsView()
+                        )
+
                         // 系统推荐的名言
                         MoodCard(
                             title: "每日箴言",
-                            subtitle: "采撷触动灵魂的文字",
                             destination: QuoteOfTheDayView()
                         )
 
                         // 自己收集的名言
                         MoodCard(
                             title: "心语珍藏",
-                            subtitle: "记录你的每一次感悟",
                             destination: MyQuotesView()
                         )
+
+                        // 睡眠札记
+                        MoodCard(
+                            title: "睡眠札记",
+                            destination: EmotionDetailView()
+                        )
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
                 }
                 
                 Spacer(minLength: 60)
@@ -226,7 +208,7 @@ struct SoundView: View {
         // 使底部 TabBar 适配暗黑模式，并融为一体
         .toolbarBackground(bgColor, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
-        .toolbarColorScheme(.dark, for: .tabBar)
+        .toolbarColorScheme(.light, for: .tabBar)
     }
 
     private var currentTracks: [SoundTrack] {
@@ -240,65 +222,55 @@ struct SoundView: View {
 }
 
 struct QuoteOfTheDayView: View {
-    @Environment(\.dismiss) private var dismiss
-    private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20)
+    private let bgColor = Color.white
     
     var body: some View {
         VStack {
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                        .font(.system(size: 20, weight: .semibold))
-                }
-                Spacer()
-                Text("每日箴言")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                Spacer()
-                Image(systemName: "chevron.left").opacity(0)
-            }
-            .padding()
-            
             Spacer()
             Text("暂无内容")
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(.black.opacity(0.6))
             Spacer()
         }
         .background(bgColor.ignoresSafeArea())
-        .navigationBarHidden(true)
+        .navigationTitle("每日箴言")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
         .toolbar(.hidden, for: .tabBar)
     }
 }
 
 struct MyQuotesView: View {
-    @Environment(\.dismiss) private var dismiss
-    private let bgColor = Color(red: 0.07, green: 0.13, blue: 0.20)
+    private let bgColor = Color.white
     
     var body: some View {
         VStack {
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                        .font(.system(size: 20, weight: .semibold))
-                }
-                Spacer()
-                Text("心语珍藏")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                Spacer()
-                Image(systemName: "chevron.left").opacity(0)
-            }
-            .padding()
-            
             Spacer()
             Text("暂无内容")
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(.black.opacity(0.6))
             Spacer()
         }
         .background(bgColor.ignoresSafeArea())
-        .navigationBarHidden(true)
+        .navigationTitle("心语珍藏")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
         .toolbar(.hidden, for: .tabBar)
     }
 }
@@ -307,4 +279,5 @@ struct MyQuotesView: View {
 
 #Preview {
     SoundView()
+        .environmentObject(SleepTabBarVisibility())
 }
