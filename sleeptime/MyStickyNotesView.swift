@@ -31,8 +31,7 @@ enum NoteTheme {
 }
 
 struct MyStickyNotesView: View {
-    // 模拟数据 (Mock Data)
-    private let notes: [StickyNote] = [
+    @State private var notes: [StickyNote] = [
         StickyNote(content: "去河边散步吹了吹风，晚霞特别温柔，心情瞬间放晴了。", date: "09-17", theme: .pink, rotation: -1.8),
         StickyNote(content: "新换的深烘咖啡豆风味很正，早起做手冲确实能定下心。", date: "09-15", theme: .yellow, rotation: 2.4),
         StickyNote(content: "把书架重新归类整理了一遍，扔掉三袋陈旧杂物，呼吸都轻快了。", date: "09-11", theme: .green, rotation: 1.2),
@@ -44,10 +43,11 @@ struct MyStickyNotesView: View {
         StickyNote(content: "读完了一整本书，记录了三条很有启发的笔记，满足。", date: "08-09", theme: .yellow, rotation: 1.2),
         StickyNote(content: "立秋后的第一场暴雨，躲在室内听雨声看书，安全感拉满。", date: "08-01", theme: .pink, rotation: -3.5)
     ]
+    @State private var isShowingComposer = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "ffffff").ignoresSafeArea()
+            Color(hex: "f6f6f4").ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -90,20 +90,6 @@ struct MyStickyNotesView: View {
                             }
                             .padding(.leading, 8)
                         }
-
-                        Spacer()
-
-                        // 头像
-                        AsyncImage(url: URL(string: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80")) { image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            Color(hex: "f0f0f0")
-                        }
-                        .frame(width: 52, height: 52)
-                        .clipShape(Circle())
-                        .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 4)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 28)
@@ -132,9 +118,9 @@ struct MyStickyNotesView: View {
 
             // 悬浮“写一张”按钮
             Button(action: {
-                // TODO: 调起写便签页面
                 let generator = UIImpactFeedbackGenerator(style: .medium)
                 generator.impactOccurred()
+                isShowingComposer = true
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "square.and.pencil")
@@ -157,8 +143,117 @@ struct MyStickyNotesView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    isShowingComposer = true
                 } label: {
                     Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingComposer) {
+            StickyNoteComposerView { content in
+                addNote(content)
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private func addNote(_ content: String) {
+        let themes: [NoteTheme] = [.yellow, .pink, .green, .blue]
+        let rotations = [-1.4, 1.6, -0.8, 1.2, -1.0, 0.9]
+        let newNote = StickyNote(
+            content: content,
+            date: Self.noteDateFormatter.string(from: Date()),
+            theme: themes[notes.count % themes.count],
+            rotation: rotations[notes.count % rotations.count]
+        )
+
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            notes.insert(newNote, at: 0)
+        }
+    }
+
+    private static let noteDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd"
+        return formatter
+    }()
+}
+
+private struct StickyNoteComposerView: View {
+    let onComplete: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var noteText = ""
+    @FocusState private var isFocused: Bool
+
+    private var trimmedText: String {
+        noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("把此刻想到的，轻轻贴在这里。")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(Color.black.opacity(0.48))
+                    .padding(.horizontal, 2)
+
+                ZStack(alignment: .topLeading) {
+                    if noteText.isEmpty {
+                        Text("写一张便利贴…")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(Color.black.opacity(0.24))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 17)
+                            .allowsHitTesting(false)
+                    }
+
+                    TextEditor(text: $noteText)
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(Color.black.opacity(0.84))
+                        .lineSpacing(6)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .focused($isFocused)
+                }
+                .frame(minHeight: 184)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                )
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .background(Color(hex: "f6f6f4").ignoresSafeArea())
+            .navigationTitle("写一张")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .foregroundColor(Color.black.opacity(0.62))
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") {
+                        onComplete(trimmedText)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(trimmedText.isEmpty)
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                    isFocused = true
                 }
             }
         }
@@ -171,8 +266,8 @@ struct NoteCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(note.content)
-                .font(.system(size: 14))
-                .lineSpacing(4)
+                .font(.system(size: 17, weight: .regular))
+                .lineSpacing(6)
                 .foregroundColor(Color(hex: "2b2b2b"))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
