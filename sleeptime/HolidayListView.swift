@@ -8,6 +8,11 @@ struct HolidayItem: Identifiable {
     var days: String
 }
 
+enum HolidayTab: String, CaseIterable {
+    case holiday = "假期"
+    case shift = "排班日历"
+}
+
 struct HolidayListView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var tabBarVisibility: SleepTabBarVisibility
@@ -21,11 +26,13 @@ struct HolidayListView: View {
         HolidayItem(name: "中秋节", date: "9月25日 至 9月27日", detail: "周五 至 周日", days: "3天"),
         HolidayItem(name: "国庆节", date: "10月1日 至 10月7日", detail: "周四 至 周三", days: "7天")
     ]
-    
+
     @State private var showingAddSheet = false
     @State private var newHolidayName = ""
     @State private var newHolidayStartDate = Date()
     @State private var newHolidayEndDate = Date()
+
+    @State private var selectedTab: HolidayTab = .holiday
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -40,22 +47,48 @@ struct HolidayListView: View {
                             .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
                     }
                     Spacer()
-                    Text("法定节假日")
+                    Text(selectedTab == .holiday ? "法定节假日" : "排班日历")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
                     Spacer()
                     Image(systemName: "chevron.left").opacity(0)
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
                 .background(Color.white.opacity(0.92))
+
+                // Tabs
+                HStack(spacing: 0) {
+                    ForEach(HolidayTab.allCases, id: \.self) { tab in
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedTab = tab
+                            }
+                        }) {
+                            Text(tab.rawValue)
+                                .font(.system(size: 15, weight: selectedTab == tab ? .bold : .medium))
+                                .foregroundColor(selectedTab == tab ? Color(red: 17/255, green: 17/255, blue: 17/255) : Color(white: 0.55))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(selectedTab == tab ? Color.white : Color.clear)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(2)
+                .background(Color(white: 0.92))
+                .clipShape(Capsule())
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
                 
                 Divider()
                     .background(Color(red: 240/255, green: 240/255, blue: 242/255))
 
-                // List
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
+                // Content
+                if selectedTab == .holiday {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
                         ForEach(holidays.indices, id: \.self) { index in
                             let item = holidays[index]
                             HStack {
@@ -92,26 +125,41 @@ struct HolidayListView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 120) // Space for button
                 }
+                } else {
+                    // Empty state for Shift Calendar
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 48))
+                            .foregroundColor(Color(white: 0.8))
+                        Text("排班日历暂无内容")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(white: 0.6))
+                    }
+                    Spacer()
+                }
             }
             
             // Fixed Add Button
-            Button(action: {
-                newHolidayName = ""
-                newHolidayStartDate = Date()
-                newHolidayEndDate = Date()
-                showingAddSheet = true
-            }) {
-                Text("添加假期")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.black)
-                    .cornerRadius(27)
-                    .padding(.horizontal, 20)
-                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+            if selectedTab == .holiday {
+                Button(action: {
+                    newHolidayName = ""
+                    newHolidayStartDate = Date()
+                    newHolidayEndDate = Date()
+                    showingAddSheet = true
+                }) {
+                    Text("添加假期")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.black)
+                        .cornerRadius(27)
+                        .padding(.horizontal, 20)
+                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                }
+                .padding(.bottom, 34) // Safe area equivalent
             }
-            .padding(.bottom, 34) // Safe area equivalent
         }
         .background(Color.white.ignoresSafeArea())
         .navigationBarHidden(true)

@@ -74,19 +74,21 @@ struct StatisticsView: View {
                     
                     // 数据列表内容
                     if selectedTab == .day {
-                        ForEach(Self.mockData) { data in
-                            DailySleepRow(
-                                dayMonth: data.day,
-                                weekday: data.weekday,
-                                bedtime: data.bedtime,
-                                sleepStatus: data.sleepStatus,
-                                isLate: data.isLate,
-                                wakeTime: data.wakeTime,
-                                duration: data.duration,
-                                feeling: data.feeling,
-                                reason: data.reason,
-                                note: data.note
-                            )
+                        VStack(spacing: 12) {
+                            ForEach(Self.mockData) { data in
+                                DailySleepRow(
+                                    dayMonth: data.day,
+                                    weekday: data.weekday,
+                                    bedtime: data.bedtime,
+                                    sleepStatus: data.sleepStatus,
+                                    isLate: data.isLate,
+                                    wakeTime: data.wakeTime,
+                                    duration: data.duration,
+                                    feeling: data.feeling,
+                                    reason: data.reason,
+                                    note: data.note
+                                )
+                            }
                         }
                     } else if selectedTab == .week {
                         // 周视图的头部：第几周 & 日期范围切换
@@ -525,84 +527,66 @@ struct DailySleepRow: View {
     private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // 第一排：日期栏 与 入睡时间（卡片外，作为区域标题）
-            HStack(alignment: .firstTextBaseline) {
-                // 左侧：日期
-                HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
+            // 顶部：日期与状态
+            HStack(alignment: .center) {
+                // 日期
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(dayMonth)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(isLate ? Color(red: 0.88, green: 0.32, blue: 0.22) : ink.opacity(0.92))
-                    
-                    Text("·")
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundColor(isLate ? Color(red: 0.88, green: 0.32, blue: 0.22) : ink.opacity(0.5))
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
                     
                     Text(weekday)
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundColor(isLate ? Color(red: 0.88, green: 0.32, blue: 0.22) : ink.opacity(0.5))
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
                 }
                 
                 Spacer()
                 
-                // 右侧：入睡时间与状态
+                // 状态胶囊
+                Text(sleepStatus)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 10)
+                    .background(isLate ? Color(red: 1, green: 59/255, blue: 48/255) : Color(red: 17/255, green: 17/255, blue: 17/255))
+                    .cornerRadius(6)
+            }
+
+            // 核心数据行：入睡 – 起床，右侧时长
+            HStack(alignment: .firstTextBaseline) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(bedtime)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(ink.opacity(0.92))
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
                         .monospacedDigit()
                     
-                    Text(sleepStatus)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(isLate ? Color(red: 0.88, green: 0.32, blue: 0.22) : Color(red: 0.2, green: 0.65, blue: 0.4))
-                }
-            }
-            .padding(.horizontal, 4)
-            .padding(.top, 8)
-            
-            // 下方：白色卡片内部信息
-            VStack(alignment: .leading, spacing: 16) {
-                
-                // 起床与时长（回归正常大小）
-                HStack(spacing: 32) {
-                    // 起床时间
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(wakeTime > "08:30" ? "晚起" : "早起")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(ink.opacity(0.5))
-                        Text(wakeTime)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(ink.opacity(0.92))
-                            .monospacedDigit()
-                    }
+                    Text("–")
+                        .font(.system(size: 14, weight: .light))
+                        .foregroundColor(Color(red: 199/255, green: 199/255, blue: 204/255))
                     
-                    // 睡眠时长
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("时长")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(ink.opacity(0.5))
-                        Text(duration)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(ink.opacity(0.92))
-                            .monospacedDigit()
-                    }
+                    Text(wakeTime)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
+                        .monospacedDigit()
                 }
+
+                Spacer()
                 
-                // 备注（如果有）
-                if let note = note, !note.isEmpty {
-                    Text(note)
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(ink.opacity(0.6))
-                        .lineSpacing(4)
-                        .padding(.top, 4)
-                }
+                Text(duration)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(red: 134/255, green: 134/255, blue: 139/255))
+                    .monospacedDigit()
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(red: 232/255, green: 232/255, blue: 237/255), lineWidth: 1)
+        )
     }
 }
 

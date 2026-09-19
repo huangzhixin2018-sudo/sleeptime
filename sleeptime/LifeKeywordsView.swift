@@ -19,7 +19,7 @@ struct LifeKeywordsView: View {
         KeywordCategory(
             id: "self",
             title: "自我",
-            desc: "聚焦核心特质与本质解析，命名即觉察。",
+            desc: "看见真实的自己，在每一次选择里确认内心的方向。",
             items: [
                 KeywordItem(name: "先动后定", quote: "先以 60 分的姿态进入行动，答案永远在推进中自然显现。"),
                 KeywordItem(name: "事实归因", quote: "分清客观事实与不可控变数，只对能改变的变量全力以赴。")
@@ -35,7 +35,7 @@ struct LifeKeywordsView: View {
         KeywordCategory(
             id: "daily",
             title: "生活日常",
-            desc: "日常微小惯性背后，是无意识的注意流向与能量损耗。",
+            desc: "整理日常的节奏，在每一次行动里积累生活的力量。",
             items: [
                 KeywordItem(name: "主动清晨", quote: "醒来先锚定自己的主干任务，把最好的脑力留给自己。")
             ],
@@ -49,7 +49,7 @@ struct LifeKeywordsView: View {
         KeywordCategory(
             id: "relation",
             title: "亲密关系",
-            desc: "在交互中保持坦率与自洽，做真实而有温度的连接。",
+            desc: "理解彼此的边界，在每一次交流里建立温暖的连接。",
             items: [
                 KeywordItem(name: "同频在场", quote: "放下评判与指导欲，给予全然的听见，理解本身就是解法。")
             ],
@@ -85,24 +85,20 @@ struct LifeKeywordsView: View {
         VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
-                    headerBox
+                    pageHeader
                     tabsRow
+                    categoryDescription
                     cardList
                 }
                 .padding(.horizontal, 20)
+                .padding(.top, 12)
                 .padding(.bottom, 40)
             }
         }
         .background(Color(hex: "f7f9fa").ignoresSafeArea())
-        .navigationTitle("心之所向")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                Button("挑选", action: openPickModal)
-                Button("自定", action: openCreateModal)
-            }
-        }
         .sheet(isPresented: $showingPickSheet) {
             pickSheetContent
                 .presentationDetents([.fraction(0.92)])
@@ -115,90 +111,91 @@ struct LifeKeywordsView: View {
         }
     }
 
-    private var headerBox: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(currentCategory.title)
-                .font(.system(size: 28, weight: .bold))
+    private var pageHeader: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text("心之所向")
+                .font(.system(size: 30, weight: .bold))
                 .foregroundColor(Color(hex: "0f172a"))
 
-            Text(currentCategory.desc)
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "64748b"))
-                .lineSpacing(4)
+            Spacer(minLength: 8)
+
+            HStack(spacing: 14) {
+                Button(action: openPickModal) {
+                    Label("选择", systemImage: "plus")
+                }
+
+                Button(action: openCreateModal) {
+                    Label("自定义", systemImage: "plus")
+                }
+            }
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(Color(hex: "334155"))
+            .labelStyle(.titleAndIcon)
+            .fixedSize()
         }
     }
 
     private var tabsRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             ForEach(["self", "daily", "relation"], id: \.self) { tabId in
                 let tabName = tabId == "self" ? "关于自我" : (tabId == "daily" ? "生活日常" : "亲密关系")
                 let isActive = currentTabId == tabId
 
                 Button(action: { currentTabId = tabId }) {
                     Text(tabName)
-                        .font(.system(size: 13))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
+                        .font(.system(size: 15, weight: isActive ? .semibold : .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
                         .foregroundColor(isActive ? .white : Color(hex: "64748b"))
                         .background(isActive ? Color(hex: "0f172a") : Color.white)
-                        .cornerRadius(18)
+                        .cornerRadius(20)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 18)
+                            RoundedRectangle(cornerRadius: 20)
                                 .stroke(isActive ? Color.clear : Color(hex: "e2e8f0"), lineWidth: 1)
                         )
                 }
+                .buttonStyle(.plain)
             }
         }
+    }
+
+    private var categoryDescription: some View {
+        Text(currentCategory.desc)
+            .font(.system(size: 16, weight: .regular))
+            .foregroundColor(Color(hex: "64748b"))
+            .lineSpacing(5)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var cardList: some View {
         VStack(spacing: 12) {
             if currentCategory.items.isEmpty {
-                Text("尚未收录特质，点击右上角挑选或自定")
-                    .font(.system(size: 13))
+                Text("还没有收录特质，可以从上方挑选或自定。")
+                    .font(.system(size: 15))
                     .foregroundColor(Color(hex: "94a3b8"))
                     .frame(maxWidth: .infinity)
                     .padding(.top, 60)
             } else {
-                ForEach(currentCategory.items.indices, id: \.self) { index in
-                    let item = currentCategory.items[index]
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(item.name)
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundColor(Color(hex: "0f172a"))
+                ForEach(currentCategory.items) { item in
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(item.name)
+                            .font(.system(size: 19, weight: .bold))
+                            .foregroundColor(Color(hex: "0f172a"))
 
-                            Spacer()
-
-                            HStack(spacing: 12) {
-                                Button("编辑") {
-                                    editExisting(index: index)
-                                }
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "94a3b8"))
-
-                                Button("移除") {
-                                    deleteItem(index: index)
-                                }
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "ef4444"))
-                            }
-                        }
-
-                        Text("“\(item.quote)”")
-                            .font(.system(size: 14))
+                        Text(item.quote)
+                            .font(.system(size: 16, weight: .regular))
                             .foregroundColor(Color(hex: "334155"))
-                            .lineSpacing(4)
+                            .lineSpacing(6)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 22)
                     .background(Color.white)
-                    .cornerRadius(16)
+                    .cornerRadius(10)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 10)
                             .stroke(Color(hex: "edf1f5"), lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1)
                 }
             }
         }

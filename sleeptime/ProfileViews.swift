@@ -64,21 +64,6 @@ struct ProfileView: View {
                     }
 
                     ProfileSection {
-                        NavigationLink {
-                            EmotionDetailView()
-                                .sleepDetailChrome(tabBarVisibility)
-                        } label: {
-                            ProfileRowView(icon: "book.pages", title: "睡眠札记", showDivider: true)
-                        }
-                        .buttonStyle(.plain)
-
-                        NavigationLink {
-                            SleepStreakShelfView()
-                                .sleepDetailChrome(tabBarVisibility)
-                        } label: {
-                            ProfileRowView(icon: "trophy.fill", title: "连睡收集架", showDivider: true)
-                        }
-                        .buttonStyle(.plain)
 
                         NavigationLink {
                             CalendarDetailView()
@@ -96,13 +81,6 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
 
-                        NavigationLink {
-                            ShiftCalendarView()
-                                .sleepDetailChrome(tabBarVisibility)
-                        } label: {
-                            ProfileRowView(icon: "calendar.badge.clock", title: "排班日历", showDivider: true)
-                        }
-                        .buttonStyle(.plain)
 
                         NavigationLink {
                             BodyAndSleepDetailView()
@@ -1087,9 +1065,7 @@ private struct EarlySleepPlanDetailView: View {
     @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
     @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
 
-    @State private var isShowingPlanPicker = false
     @State private var isShowingShorterSetup = false
-    @State private var isShowingStreakSetup = false
     @State private var isShowingFishSetup = false
 
     let onPlanStarted: () -> Void
@@ -1113,7 +1089,7 @@ private struct EarlySleepPlanDetailView: View {
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 14) {
                 Button {
-                    isShowingPlanPicker = true
+                    isShowingFishSetup = true
                 } label: {
                     Label("创建早睡计划", systemImage: "plus")
                         .font(.system(size: 17, weight: .semibold))
@@ -1153,23 +1129,7 @@ private struct EarlySleepPlanDetailView: View {
         .navigationDestination(isPresented: $isShowingShorterSetup) {
             ShorterLateNightPlanSetupView(onPlanStarted: onPlanStarted)
         }
-        .navigationDestination(isPresented: $isShowingStreakSetup) {
-            EarlySleepStreakPlanSetupView(onPlanStarted: onPlanStarted)
-        }
-        .sheet(isPresented: $isShowingPlanPicker) {
-            EarlySleepPlanPicker { plan in
-                isShowingPlanPicker = false
-                DispatchQueue.main.async {
-                    if plan.title == "不养鱼计划" {
-                        isShowingStreakSetup = true
-                    } else if plan.title == "养鱼计划" {
-                        isShowingFishSetup = true
-                    }
-                }
-            }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
+
         .fullScreenCover(isPresented: $isShowingFishSetup) {
             EarlySleepFishPlanSetupView(onPlanStarted: onPlanStarted)
         }

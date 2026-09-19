@@ -113,7 +113,7 @@ enum SleepCheckInStore {
 }
 
 private struct HomeWeekView: View {
-    @ObservedObject private var liveActivityManager = LiveActivityManager.shared
+
 
     @EnvironmentObject var fishTankVM: FishTankViewModel
     @EnvironmentObject var tabBarVisibility: SleepTabBarVisibility
@@ -121,9 +121,7 @@ private struct HomeWeekView: View {
     @State private var sleepStates: [Int: HomeSleepState] = [:]
     @State private var sleepOnsetRoute: SleepOnsetRoute?
     @State private var isEarlySleepPreview = false
-    @State private var habits: [BedtimeHabit] = [
-        BedtimeHabit(name: "冥想", hasAlarm: true, alarmTime: Calendar.current.date(from: DateComponents(hour: 22, minute: 30)) ?? Date(), repeatDays: [0,1,2,3,4,5,6], checkInTime: nil)
-    ]
+    @State private var habits: [BedtimeHabit] = []
     @State private var isShowingAddHabitSheet = false
     @AppStorage("home.sleepOnsetEntries") private var storedSleepOnsetEntries = "[]"
     @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
@@ -281,56 +279,8 @@ private struct HomeWeekView: View {
             }
             .padding(.horizontal, 18)
 
-            // 睡眠流程控制按钮
-            if liveActivityManager.isSleepFlowActive {
-                Button(action: {
-                    liveActivityManager.stopSleepFlow()
-                }) {
-                    HStack {
-                        Image(systemName: "stop.circle.fill")
-                        Text("结束睡眠流程")
-                    }
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.red.opacity(0.8))
-                    .cornerRadius(16)
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-            } else {
-                Button(action: {
-                    let now = Date()
-                    let calendar = Calendar.current
-                    var components = calendar.dateComponents([.year, .month, .day], from: now)
-                    // 使用当天的23:30作为示例目标时间
-                    components.hour = 23
-                    components.minute = 30
-                    var target = calendar.date(from: components) ?? now.addingTimeInterval(3600)
-                    if target <= now {
-                        target = calendar.date(byAdding: .day, value: 1, to: target) ?? now.addingTimeInterval(3600)
-                    }
+            // 睡眠流程控制相关按钮已被移除
 
-                    liveActivityManager.startSleepFlow(targetBedtime: target)
-                }) {
-                    HStack {
-                        Image(systemName: "moon.zzz.fill")
-                        Text("开启睡眠流程")
-                    }
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.black)
-                    .cornerRadius(16)
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-                
-
-            }
-            
             PlanHabitSection(habits: $habits, isShowingAddHabitSheet: $isShowingAddHabitSheet)
                 .padding(.horizontal, 18)
                 .padding(.top, 16)
@@ -579,6 +529,11 @@ private struct SleepDurationDisplay: View {
     let wakeMinutes: Int
     let isEarlySleep: Bool
 
+    @Environment(\.displayScale) private var displayScale
+
+    @State private var isShowingShareSheet = false
+    @State private var sharedImage: UIImage?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -592,7 +547,14 @@ private struct SleepDurationDisplay: View {
 
                 Spacer()
 
-                Button(action: {}) {
+                Button(action: {
+                    let renderer = ImageRenderer(content: ShareCardView(date: Date(), isEarlySleep: isEarlySleep, bedtimeMinutes: bedtimeMinutes))
+                    renderer.scale = displayScale
+                    if let uiImage = renderer.uiImage {
+                        self.sharedImage = uiImage
+                        self.isShowingShareSheet = true
+                    }
+                }) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Color.black.opacity(0.72))
@@ -624,6 +586,11 @@ private struct SleepDurationDisplay: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(timeText(bedtimeMinutes))入睡，睡眠时长\(durationMinutes / 60)小时\(durationMinutes % 60)分钟，\(timeText(wakeMinutes))起床")
+        .sheet(isPresented: $isShowingShareSheet) {
+            if let image = sharedImage {
+                ActivityShareSheet(items: [image])
+            }
+        }
     }
 
     private var currentDateTitle: String {

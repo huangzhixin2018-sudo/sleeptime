@@ -46,12 +46,12 @@ private struct TimelineCard: View {
         VStack(spacing: 0) {
             // Header
             HStack(alignment: .firstTextBaseline) {
-                Text("改变，从一次选择开始")
+                Text("规律作息")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(AppTheme.accent)
-                
+
                 Spacer()
-                
+
                 Text("第 \(day) 天")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(Color.black.opacity(0.8))
@@ -59,73 +59,51 @@ private struct TimelineCard: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
             
-            // Timeline
-            VStack(alignment: .leading, spacing: 0) {
-                TimelineNode(
-                    time: "23:00",
-                    title: "入睡准备",
-                    isLast: false,
-                    isCompleted: day < currentDay
-                )
-                TimelineNode(
-                    time: "23:30",
-                    title: "目标入睡",
-                    isLast: true,
-                    isCompleted: day < currentDay
-                )
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24) // Increased spacing between header and timeline
-            .padding(.bottom, 8) // Reduced bottom padding
+            Spacer()
             
-            Spacer(minLength: 0)
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-}
+            // Timeline (Horizontal)
+            HStack(spacing: 0) {
+                // Node 1
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(day < currentDay ? AppTheme.accent : Color.black.opacity(0.2))
+                        .frame(width: 8, height: 8)
+                    Text("23:00")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.black.opacity(0.8))
+                    Text("入睡准备")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.black.opacity(0.6))
+                }
 
-private struct TimelineNode: View {
-    let time: String
-    let title: String
-    let isLast: Bool
-    let isCompleted: Bool
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Time
-            Text(time)
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(Color.black.opacity(0.8))
-                .frame(width: 50, alignment: .leading)
-            
-            // Node and Line
-            VStack(spacing: 0) {
-                Circle()
-                    .fill(isCompleted ? AppTheme.accent : Color.black.opacity(0.2))
-                    .frame(width: 8, height: 8)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white, lineWidth: 2)
-                    )
-                    .padding(.top, 4)
+                Spacer()
+
+                // Line connecting them
+                Rectangle()
+                    .fill(day < currentDay ? AppTheme.accent.opacity(0.5) : Color.black.opacity(0.1))
+                    .frame(width: 24, height: 2)
+                    .padding(.horizontal, 8)
                 
-                if !isLast {
-                    Rectangle()
-                        .fill(isCompleted ? AppTheme.accent.opacity(0.5) : Color.black.opacity(0.1))
-                        .frame(width: 2)
-                        .frame(height: 24)
+                Spacer()
+
+                // Node 2
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(day < currentDay ? AppTheme.accent : Color.black.opacity(0.2))
+                        .frame(width: 8, height: 8)
+                    Text("23:30")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.black.opacity(0.8))
+                    Text("目标入睡")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.black.opacity(0.6))
                 }
             }
-            
-            // Title
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.black.opacity(0.6))
-                .padding(.top, -1)
+            .padding(.horizontal, 20)
             
             Spacer()
         }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
