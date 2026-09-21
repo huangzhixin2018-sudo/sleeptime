@@ -1006,7 +1006,7 @@ struct BlankPlanView: View {
     @EnvironmentObject var fishTankVM: FishTankViewModel
 
     @AppStorage("shorterPlan.startedAt") private var planStartedAt = 0.0
-    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "fish"
     @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
     @AppStorage("earlySleepPlan.currentStreak") private var currentEarlySleepStreak = 0
     @AppStorage("sleepCheckIn.records") private var encodedSleepCheckIns = "[]"
@@ -1117,42 +1117,14 @@ struct BlankPlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    if activePlanType == "streak" {
-                        PlanTimelineCarouselView(
-                            totalDays: planDurationDays,
-                            currentDay: currentDay
-                        )
-                    } else {
-                        // 计划页面的动态阶段指示器
-                        PlanStageCarouselView(
-                            totalDays: planDurationDays,
-                            currentDay: currentDay
-                        )
-                    }
+                    PlanStageCarouselView(
+                        totalDays: planDurationDays,
+                        currentDay: currentDay
+                    )
                     
                     // 日间连胜与任务进度卡片（第二张卡片）
                     PlanDualStatsCard()
                     
-                    if activePlanType != "fish" {
-                    
-                    if activePlanType != "streak" {
-                        LatestBedtimeGoalCard(
-                            bedtimeMinutes: latestBedtimeMinutes,
-                            targetMinutes: targetSleepTimeMinutes
-                        )
-                    }
-
-
-
-                    } // End of activePlanType != "fish"
-                    
-                    if activePlanType == "streak" {
-                        LongestEarlySleepCard(
-                            currentValue: currentEarlySleepStreak,
-                            targetValue: targetEarlySleepStreak
-                        )
-                    }
-
                     HStack(spacing: 8) {
                         NavigationLink {
                             TimeTravelDetailView()
@@ -1203,36 +1175,14 @@ struct BlankPlanView: View {
 
 
 
-                    if activePlanType != "fish" {
-                        let planName: String = {
-                            switch activePlanType {
-                            case "fish": return "养鱼计划"
-                            case "streak": return "不养鱼计划"
-                            default: return "渐进早睡计划"
-                            }
-                        }()
-                        
-                        EmptyPlanFrameworkCard(
-                            segments: trajectorySegments,
-                            planName: planName
-                        )
-                        .padding(.top, 8)
-                        
-                        // 页面底部的装饰性小鱼
-                        SimpleFishView()
-                            .frame(width: 44, height: 26)
-                            .padding(.top, 16)
-                            .padding(.bottom, 20)
-                    } else {
-                        FishTankView(vm: fishTankVM)
-                        
-                        EmptyPlanFrameworkCard(
-                            segments: trajectorySegments,
-                            planName: "养鱼计划"
-                        )
-                            .padding(.top, 16)
-                            .padding(.bottom, 8)
-                    }
+                    FishTankView(vm: fishTankVM)
+
+                    EmptyPlanFrameworkCard(
+                        segments: trajectorySegments,
+                        planName: "养鱼计划"
+                    )
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
 
                 }
                 .padding(.horizontal, 14)
@@ -1246,7 +1196,10 @@ struct BlankPlanView: View {
             .sheet(item: $exportedPlan) { plan in
                 ActivityShareSheet(items: [plan.image])
             }
-            .onAppear(perform: synchronizePlanStreaks)
+            .onAppear {
+                activePlanType = "fish"
+                synchronizePlanStreaks()
+            }
             .onChange(of: encodedSleepCheckIns) {
                 synchronizePlanStreaks()
             }

@@ -8,8 +8,8 @@ struct EarlySleepFishPlanSetupView: View {
     @AppStorage("shorterPlan.durationDays") private var savedDurationDays = 14
     @AppStorage("shorterPlan.targetSleepTimeMinutes") private var savedTargetSleepTimeMinutes = 26 * 60
     @AppStorage("shorterPlan.maxLateStreak") private var savedMaxLateStreak = 3
-    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "streak"
-    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "早睡计划"
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "fish"
+    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "养鱼计划"
     @AppStorage("earlySleepPlan.metricType") private var savedMetricType = PlanMetric.earlySleepDays.rawValue
     @AppStorage("earlySleepPlan.metricTargetDays") private var savedMetricTargetDays = 3
     @AppStorage("earlySleepPlan.earlySleepTargetDays") private var savedEarlySleepTargetDays = 2
@@ -198,8 +198,8 @@ struct EarlySleepFishPlanSetupView: View {
         savedLongestEarlySleepTargetDays = longestEarlySleepTargetDays
         currentEarlySleepStreak = 0
         currentMaxLateStreak = 0
-        activePlanType = "goals"
-        activePlanName = "早睡计划"
+        activePlanType = "fish"
+        activePlanName = "养鱼计划"
         startedAt = Date().timeIntervalSince1970
         isActive = true
         UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.8)

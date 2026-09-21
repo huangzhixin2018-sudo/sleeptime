@@ -1057,8 +1057,8 @@ private struct EarlySleepPlanDetailView: View {
     @AppStorage("shorterPlan.targetSleepTimeMinutes") private var targetSleepTimeMinutes = 23 * 60 + 30
     @AppStorage("shorterPlan.startedAt") private var startedAt = 0.0
     @AppStorage("earlySleepPlan.history") private var historyData = "[]"
-    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
-    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "连续熬夜越来越短"
+    @AppStorage("earlySleepPlan.activeType") private var activePlanType = "fish"
+    @AppStorage("earlySleepPlan.activeName") private var activePlanName = "养鱼计划"
     @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
     @AppStorage("earlySleepPlan.metricType") private var metricType = PlanMetric.earlySleepDays.rawValue
     @AppStorage("earlySleepPlan.metricTargetDays") private var metricTargetDays = 3
@@ -1067,7 +1067,6 @@ private struct EarlySleepPlanDetailView: View {
     @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
     @AppStorage("sleepGoal.allowedDeviation") private var allowedDeviation = 0
 
-    @State private var isShowingShorterSetup = false
     @State private var isShowingFishSetup = false
 
     let onPlanStarted: () -> Void
@@ -1128,10 +1127,6 @@ private struct EarlySleepPlanDetailView: View {
         .background(AppTheme.pageBackground.ignoresSafeArea())
         .navigationTitle("早睡计划")
         .navigationBarTitleDisplayMode(.large)
-        .navigationDestination(isPresented: $isShowingShorterSetup) {
-            ShorterLateNightPlanSetupView(onPlanStarted: onPlanStarted)
-        }
-
         .fullScreenCover(isPresented: $isShowingFishSetup) {
             EarlySleepFishPlanSetupView(onPlanStarted: onPlanStarted)
         }
@@ -1148,18 +1143,7 @@ private struct EarlySleepPlanDetailView: View {
     }
 
     private var currentObjective: String {
-        switch PlanMetric(rawValue: metricType) ?? .earlySleepDays {
-        case .earlySleepDays:
-            return "在 \(durationDays) 天内，累计早睡 \(metricTargetDays) 天"
-        case .bedtimeDays:
-            return "在 \(durationDays) 天内，\(String(format: "%02d:%02d", targetSleepTimeMinutes / 60, targetSleepTimeMinutes % 60)) 前入睡 \(metricTargetDays) 天"
-        case .maxLateStreak:
-            return "在 \(durationDays) 天内，连续熬夜不超过 \(metricTargetDays) 天"
-        case .latestBedtime:
-            return "最晚入睡时间不超过 \(String(format: "%02d:%02d", targetSleepTimeMinutes / 60, targetSleepTimeMinutes % 60))"
-        case .longestEarlySleepStreak:
-            return "在 \(durationDays) 天内，最长连续早睡 \(metricTargetDays) 天"
-        }
+        "共 5 项计划目标"
     }
 
     private var bedtimeText: String {

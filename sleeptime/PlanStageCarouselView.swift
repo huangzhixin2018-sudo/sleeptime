@@ -71,8 +71,6 @@ struct PlanStageCarouselView: View {
         }
     }
     
-    @AppStorage("activePlanType") private var activePlanType = "streak"
-    
     // 模拟数据逻辑（后续可以替换为真实的计划数据）
     private func getDayInfo(for day: Int) -> (title: String, subtitle: String, subtitleColor: Color) {
         let themeColor = Color(red: 120/255, green: 130/255, blue: 150/255) // 大气沉稳的灰蓝色
@@ -93,8 +91,6 @@ struct PlanStageCarouselView: View {
 struct StageItemView: View {
     let day: Int
     let currentDay: Int
-    
-    @AppStorage("activePlanType") private var activePlanType = "streak"
     
     var body: some View {
         ZStack {
@@ -130,22 +126,12 @@ private struct StageFishArtwork: View {
     let day: Int
     let currentDay: Int
 
-    @AppStorage("activePlanType") private var activePlanType = "streak"
-
     private var gradient: LinearGradient {
-        if activePlanType == "fish" {
-            return LinearGradient(
-                colors: [Color.cyan.opacity(0.8), Color.blue.opacity(0.9)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        } else {
-            return LinearGradient(
-                colors: [Color(red: 0.4, green: 0.5, blue: 0.8), Color(red: 0.2, green: 0.3, blue: 0.6)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        LinearGradient(
+            colors: [Color.cyan.opacity(0.8), Color.blue.opacity(0.9)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     @ViewBuilder
