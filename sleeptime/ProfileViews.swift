@@ -1060,6 +1060,8 @@ private struct EarlySleepPlanDetailView: View {
     @AppStorage("earlySleepPlan.activeType") private var activePlanType = "shorter"
     @AppStorage("earlySleepPlan.activeName") private var activePlanName = "连续熬夜越来越短"
     @AppStorage("earlySleepPlan.targetStreak") private var targetEarlySleepStreak = 5
+    @AppStorage("earlySleepPlan.metricType") private var metricType = PlanMetric.earlySleepDays.rawValue
+    @AppStorage("earlySleepPlan.metricTargetDays") private var metricTargetDays = 3
     @AppStorage("sleepGoal.workdaySelection") private var workdaySelection = "2,3,4,5,6"
     @AppStorage("sleepGoal.workdayBedtime") private var workdayBedtime = 23 * 60
     @AppStorage("sleepGoal.weekendBedtime") private var weekendBedtime = 23 * 60
@@ -1146,10 +1148,18 @@ private struct EarlySleepPlanDetailView: View {
     }
 
     private var currentObjective: String {
-        if activePlanType == "streak" {
-            return "在 \(durationDays) 天内，最长连续早睡达到 \(targetEarlySleepStreak) 天 · \(bedtimeText) 前入睡"
+        switch PlanMetric(rawValue: metricType) ?? .earlySleepDays {
+        case .earlySleepDays:
+            return "在 \(durationDays) 天内，累计早睡 \(metricTargetDays) 天"
+        case .bedtimeDays:
+            return "在 \(durationDays) 天内，\(String(format: "%02d:%02d", targetSleepTimeMinutes / 60, targetSleepTimeMinutes % 60)) 前入睡 \(metricTargetDays) 天"
+        case .maxLateStreak:
+            return "在 \(durationDays) 天内，连续熬夜不超过 \(metricTargetDays) 天"
+        case .latestBedtime:
+            return "最晚入睡时间不超过 \(String(format: "%02d:%02d", targetSleepTimeMinutes / 60, targetSleepTimeMinutes % 60))"
+        case .longestEarlySleepStreak:
+            return "在 \(durationDays) 天内，最长连续早睡 \(metricTargetDays) 天"
         }
-        return "目标最晚入睡时间 \(String(format: "%02d:%02d", targetSleepTimeMinutes / 60, targetSleepTimeMinutes % 60))"
     }
 
     private var bedtimeText: String {
