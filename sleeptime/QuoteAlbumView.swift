@@ -46,49 +46,8 @@ struct QuoteAlbumView: View {
             
             TabView(selection: $currentIndex) {
                 ForEach(0..<quotes.count, id: \.self) { index in
-                    let quote = quotes[index]
-                    
-                    GeometryReader { geo in
-                        VStack(spacing: 0) {
-                            ScrollView(showsIndicators: false) {
-                                VStack(spacing: 40) {
-                                    // Chinese
-                                    Text(quote.chinese)
-                                        .font(.custom("Songti SC", size: 28))
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.white)
-                                        .lineSpacing(12)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 30)
-                                    
-                                    // English
-                                    Text(quote.english)
-                                        .font(.system(size: 16, weight: .light, design: .serif))
-                                        .foregroundColor(Color.white.opacity(0.6))
-                                        .lineSpacing(6)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 40)
-                                }
-                                .padding(.vertical, 40)
-                                .frame(minHeight: geo.size.height - 120) // Leave space for author
-                            }
-                            
-                            // Author
-                            VStack(spacing: 8) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.2))
-                                    .frame(width: 40, height: 1)
-                                
-                                Text(quote.author)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.8))
-                            }
-                            .frame(height: 80)
-                            .padding(.bottom, 40)
-                        }
-                    }
+                    QuoteAlbumPage(quote: quotes[index])
                     .tag(index)
-                    // Ensure the view takes full space for swiping
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
@@ -109,6 +68,56 @@ struct QuoteAlbumView: View {
         .onDisappear {
             tabBarVisibility.isHidden = false
         }
+    }
+}
+
+private struct QuoteAlbumPage: View {
+    let quote: AlbumQuote
+
+    var body: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                quoteText(minimumHeight: geometry.size.height - 120)
+                author
+            }
+        }
+    }
+
+    private func quoteText(minimumHeight: CGFloat) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 40) {
+                Text(quote.chinese)
+                    .font(.custom("Songti SC", size: 28))
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white)
+                    .lineSpacing(12)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+
+                Text(quote.english)
+                    .font(.system(size: 16, weight: .light, design: .serif))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                    .lineSpacing(6)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+            .padding(.vertical, 40)
+            .frame(minHeight: minimumHeight)
+        }
+    }
+
+    private var author: some View {
+        VStack(spacing: 8) {
+            Rectangle()
+                .fill(Color.white.opacity(0.2))
+                .frame(width: 40, height: 1)
+
+            Text(quote.author)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.8))
+        }
+        .frame(height: 80)
+        .padding(.bottom, 40)
     }
 }
 

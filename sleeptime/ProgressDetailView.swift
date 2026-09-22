@@ -32,35 +32,7 @@ struct ProgressDetailView: View {
 
                 VStack(spacing: 20) {
                     ForEach(progressItems) { item in
-                        HStack(alignment: .center, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(item.title)
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(ink.opacity(0.92))
-                                
-                                Text(item.subtitle)
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(Color.black.opacity(0.5))
-                                    .lineSpacing(4)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            HStack(alignment: .lastTextBaseline, spacing: 4) {
-                                Text("\(item.count)")
-                                    .font(.system(size: 40, weight: .bold))
-                                    .foregroundStyle(ink)
-                                    .monospacedDigit()
-
-                                Text("次")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(Color.black.opacity(0.5))
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 32)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        ProgressItemRow(item: item, ink: ink)
                     }
                 }
             }
@@ -71,6 +43,43 @@ struct ProgressDetailView: View {
         .background(pageBackground.ignoresSafeArea())
         .navigationTitle("进步")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ProgressItemRow: View {
+    let item: ProgressItem
+    let ink: Color
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(item.title)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink.opacity(0.92))
+
+                Text(item.subtitle)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.5))
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text("\(item.count)")
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(ink)
+                    .monospacedDigit()
+
+                Text("次")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.5))
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 32)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
