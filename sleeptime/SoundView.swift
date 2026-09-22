@@ -124,30 +124,13 @@ struct SoundView: View {
                 if !currentTracks.isEmpty {
                     VStack(spacing: 24) {
                         ForEach(currentTracks) { track in
-                            HStack(spacing: 16) {
-                                // Mock Album Art
-                                Rectangle()
-                                    .fill(track.color)
-                                    .frame(width: 60, height: 60)
-                                    .overlay(
-                                        Text(track.title.prefix(1))
-                                            .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(.black.opacity(0.5))
-                                    )
-                                    .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                                
-                                Text(track.trackNumber)
-                                    .font(.system(size: 16, weight: .regular))
-                                    .foregroundColor(.black.opacity(0.6))
-                                    .frame(width: 28, alignment: .leading)
-                                
-                                Text(track.title)
-                                    .font(.system(size: 17, weight: .regular))
-                                    .foregroundColor(.black.opacity(0.9))
-                                
-                                Spacer()
+                            if track.title == "呼吸法" {
+                                NavigationLink(destination: CreativeBreathingView()) {
+                                    trackRow(for: track)
+                                }
+                            } else {
+                                trackRow(for: track)
                             }
-                            .padding(.horizontal, 24)
                         }
                     }
                 } else if selectedCategory == "心境" {
@@ -165,12 +148,6 @@ struct SoundView: View {
                             destination: LifeKeywordsView()
                         )
 
-                        // 我的便利贴
-                        MoodCard(
-                            title: "我的便利贴",
-                            destination: MyStickyNotesView()
-                        )
-
                         // 小期待
                         MoodCard(
                             title: "小期待",
@@ -179,13 +156,13 @@ struct SoundView: View {
 
                         // 系统推荐的名言
                         MoodCard(
-                            title: "每日箴言",
-                            destination: QuoteOfTheDayView()
+                            title: "语录专辑",
+                            destination: QuoteAlbumView()
                         )
 
                         // 自己收集的名言
                         MoodCard(
-                            title: "心语珍藏",
+                            title: "我的语录",
                             destination: MyQuotesView()
                         )
 
@@ -213,67 +190,44 @@ struct SoundView: View {
 
     private var currentTracks: [SoundTrack] {
         switch selectedCategory {
-        case "睡眠": sleepTracks
-        case "声音": soundTracks
-        case "冥想": meditationTracks
-        default: []
+        case "睡眠": return sleepTracks
+        case "声音": return soundTracks
+        case "冥想": return meditationTracks
+        default: return []
         }
+    }
+    
+    private func trackRow(for track: SoundTrack) -> some View {
+        HStack(spacing: 16) {
+            // Mock Album Art
+            Rectangle()
+                .fill(track.color)
+                .frame(width: 60, height: 60)
+                .overlay(
+                    Text(track.title.prefix(1))
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black.opacity(0.5))
+                )
+                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+            
+            Text(track.trackNumber)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.black.opacity(0.6))
+                .frame(width: 28, alignment: .leading)
+            
+            Text(track.title)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundColor(.black.opacity(0.9))
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
     }
 }
 
-struct QuoteOfTheDayView: View {
-    private let bgColor = Color.white
-    
-    var body: some View {
-        VStack {
-            Spacer()
-            Text("暂无内容")
-                .foregroundColor(.black.opacity(0.6))
-            Spacer()
-        }
-        .background(bgColor.ignoresSafeArea())
-        .navigationTitle("每日箴言")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
-        }
-        .toolbar(.hidden, for: .tabBar)
-    }
-}
 
-struct MyQuotesView: View {
-    private let bgColor = Color.white
-    
-    var body: some View {
-        VStack {
-            Spacer()
-            Text("暂无内容")
-                .foregroundColor(.black.opacity(0.6))
-            Spacer()
-        }
-        .background(bgColor.ignoresSafeArea())
-        .navigationTitle("心语珍藏")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
-        }
-        .toolbar(.hidden, for: .tabBar)
-    }
-}
+
+
 
 
 

@@ -18,6 +18,7 @@ struct SmallExpectationsView: View {
     ]
 
     @State private var showFulfilled = false
+    @State private var showAddSheet = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -82,9 +83,9 @@ struct SmallExpectationsView: View {
 
             // Floating Action Button
             Button(action: {
-                // TODO: Add new expectation
                 let generator = UIImpactFeedbackGenerator(style: .medium)
                 generator.impactOccurred()
+                showAddSheet = true
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "plus")
@@ -104,6 +105,13 @@ struct SmallExpectationsView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
+        .sheet(isPresented: $showAddSheet) {
+            AddExpectationView { newItem in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    items.insert(newItem, at: 0)
+                }
+            }
+        }
     }
 
     private func toggleFulfillment(for item: ExpectationItem) {
@@ -115,6 +123,99 @@ struct SmallExpectationsView: View {
                 items[index].isFulfilled.toggle()
             }
         }
+    }
+}
+
+// MARK: - Components
+
+struct AddExpectationView: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var title: String = ""
+    @State private var selectedDate = Date()
+    var onAdd: (ExpectationItem) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(Color(hex: "0f172a"))
+                }
+                Spacer()
+                Text("写下新期待")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "0f172a"))
+                Spacer()
+                Button(action: { save() }) {
+                    Text("保存")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(title.trimmingCharacters(in: .whitespaces).isEmpty ? Color(hex: "94a3b8") : Color(hex: "0f172a"))
+                }
+                .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            .padding(20)
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Title Input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("期待的内容")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "64748b"))
+                        
+                        TextField("写下一件最近想做的小事...", text: $title)
+                            .font(.system(size: 16))
+                            .padding(16)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "e2e8f0"), lineWidth: 1)
+                            )
+                    }
+                    
+                    // Date Picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("计划时间")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "64748b"))
+                        
+                        DatePicker("选择日期", selection: $selectedDate, displayedComponents: .date)
+                            .datePickerStyle(.graphical)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "e2e8f0"), lineWidth: 1)
+                            )
+                            .tint(Color(hex: "0f172a"))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .background(Color(hex: "f7f9fa").ignoresSafeArea())
+    }
+    
+    private func save() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日"
+        formatter.locale = Locale(identifier: "zh_CN")
+        let dateStr = formatter.string(from: selectedDate)
+        
+        let weekdayFormatter = DateFormatter()
+        weekdayFormatter.dateFormat = "EEEE"
+        weekdayFormatter.locale = Locale(identifier: "zh_CN")
+        var weekdayStr = weekdayFormatter.string(from: selectedDate)
+        weekdayStr = weekdayStr.replacingOccurrences(of: "星期", with: "周")
+        
+        let newItem = ExpectationItem(title: title, date: dateStr, weekday: weekdayStr, isFulfilled: false)
+        onAdd(newItem)
+        dismiss()
     }
 }
 
