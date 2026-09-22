@@ -251,7 +251,7 @@ private struct HomeWeekView: View {
                     .sleepDetailChrome(tabBarVisibility)
                 ) {
                     HomeSleepInsightCard(
-                        title: "影响因素",
+                        title: "熬夜原因",
                         value: "去记录",
                         icon: "sun.and.horizon.fill",
                         iconColor: .orange
@@ -263,8 +263,8 @@ private struct HomeWeekView: View {
                     .sleepDetailChrome(tabBarVisibility)
                 ) {
                     HomeSleepInsightCard(
-                        title: "睡眠状态",
-                        value: "情绪感知",
+                        title: "睡眠札记",
+                        value: "去记录",
                         icon: "moon.stars"
                     )
                 }
@@ -1234,10 +1234,21 @@ struct BlankPlanView: View {
     @AppStorage("shorterPlan.targetSleepTimeMinutes") private var targetSleepTimeMinutes = 23 * 60 + 30
 
     private var trajectorySegments: [SleepTrajectorySegment] {
-        Array(SleepCheckInStore.segments(
+        let realSegments = Array(SleepCheckInStore.segments(
             from: SleepCheckInStore.decode(encodedSleepCheckIns),
             startedAt: planStartedAt
         ).suffix(3))
+        
+        if realSegments.isEmpty {
+            // 返回模拟的三段作息变化卡片数据
+            let today = Date()
+            return [
+                SleepTrajectorySegment(isEarlySleep: true, dates: [today.addingTimeInterval(-86400 * 4)]),
+                SleepTrajectorySegment(isEarlySleep: false, dates: [today.addingTimeInterval(-86400 * 3), today.addingTimeInterval(-86400 * 2)]),
+                SleepTrajectorySegment(isEarlySleep: true, dates: [today.addingTimeInterval(-86400 * 1), today])
+            ]
+        }
+        return realSegments
     }
 
     private var derivedEarlySleepStreak: Int {
@@ -1404,6 +1415,7 @@ struct BlankPlanView: View {
                     )
                     .padding(.top, 16)
                     .padding(.bottom, 8)
+                    
 
                 }
                 .padding(.horizontal, 14)

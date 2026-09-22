@@ -44,15 +44,16 @@ struct QuoteAlbumView: View {
             // Background
             Color(hex: "0f172a").ignoresSafeArea() // Dark immersive background
             
-            TabView(selection: $currentIndex) {
-                ForEach(0..<quotes.count, id: \.self) { index in
-                    QuoteAlbumPage(quote: quotes[index])
-                    .tag(index)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(0..<quotes.count, id: \.self) { index in
+                        QuoteAlbumPage(quote: quotes[index])
+                            .containerRelativeFrame([.horizontal, .vertical])
+                    }
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .always))
-            .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .scrollTargetBehavior(.paging)
+            .ignoresSafeArea(.all, edges: .bottom) // Let the scroll view flow to bottom
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)

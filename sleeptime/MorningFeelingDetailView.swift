@@ -63,7 +63,7 @@ struct MorningFeelingDetailView: View {
             }
         }
         .background(Color.white.ignoresSafeArea())
-        .navigationTitle("")
+        .navigationTitle("清晨的感觉")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingFeelingSheet) {
             MorningFeelingSelectionSheet(selectedFeeling: $todayFeeling)

@@ -68,22 +68,19 @@ struct TimeTravelDetailView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
-                // 卡片说明
-                VStack(alignment: .leading, spacing: 16) {
+                // 标签区域标题
+                HStack {
                     Text("早睡原则")
-                        .font(.system(size: 17, weight: .bold, design: .serif))
-                        .foregroundColor(.primary)
-                        .lineSpacing(6)
-                    
-                    Text("① 识别你的晚睡诱因\n        ↓\n② 建立你的早睡原则\n        ↓\n③ 每日强化原则理念\n        ↓\n④ 查看睡眠反馈并调整原则")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color.secondary)
-                        .lineSpacing(4)
+                        .font(.system(size: 20, weight: .bold))
+                    Spacer()
+                    Button(action: {
+                        // TODO: 管理操作
+                    }) {
+                        Text("管理")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    }
                 }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(uiColor: .systemBackground))
-                .cornerRadius(12)
 
                 // 标签流式布局
                 FlowLayout(spacing: 12, lineSpacing: 16) {
@@ -106,8 +103,8 @@ struct TimeTravelDetailView: View {
 
                 if !principles.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("\(Calendar.current.component(.month, from: Date()))月")
-                            .font(.system(size: 17, weight: .semibold))
+                        Text("原则实践")
+                            .font(.system(size: 20, weight: .bold))
 
                         ForEach(principles) { principle in
                             PersonalPrincipleCard(principle: principle) {

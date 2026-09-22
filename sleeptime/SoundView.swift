@@ -142,12 +142,6 @@ struct SoundView: View {
                         ],
                         spacing: 10
                     ) {
-                        // 心之所向
-                        MoodCard(
-                            title: "心之所向",
-                            destination: LifeKeywordsView()
-                        )
-
                         // 小期待
                         MoodCard(
                             title: "小期待",

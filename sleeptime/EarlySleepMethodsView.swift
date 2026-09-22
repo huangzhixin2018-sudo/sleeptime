@@ -27,7 +27,7 @@ struct EarlySleepMethodsView: View {
                                 Button {
                                     activeModal = .detail(method.id)
                                 } label: {
-                                    MethodStickyNoteCard(method: method, palette: notePalette(for: method))
+                                    MethodStickyNoteCard(method: method)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -118,16 +118,7 @@ struct EarlySleepMethodsView: View {
         .padding(.top, 72)
     }
 
-    private func notePalette(for method: FreeSleepMethod) -> MethodNotePalette {
-        let palettes: [MethodNotePalette] = [
-            .init(paper: Color(red: 0.91, green: 0.88, blue: 0.99)),
-            .init(paper: Color(red: 0.87, green: 0.95, blue: 0.92)),
-            .init(paper: Color(red: 0.89, green: 0.94, blue: 0.99)),
-            .init(paper: Color(red: 0.99, green: 0.91, blue: 0.92))
-        ]
-        let seed = method.id.uuidString.unicodeScalars.reduce(UInt(0)) { ($0 &* 31) &+ UInt($1.value) }
-        return palettes[Int(seed % UInt(palettes.count))]
-    }
+
 
     private func loadMethods() {
         guard let data = encodedMethods.data(using: .utf8) else { return }
@@ -139,10 +130,6 @@ struct EarlySleepMethodsView: View {
               let value = String(data: data, encoding: .utf8) else { return }
         encodedMethods = value
     }
-}
-
-private struct MethodNotePalette {
-    let paper: Color
 }
 
 private enum MethodModal: Identifiable {
@@ -159,25 +146,24 @@ private enum MethodModal: Identifiable {
 
 private struct MethodStickyNoteCard: View {
     let method: FreeSleepMethod
-    let palette: MethodNotePalette
 
     var body: some View {
         Text(method.content)
             .font(.system(size: 19, weight: .medium))
-            .foregroundStyle(Color.black.opacity(0.80))
+            .foregroundStyle(Color.black.opacity(0.85))
             .lineSpacing(8)
             .lineLimit(4)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, minHeight: 138, alignment: .leading)
             .padding(.horizontal, 30)
             .padding(.vertical, 22)
-            .background(palette.paper)
+            .background(Color.white)
             .clipShape(SleepMethodCardShape())
             .overlay {
                 SleepMethodCardShape()
-                    .stroke(Color.black.opacity(0.035), lineWidth: 1)
+                    .stroke(Color.black, lineWidth: 2)
             }
-            .shadow(color: Color.black.opacity(0.055), radius: 12, x: 0, y: 6)
+            .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
             .contentShape(SleepMethodCardShape())
     }
 }
