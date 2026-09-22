@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct EarlySleepMethodsView: View {
-    @AppStorage("earlySleep.freeMethods") private var encodedMethods = "[]"
+    @AppStorage("earlySleep.freeMethods.v2") private var encodedMethods = "[]"
     @State private var methods: [FreeSleepMethod] = []
     @State private var activeModal: MethodModal?
 
@@ -11,28 +11,30 @@ struct EarlySleepMethodsView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    HStack {
-                        Text("我的早睡方法")
-                            .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(Color.black.opacity(0.9))
-                        Spacer()
-                    }
+                    Text("我的早睡方法")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Color.black.opacity(0.9))
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.top, 10)
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 24)
 
-                    VStack(spacing: 14) {
-                        ForEach(Array(methods.enumerated()), id: \.element.id) { index, method in
-                            Button {
-                                activeModal = .detail(method.id)
-                            } label: {
-                                MethodStickyNoteCard(method: method, color: noteColor(for: index))
+                    if methods.isEmpty {
+                        emptyState
+                    } else {
+                        LazyVStack(spacing: 18) {
+                            ForEach(methods) { method in
+                                Button {
+                                    activeModal = .detail(method.id)
+                                } label: {
+                                    MethodStickyNoteCard(method: method, palette: notePalette(for: method))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 120)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 120)
                 }
             }
 
@@ -40,8 +42,12 @@ struct EarlySleepMethodsView: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 activeModal = .composer
             } label: {
-                Text("写一张")
-                    .font(.system(size: 15, weight: .medium))
+                HStack(spacing: 8) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("添加方法")
+                        .font(.system(size: 15, weight: .semibold))
+                }
                     .foregroundStyle(.white)
                     .frame(width: 190, height: 48)
                     .background(Color(red: 0.17, green: 0.17, blue: 0.19), in: Capsule())
@@ -56,10 +62,12 @@ struct EarlySleepMethodsView: View {
                 switch modal {
                 case .composer:
                     EarlySleepMethodComposerView { content in
-                        methods.insert(
-                            FreeSleepMethod(id: UUID(), content: content, createdAt: Date()),
-                            at: 0
-                        )
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            methods.insert(
+                                FreeSleepMethod(id: UUID(), content: content, createdAt: Date()),
+                                at: 0
+                            )
+                        }
                         persistMethods()
                     }
                     .presentationDetents([.medium])
@@ -89,14 +97,36 @@ struct EarlySleepMethodsView: View {
         return $methods[index]
     }
 
-    private func noteColor(for index: Int) -> Color {
-        let colors = [
-            Color(red: 0.99, green: 0.97, blue: 0.84),
-            Color(red: 0.92, green: 0.96, blue: 0.90),
-            Color(red: 0.91, green: 0.95, blue: 0.98),
-            Color(red: 0.98, green: 0.92, blue: 0.93)
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "lightbulb.max")
+                .font(.system(size: 26, weight: .medium))
+                .foregroundStyle(Color(red: 0.74, green: 0.57, blue: 0.18))
+                .frame(width: 56, height: 56)
+                .background(Color(red: 0.99, green: 0.95, blue: 0.76), in: Circle())
+
+            VStack(spacing: 6) {
+                Text("还没有早睡方法")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Color.black.opacity(0.78))
+                Text("记下今晚想尝试的一件小事")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.black.opacity(0.42))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 72)
+    }
+
+    private func notePalette(for method: FreeSleepMethod) -> MethodNotePalette {
+        let palettes: [MethodNotePalette] = [
+            .init(paper: Color(red: 0.91, green: 0.88, blue: 0.99)),
+            .init(paper: Color(red: 0.87, green: 0.95, blue: 0.92)),
+            .init(paper: Color(red: 0.89, green: 0.94, blue: 0.99)),
+            .init(paper: Color(red: 0.99, green: 0.91, blue: 0.92))
         ]
-        return colors[index % colors.count]
+        let seed = method.id.uuidString.unicodeScalars.reduce(UInt(0)) { ($0 &* 31) &+ UInt($1.value) }
+        return palettes[Int(seed % UInt(palettes.count))]
     }
 
     private func loadMethods() {
@@ -109,6 +139,10 @@ struct EarlySleepMethodsView: View {
               let value = String(data: data, encoding: .utf8) else { return }
         encodedMethods = value
     }
+}
+
+private struct MethodNotePalette {
+    let paper: Color
 }
 
 private enum MethodModal: Identifiable {
@@ -125,31 +159,58 @@ private enum MethodModal: Identifiable {
 
 private struct MethodStickyNoteCard: View {
     let method: FreeSleepMethod
-    let color: Color
+    let palette: MethodNotePalette
 
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(method.content)
-                    .font(.system(size: 18))
-                    .foregroundStyle(Color.black.opacity(0.8))
-                    .lineSpacing(7)
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 18)
-            .padding(.bottom, 18)
-            .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
-            .background(color, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+        Text(method.content)
+            .font(.system(size: 19, weight: .medium))
+            .foregroundStyle(Color.black.opacity(0.80))
+            .lineSpacing(8)
+            .lineLimit(4)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, minHeight: 138, alignment: .leading)
+            .padding(.horizontal, 30)
+            .padding(.vertical, 22)
+            .background(palette.paper)
+            .clipShape(SleepMethodCardShape())
             .overlay {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                SleepMethodCardShape()
+                    .stroke(Color.black.opacity(0.035), lineWidth: 1)
             }
-
-        }
+            .shadow(color: Color.black.opacity(0.055), radius: 12, x: 0, y: 6)
+            .contentShape(SleepMethodCardShape())
     }
+}
 
+private struct SleepMethodCardShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let radius: CGFloat = 22
+        let notchRadius: CGFloat = 11
+        let notchY = rect.midY
+        var path = Path()
+
+        path.move(to: CGPoint(x: radius, y: 0))
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: 0))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: radius), control: CGPoint(x: rect.maxX, y: 0))
+        path.addLine(to: CGPoint(x: rect.maxX, y: notchY - notchRadius))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: notchY + notchRadius),
+            control: CGPoint(x: rect.maxX - notchRadius * 1.35, y: notchY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - radius))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX - radius, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: radius, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: 0, y: rect.maxY - radius), control: CGPoint(x: 0, y: rect.maxY))
+        path.addLine(to: CGPoint(x: 0, y: notchY + notchRadius))
+        path.addQuadCurve(
+            to: CGPoint(x: 0, y: notchY - notchRadius),
+            control: CGPoint(x: notchRadius * 1.35, y: notchY)
+        )
+        path.addLine(to: CGPoint(x: 0, y: radius))
+        path.addQuadCurve(to: CGPoint(x: radius, y: 0), control: CGPoint(x: 0, y: 0))
+        path.closeSubpath()
+        return path
+    }
 }
 
 private struct EarlySleepMethodDetailView: View {
@@ -165,44 +226,70 @@ private struct EarlySleepMethodDetailView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(red: 0.965, green: 0.965, blue: 0.955).ignoresSafeArea()
+            Color(.systemGroupedBackground).ignoresSafeArea()
 
-            ZStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(chineseDate(method.createdAt))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(isEditing ? "编辑方法" : "早睡方法")
+                            .font(.system(size: 20, weight: .semibold))
 
+                        Text(chineseDate(method.createdAt))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 34, height: 34)
+                            .background(Color(.secondarySystemGroupedBackground), in: Circle())
+                    }
+                    .accessibilityLabel("关闭")
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 18)
+
+                Group {
                     if isEditing {
                         TextEditor(text: $draft)
-                            .font(.system(size: 20))
-                            .lineSpacing(8)
                             .scrollContentBackground(.hidden)
                             .textContentType(.none)
                             .focused($isFocused)
                     } else {
-                        Text(method.content)
-                            .font(.system(size: 20))
-                            .lineSpacing(8)
+                        ScrollView(showsIndicators: false) {
+                            Text(method.content)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                    Spacer()
+                }
+                .font(.system(size: 18))
+                .foregroundStyle(Color.primary.opacity(0.86))
+                .lineSpacing(7)
+                .padding(16)
+                .frame(maxWidth: .infinity, minHeight: 260, alignment: .topLeading)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 36)
-                .padding(.bottom, 24)
-                .frame(maxWidth: .infinity, minHeight: 430, alignment: .topLeading)
-                .background(Color(red: 1.00, green: 0.98, blue: 0.84))
 
+                Spacer(minLength: 100)
             }
-            .padding(.top, 10)
-            .padding(.bottom, 92)
 
             actionBar
-            .padding(.horizontal, 20)
-            .padding(.bottom, 22)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 22)
         }
         .interactiveDismissDisabled(isEditing)
-        .confirmationDialog("删除这张便利贴？", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+        .confirmationDialog("删除这个方法？", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
             Button("删除", role: .destructive) {
                 onDelete()
                 dismiss()
@@ -216,11 +303,13 @@ private struct EarlySleepMethodDetailView: View {
         if isEditing {
             HStack(spacing: 12) {
                 Button("取消") {
+                    draft = method.content
                     isFocused = false
                     isEditing = false
                 }
                 .foregroundStyle(.primary)
                 .frame(width: 88, height: 52)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
 
                 Button("保存修改", action: saveChanges)
                     .font(.system(size: 16, weight: .semibold))
@@ -240,7 +329,8 @@ private struct EarlySleepMethodDetailView: View {
                 Button("删除", role: .destructive) {
                     isConfirmingDelete = true
                 }
-                .frame(width: 72, height: 52)
+                .frame(width: 52, height: 52)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
             }
         }
     }
@@ -286,51 +376,44 @@ private struct EarlySleepMethodComposerView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color(red: 0.965, green: 0.965, blue: 0.955).ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 10) {
+                Text("写下一个真正对你有效的方法")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
 
-                VStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text(chineseDate(Date()))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.black.opacity(0.38))
-
-                        ZStack(alignment: .topLeading) {
-                            if content.isEmpty {
-                                Text("写下你的早睡方法")
-                                    .font(.system(size: 18))
-                                    .foregroundStyle(Color.black.opacity(0.25))
-                                    .padding(.top, 8)
-                                    .padding(.leading, 5)
-                                    .allowsHitTesting(false)
-                            }
-
-                            TextEditor(text: $content)
-                                .font(.system(size: 18))
-                                .foregroundStyle(Color.black.opacity(0.82))
-                                .lineSpacing(7)
-                                .scrollContentBackground(.hidden)
-                                .background(Color.clear)
-                                .textContentType(.none)
-                                .focused($isFocused)
+                ZStack(alignment: .topLeading) {
+                    if content.isEmpty {
+                        Text("例如：睡前半小时把手机放到客厅")
+                            .font(.system(size: 17))
+                            .foregroundStyle(Color.secondary.opacity(0.65))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 8)
+                            .allowsHitTesting(false)
                         }
-                    }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 20)
-                    .padding(.bottom, 18)
-                    .frame(maxWidth: .infinity, minHeight: 220, alignment: .topLeading)
-                    .background(Color(red: 0.99, green: 0.97, blue: 0.84), in: RoundedRectangle(cornerRadius: 6))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                    }
 
-                    Spacer(minLength: 0)
+                    TextEditor(text: $content)
+                        .font(.system(size: 17))
+                        .foregroundStyle(Color.primary.opacity(0.86))
+                        .lineSpacing(7)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .textContentType(.none)
+                        .focused($isFocused)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
+                .padding(12)
+                .frame(maxWidth: .infinity, minHeight: 190, alignment: .topLeading)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                }
+
+                Spacer(minLength: 0)
             }
-            .navigationTitle("写一张")
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .navigationTitle("写下方法")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -353,12 +436,6 @@ private struct EarlySleepMethodComposerView: View {
         }
     }
 
-    private func chineseDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "yyyy年M月d日"
-        return formatter.string(from: date)
-    }
 }
 
 private struct FreeSleepMethod: Codable, Identifiable, Equatable {

@@ -88,20 +88,18 @@ struct TimeTravelDetailView: View {
                 // 标签流式布局
                 FlowLayout(spacing: 12, lineSpacing: 16) {
                     ForEach(tags, id: \.self) { tag in
-                        NavigationLink(destination: PrincipleDetailView(title: tag)) {
-                            HStack(spacing: 6) {
-                                Text("#")
-                                    .font(.system(size: 15, weight: .light))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                Text(tag)
-                                    .font(.system(size: 16, weight: .medium, design: .serif))
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(Color.black)
-                            .cornerRadius(24)
+                        HStack(spacing: 6) {
+                            Text("#")
+                                .font(.system(size: 15, weight: .light))
+                                .foregroundColor(Color.white.opacity(0.6))
+                            Text(tag)
+                                .font(.system(size: 16, weight: .medium, design: .serif))
+                                .foregroundColor(.white)
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black)
+                        .cornerRadius(24)
                     }
                 }
                 .padding(.top, 10)

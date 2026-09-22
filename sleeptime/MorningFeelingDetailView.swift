@@ -43,21 +43,6 @@ struct MorningFeelingDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 自定义导航栏，删除标题
-            HStack {
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.black)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 16)
-
             // 列表
             ScrollView {
                 VStack(spacing: 0) {
@@ -74,10 +59,12 @@ struct MorningFeelingDetailView: View {
                     }
                 }
                 .padding(.horizontal, 16)
+                .padding(.top, 16)
             }
         }
         .background(Color.white.ignoresSafeArea())
-        .navigationBarHidden(true)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingFeelingSheet) {
             MorningFeelingSelectionSheet(selectedFeeling: $todayFeeling)
         }

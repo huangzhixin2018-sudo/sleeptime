@@ -492,11 +492,6 @@ struct StatisticsView: View {
                         
                         Spacer()
                     } else if selectedTab == .total {
-                        ConvergenceShiftView(year: 2026)
-                            // Offset negative horizontal padding to make it full width if desired
-                            .padding(.horizontal, -20)
-                            .padding(.top, 24)
-                        
                         Spacer()
                     } else {
                         Spacer()

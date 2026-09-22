@@ -100,7 +100,8 @@ struct SleepStatusDetailView: View {
                 }
             })
         }
-        .navigationBarHidden(true)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.light)
     }
 }
@@ -132,23 +133,12 @@ private struct EmotionSelectionInnerView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color.black.opacity(0.45))
-                            .frame(width: 36, height: 36)
-                            .background(Circle().fill(Color.black.opacity(0.05)))
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 44) {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("此刻的睡眠是什么样？")
+                            Text("此刻的睡眠")
                                 .font(.system(size: 34, weight: .light))
                                 .foregroundColor(Color.black.opacity(0.9))
                                 .tracking(2)
@@ -488,107 +478,110 @@ private struct EmotionRecordSheetView: View {
                 HStack {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color.black.opacity(0.45))
-                            .frame(width: 36, height: 36)
-                            .background(Circle().fill(Color.black.opacity(0.05)))
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color.black.opacity(0.6))
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(Color.black.opacity(0.08)))
                     }
                     Spacer()
                     Text("记录状态")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Color.black.opacity(0.45))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color.black.opacity(0.85))
                         .tracking(2)
                     Spacer()
-                    Color.clear.frame(width: 36, height: 36)
+                    Color.clear.frame(width: 44, height: 44)
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .padding(.vertical, 20)
 
-                VStack(alignment: .leading, spacing: 20) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(["平静", "开心", "焦虑", "难过", "疲惫", "清醒"], id: \.self) { tag in
-                                Button(action: {
-                                    if selectedTags.contains(tag) {
-                                        selectedTags.remove(tag)
-                                    } else {
-                                        selectedTags.insert(tag)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(["平静", "开心", "焦虑", "难过", "疲惫", "清醒"], id: \.self) { tag in
+                                    Button(action: {
+                                        if selectedTags.contains(tag) {
+                                            selectedTags.remove(tag)
+                                        } else {
+                                            selectedTags.insert(tag)
+                                        }
+                                    }) {
+                                        Text(tag)
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(selectedTags.contains(tag) ? .white : Color.black.opacity(0.6))
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                Capsule()
+                                                    .fill(selectedTags.contains(tag) ? Color.black.opacity(0.8) : Color.black.opacity(0.05))
+                                            )
                                     }
-                                }) {
-                                    Text(tag)
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(selectedTags.contains(tag) ? .white : Color.black.opacity(0.6))
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(
-                                            Capsule()
-                                                .fill(selectedTags.contains(tag) ? Color.black.opacity(0.8) : Color.black.opacity(0.05))
-                                        )
                                 }
                             }
+                            .padding(.horizontal, 16)
+                        }
+                        .padding(.top, 4)
+
+                        ZStack(alignment: .topLeading) {
+                            if noteText.isEmpty {
+                                Text("用几个词描述现在的感受，不用完整的句子…")
+                                    .font(.system(size: 18, weight: .light))
+                                    .foregroundColor(Color.black.opacity(0.22))
+                                    .lineSpacing(8)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 5)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $noteText)
+                                .font(.system(size: 18, weight: .light))
+                                .foregroundColor(Color.black.opacity(0.82))
+                                .lineSpacing(8)
+                                .frame(height: 180)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                                .focused($isNoteFocused)
                         }
                         .padding(.horizontal, 16)
-                    }
-                    .padding(.top, 4)
+                        .padding(.vertical, 12)
+                        .background(Color.white.opacity(0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(Color.black.opacity(0.07), lineWidth: 1)
+                        )
 
-                    ZStack(alignment: .topLeading) {
-                        if noteText.isEmpty {
-                            Text("用几个词描述现在的感受，不用完整的句子…")
-                                .font(.system(size: 18, weight: .light))
-                                .foregroundColor(Color.black.opacity(0.22))
-                                .lineSpacing(8)
-                                .padding(.top, 8)
-                                .padding(.leading, 5)
-                                .allowsHitTesting(false)
-                        }
-                        TextEditor(text: $noteText)
-                            .font(.system(size: 18, weight: .light))
-                            .foregroundColor(Color.black.opacity(0.82))
-                            .lineSpacing(8)
-                            .frame(height: 200)
-                            .scrollContentBackground(.hidden)
-                            .background(Color.clear)
-                            .focused($isNoteFocused)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(0.6))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.black.opacity(0.07), lineWidth: 1)
-                    )
-
-                    Button(action: {
-                        isNoteFocused = false
-                        withAnimation(.easeInOut(duration: 0.35)) {
-                            showConfirmation = true
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            withAnimation(.easeInOut(duration: 0.3)) { showConfirmation = false }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { 
-                                onRecordComplete?()
-                                dismiss() 
+                        Button(action: {
+                            isNoteFocused = false
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                showConfirmation = true
                             }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation(.easeInOut(duration: 0.3)) { showConfirmation = false }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { 
+                                    onRecordComplete?()
+                                    dismiss() 
+                                }
+                            }
+                        }) {
+                            Text("完成记录")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color.black.opacity(0.82))
+                                )
                         }
-                    }) {
-                        Text("完成记录")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color.black.opacity(0.82))
-                            )
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 8)
+                    .padding(.bottom, 36)
                 }
-                .padding(.horizontal, 28)
-                .padding(.top, 8)
-                .padding(.bottom, 36)
-
-                Spacer()
+                .onTapGesture {
+                    isNoteFocused = false
+                }
             }
 
             if showConfirmation {
