@@ -412,7 +412,7 @@ private struct HomeSleepInsightCard: View {
 private struct HomePastTodayCard: View {
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
-            Text("历月今日")
+            Text("上月今日")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -478,7 +478,7 @@ private struct HomeYearProgressCard: View {
 
             Spacer()
 
-            Text("还剩 109 天")
+            Text("还剩 106 天")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Color.black.opacity(0.5))
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -807,218 +807,224 @@ private struct SleepTabBarVisibilityBridge: UIViewControllerRepresentable {
     }
 }
 
-struct PastMonthRecord: Identifiable {
-    let id = UUID()
-    let month: Int
-    let sleepTime: String
-    let status: HomeSleepState
-}
-
 struct PastTodayDetailView: View {
-    @State private var records: [PastMonthRecord] = [
-        PastMonthRecord(month: 8, sleepTime: "23:45", status: .dream),
-        PastMonthRecord(month: 7, sleepTime: "01:20", status: .insomnia),
-        PastMonthRecord(month: 6, sleepTime: "22:30", status: .poorSleep),
-        PastMonthRecord(month: 5, sleepTime: "00:15", status: .difficulty),
-        PastMonthRecord(month: 4, sleepTime: "23:00", status: .dream),
-        PastMonthRecord(month: 3, sleepTime: "02:10", status: .allNight),
-        PastMonthRecord(month: 2, sleepTime: "22:45", status: .dream),
-        PastMonthRecord(month: 1, sleepTime: "23:30", status: .midnightWake)
-    ]
-
-    // 获取当前日期
-    private var currentDay: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        return formatter.string(from: Date())
-    }
-
     var body: some View {
-        ZStack {
-            AppTheme.homeBackground.ignoresSafeArea()
-            
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    
-                    // Header
-                    VStack(spacing: 8) {
-                        Text("每月的今天")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.black.opacity(0.6))
-                        
-                        Text("\(currentDay)日")
-                            .font(.system(size: 48, weight: .bold))
-                            .foregroundColor(.black)
-                    }
-                    .padding(.top, 32)
-                    
-                    // List
-                    VStack(spacing: 0) {
-                        ForEach(records.indices, id: \.self) { index in
-                            let record = records[index]
-                            
-                            HStack {
-                                Text("\(record.month)月")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .frame(width: 50, alignment: .leading)
-                                
-                                Spacer()
-                                
-                                Text(record.sleepTime)
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .monospacedDigit()
-                                    .foregroundColor(.black)
-                                
-                                Spacer()
-                                
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(record.status.color)
-                                        .frame(width: 8, height: 8)
-                                    Text(record.status.title)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.black.opacity(0.6))
-                                }
-                                .frame(width: 80, alignment: .trailing)
-                            }
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 20)
-                            
-                            if index < records.count - 1 {
-                                Divider()
-                                    .background(Color(white: 0.9))
-                                    .padding(.leading, 20)
-                            }
-                        }
-                    }
-                    .background(Color.white)
-                    .cornerRadius(20)
-                    .padding(.horizontal, 20)
-                }
-                .padding(.bottom, 40)
-            }
-        }
-        .navigationTitle("历月今日")
-        .navigationBarTitleDisplayMode(.inline)
+        HomeRecordDetailView()
     }
 }
 
 struct YearProgressDetailView: View {
-    @State private var holidays = [
-        HolidayItem(name: "元旦", date: "1月1日 至 1月3日", detail: "周四 至 周六", days: "3天"),
-        HolidayItem(name: "春节", date: "2月15日 至 2月23日", detail: "腊月廿八 至 正月初七", days: "9天"),
-        HolidayItem(name: "清明节", date: "4月4日 至 4月6日", detail: "周六 至 周一", days: "3天"),
-        HolidayItem(name: "劳动节", date: "5月1日 至 5月5日", detail: "周五 至 周二", days: "5天"),
-        HolidayItem(name: "端午节", date: "6月19日 至 6月21日", detail: "周五 至 周日", days: "3天"),
-        HolidayItem(name: "中秋节", date: "9月25日 至 9月27日", detail: "周五 至 周日", days: "3天"),
-        HolidayItem(name: "国庆节", date: "10月1日 至 10月7日", detail: "周四 至 周三", days: "7天")
+    @Environment(\.displayScale) private var displayScale
+    @AppStorage("annual.goal.targetDays") private var targetDays = 100
+    @State private var showsGoalEditor = false
+
+    private let ink = Color(red: 18 / 255, green: 18 / 255, blue: 18 / 255)
+    private let completedDays = 42
+    private let footprints: [HomepageAnnualFootprint] = [
+        .init(title: "节律修复", subtitle: "晚睡后次日入睡早于 0:00", value: "8", unit: "次"),
+        .init(title: "规律作息", subtitle: "连续 5 天入睡误差小于 30 分钟", value: "16", unit: "周"),
+        .init(title: "神清气爽", subtitle: "睡眠感受记录为神清气爽", value: "42", unit: "天"),
+        .init(title: "早睡之月", subtitle: "月度早睡天数达到 15 天", value: "5", unit: "月"),
+        .init(title: "周期守约", subtitle: "完成周期计划目标", value: "2", unit: "次"),
+        .init(title: "准点入夜", subtitle: "12点前准时入睡", value: "37", unit: "次")
     ]
+
+    private var progress: Double {
+        min(Double(completedDays) / Double(max(targetDays, 1)), 1)
+    }
 
     var body: some View {
         ZStack {
-            AppTheme.homeBackground.ignoresSafeArea()
-            
+            Color(red: 242 / 255, green: 242 / 255, blue: 247 / 255).ignoresSafeArea()
+
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    // Header progress card
-                    YearProgressHeaderCard()
-                    
-                    // Holiday list
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("法定节假日")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 20)
-                            
-                        VStack(spacing: 0) {
-                            ForEach(holidays.indices, id: \.self) { index in
-                                let item = holidays[index]
-                                HolidayRowView(item: item)
-                                
-                                if index < holidays.count - 1 {
-                                    Divider()
-                                        .background(Color(white: 0.9))
-                                        .padding(.leading, 20)
-                                }
-                            }
-                        }
-                        .background(Color.white)
-                        .cornerRadius(20)
+                VStack(spacing: 0) {
+                    posterContent
+
+                    exportButton
                         .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
+                }
+            }
+        }
+        .navigationTitle("年度目标")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showsGoalEditor) {
+            annualGoalEditor
+                .presentationDetents([.height(310)])
+                .presentationCornerRadius(28)
+        }
+    }
+
+    private var posterContent: some View {
+        VStack(alignment: .leading, spacing: 44) {
+            annualGoalHeroCard
+                .onTapGesture { showsGoalEditor = true }
+
+            VStack(alignment: .leading, spacing: 20) {
+                Text("年度足迹")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(ink)
+                    .padding(.horizontal, 4)
+
+                VStack(spacing: 20) {
+                    ForEach(footprints) { footprint in
+                        footprintCard(footprint)
                     }
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 40)
             }
         }
-        .navigationTitle("2026年进度")
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 24)
+        .background(Color(red: 242 / 255, green: 242 / 255, blue: 247 / 255))
     }
-}
 
-struct YearProgressHeaderCard: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Text("2026 年已走过")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.black.opacity(0.6))
-                
-            HStack(alignment: .lastTextBaseline, spacing: 4) {
-                Text("70")
-                    .font(.system(size: 48, weight: .bold))
-                    .monospacedDigit()
-                Text("%")
-                    .font(.system(size: 24, weight: .bold))
+    private var annualGoalHeroCard: some View {
+        VStack(alignment: .leading, spacing: 26) {
+            Text("2026年已走过259天，还剩106天")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(ink.opacity(0.95))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            .padding(.horizontal, 4)
+
+            VStack(alignment: .leading, spacing: 20) {
+                Text("2026年度早睡目标")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color(red: 45 / 255, green: 135 / 255, blue: 245 / 255))
+
+                HStack(alignment: .lastTextBaseline, spacing: 8) {
+                    Text("\(completedDays)")
+                        .font(.system(size: 48, weight: .bold))
+                        .foregroundStyle(ink)
+                        .monospacedDigit()
+
+                    Text("/ \(targetDays) 天")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.black.opacity(0.4))
+                }
+
+                GeometryReader { proxy in
+                    Capsule()
+                        .fill(Color.black.opacity(0.06))
+                        .overlay(alignment: .leading) {
+                            Capsule()
+                                .fill(ink.opacity(0.85))
+                                .frame(width: proxy.size.width * progress)
+                        }
+                }
+                .frame(height: 4)
+                .padding(.top, 4)
             }
-            .foregroundColor(.black)
-            
-            Text("还剩 109 天")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.black.opacity(0.5))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.05))
-                .clipShape(Capsule())
+            .padding(.horizontal, 24)
+            .padding(.vertical, 32)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .frame(maxWidth: .infinity)
+    }
+
+    private func footprintCard(_ footprint: HomepageAnnualFootprint) -> some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(footprint.title)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(ink.opacity(0.92))
+
+                Text(footprint.subtitle)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.5))
+                    .lineSpacing(4)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(footprint.value)
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(ink)
+                    .monospacedDigit()
+
+                Text(footprint.unit)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.black.opacity(0.5))
+            }
+        }
+        .padding(.horizontal, 24)
         .padding(.vertical, 32)
         .background(Color.white)
-        .cornerRadius(24)
-        .padding(.horizontal, 20)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var annualGoalEditor: some View {
+        NavigationStack {
+            VStack(spacing: 26) {
+                VStack(spacing: 8) {
+                    Text("\(targetDays)")
+                        .font(.system(size: 48, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                    Text("年度早睡天数")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.black.opacity(0.42))
+                }
+
+                Stepper(value: $targetDays, in: 30...365, step: 10) {
+                    Text("调整目标")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .padding(.horizontal, 18)
+                .frame(height: 54)
+                .background(Color.black.opacity(0.045))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 18)
+            .navigationTitle("设置年度目标")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") { showsGoalEditor = false }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+
+    private var exportButton: some View {
+        Button(action: exportImage) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("导出图片")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(ink)
+            .foregroundStyle(Color(red: 247 / 255, green: 247 / 255, blue: 247 / 255))
+            .clipShape(Capsule())
+            .shadow(color: ink.opacity(0.16), radius: 12, x: 0, y: 6)
+        }
+    }
+
+    @MainActor
+    private func exportImage() {
+        let renderer = ImageRenderer(content: posterContent)
+        renderer.scale = displayScale
+        guard let image = renderer.uiImage,
+              let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              let rootController = scene.windows.first(where: \.isKeyWindow)?.rootViewController else { return }
+        rootController.present(UIActivityViewController(activityItems: [image], applicationActivities: nil), animated: true)
     }
 }
 
-struct HolidayRowView: View {
-    let item: HolidayItem
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(item.name)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
-                    Text(item.date)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.black.opacity(0.6))
-                }
-                Text(item.detail)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.black.opacity(0.4))
-            }
-            Spacer()
-            Text(item.days)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.black)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 12)
-                .background(Color(white: 0.95))
-                .cornerRadius(8)
-        }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
-    }
+private struct HomepageAnnualFootprint: Identifiable {
+    let id = UUID()
+    let title: String
+    let subtitle: String
+    let value: String
+    let unit: String
 }
 
 struct SleepDetailChromeModifier: ViewModifier {
